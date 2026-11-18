@@ -12,14 +12,15 @@
  *               (ej. "global") comparte sala en toda la web.
  *   name        Nombre fijo del usuario           (aleatorio: "Capibara Zen")
  *   color       Color hex #RRGGBB                 (aleatorio de la paleta)
- *   presence    Píldora con avatares conectados   (true)
- *   toggle      Botón para ocultar cursores / dejar de compartir el tuyo (true)
+ *   presence    Píldora: personas · chat · reacciones · tu perfil (true)
+ *   onboarding  Aviso de bienvenida la primera vez que alguien entra (true)
+ *   toggle      Interruptor de "modo fantasma" en tu perfil       (true)
  *   chat        Chat de cursor con la tecla "/"   (true)
  *   reactions   Array de emojis para reaccionar con la tecla "E", o false
  *   clicks      Mostrar los clics de los demás como ondas          (true)
  *   selection   Mostrar el texto que seleccionan los demás         (true)
- *   follow      Seguir a alguien al pulsar su avatar               (true)
- *   editable    Editar tu nombre y color al pulsar tu avatar       (true)
+ *   follow      Botón "Seguir" en el panel de personas             (true)
+ *   editable    Editar nombre, color y foto en tu perfil           (true)
  *   onStats     fn({ page, site, peak }) — cada vez que cambian las cifras
  *   anchor      'center' | 'left' — referencia horizontal para mapear
  *               posiciones entre pantallas de distinto ancho     ('center')
@@ -34,6 +35,7 @@
  *   botPhrases  Array de frases para el chat de los bots
  *
  * Devuelve { me, peers, room, ghost, stats, setRoom(), setGhost(), setIdentity(),
+ *            open("people"|"profile"|"chat"|"reactions"), close(),
  *            react(emoji), follow(id), unfollow(), destroy() }.
  *
  * Protocolo (JSON por WebSocket, conexión a <url>?room=<sala>):
@@ -68,7 +70,7 @@
   var SEND_EVERY_MS = 40;   // ~25 envíos/seg como máximo
   var LERP = 0.28;          // suavizado de cursores remotos (0..1)
   var CHAT_LINGER_MS = 4000;
-  var UI = ".mc-presence,.mc-local,.mc-layer,.mc-pop,.mc-picker";
+  var UI = ".mc-presence,.mc-local,.mc-layer,.mc-pop,.mc-picker,.mc-coach,.mc-follow";
 
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function rand(a, b) { return a + Math.random() * (b - a); }
@@ -164,67 +166,138 @@
     ".mc-local .mc-tag{pointer-events:auto;padding:7px 12px 9px;border-radius:3px 16px 16px 16px}",
     ".mc-local input{all:unset;font:400 14px/1.2 " + FONT + ";width:200px;color:inherit;caret-color:currentColor}",
     ".mc-local input::placeholder{color:inherit;opacity:.65}",
-    /* superficies flotantes (píldora, popovers, selector de emojis) */
-    ".mc-presence,.mc-pop,.mc-picker{background:#fff;color:#444;border:1px solid rgba(0,0,0,.08);box-shadow:0 6px 20px rgba(0,0,0,.12);font:500 12px/1 " + FONT + "}",
-    ".mc-presence{position:fixed;right:16px;bottom:16px;display:flex;align-items:center;gap:6px;z-index:2147483002;",
-    "  border-radius:999px;padding:4px 4px 4px 6px;max-width:calc(100vw - 32px)}",
-    ".mc-btn{all:unset;box-sizing:border-box;cursor:pointer;border-radius:999px;display:inline-grid;place-items:center}",
-    ".mc-btn:hover{background:rgba(0,0,0,.06)}",
+    /* ---------- píldora, paneles, tooltip y aviso inicial ---------- */
+    ".mc-presence,.mc-pop,.mc-picker,.mc-coach{background:#fff;color:#1E1E1E;border:1px solid rgba(0,0,0,.08);",
+    "  box-shadow:0 8px 28px rgba(0,0,0,.14);font:500 13px/1.3 " + FONT + "}",
+    ".mc-presence{position:fixed;right:16px;bottom:16px;display:flex;align-items:center;gap:2px;z-index:2147483002;",
+    "  border-radius:999px;padding:4px;max-width:calc(100vw - 32px)}",
+    ".mc-btn{all:unset;box-sizing:border-box;cursor:pointer;border-radius:999px;display:inline-flex;align-items:center;",
+    "  justify-content:center;gap:8px;transition:background .15s}",
+    ".mc-btn:hover,.mc-btn[aria-expanded=true]{background:rgba(0,0,0,.06)}",
     ".mc-btn:focus-visible{outline:2px solid #0D99FF;outline-offset:1px}",
-    ".mc-count{padding:7px 8px;white-space:nowrap}",
-    ".mc-icon{width:28px;height:28px;font-size:15px}",
-    ".mc-avatars{display:flex;padding:0 2px}",
-    ".mc-avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:600;",
-    "  border:2px solid #fff;margin-left:-7px;box-sizing:border-box}",
-    ".mc-avatars>:first-child{margin-left:0}",
-    "button.mc-avatar{all:unset;box-sizing:border-box;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;",
-    "  font-size:11px;font-weight:600;border:2px solid #fff;margin-left:-7px;cursor:pointer;transition:transform .15s}",
-    "button.mc-avatar:hover{transform:translateY(-2px);position:relative;z-index:1}",
-    "button.mc-avatar:focus-visible{outline:2px solid #0D99FF}",
-    ".mc-avatar.mc-me{box-shadow:inset 0 0 0 2px rgba(255,255,255,.7)}",
-    ".mc-avatar.mc-following{outline:2px solid currentColor;outline-offset:1px}",
-    ".mc-hint{opacity:.6;white-space:nowrap;padding-right:2px}",
-    ".mc-ghost .mc-avatars,.mc-ghost .mc-hint,.mc-ghost .mc-react-btn{display:none}",
-    "@media (hover:none),(max-width:640px){.mc-hint{display:none}}",
-    ".mc-pop{position:fixed;right:16px;bottom:64px;z-index:2147483003;border-radius:14px;padding:14px;width:240px;line-height:1.3}",
-    ".mc-pop h4{margin:0 0 10px;font-size:12px;font-weight:600;opacity:.7}",
-    ".mc-stat{display:flex;justify-content:space-between;padding:6px 0;font-weight:400;font-size:13px}",
-    ".mc-stat b{font-weight:600}",
-    ".mc-pop input{box-sizing:border-box;width:100%;font:400 14px " + FONT + ";padding:8px 10px;border-radius:8px;",
+    ".mc-people{height:36px;padding:0 12px 0 4px;font-weight:600;white-space:nowrap}",
+    ".mc-people.mc-alone{padding-left:10px;font-weight:500;opacity:.8}",
+    ".mc-stack{display:flex}",
+    ".mc-avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;",
+    "  border:2px solid #fff;margin-left:-8px;box-sizing:border-box;overflow:hidden;flex:none}",
+    ".mc-stack>:first-child{margin-left:0}",
+    ".mc-avatar.mc-more{background:#EDEDED;color:#333}",
+    ".mc-icon{width:36px;height:36px}",
+    ".mc-sep{width:1px;height:20px;background:rgba(0,0,0,.1);margin:0 4px;flex:none}",
+    ".mc-me-btn{height:36px;padding:0 6px 0 4px;gap:3px}",
+    ".mc-me-btn .mc-avatar{margin:0;border:0;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}",
+    ".mc-chev{opacity:.45;transition:transform .15s}",
+    ".mc-me-btn[aria-expanded=true] .mc-chev{transform:rotate(180deg)}",
+    ".mc-ghost-bar{display:none;align-items:center;gap:8px;padding:0 0 0 10px;white-space:nowrap}",
+    ".mc-presence.mc-ghost>*{display:none}",
+    ".mc-presence.mc-ghost>.mc-ghost-bar{display:flex}",
+    ".mc-pill-btn{height:30px;padding:0 14px;font-weight:600;background:#1E1E1E;color:#fff}",
+    ".mc-pill-btn:hover{background:#000}",
+    "@media (hover:none){.mc-chat-btn{display:none}}",
+    /* tooltip con atajo de teclado */
+    ".mc-tooltip{position:fixed;left:0;top:0;z-index:2147483004;pointer-events:none;background:#1E1E1E;color:#fff;",
+    "  font:500 12px/1 " + FONT + ";padding:7px 9px;border-radius:7px;white-space:nowrap;opacity:0;transform:translateY(4px);",
+    "  transition:opacity .12s,transform .12s}",
+    ".mc-tooltip.mc-on{opacity:1;transform:none}",
+    ".mc-tooltip kbd{font:600 11px/1 ui-monospace,Menlo,monospace;background:rgba(255,255,255,.18);border-radius:4px;padding:2px 5px;margin-left:8px}",
+    "@media (hover:none){.mc-tooltip{display:none}}",
+    ".mc-pop kbd,.mc-coach kbd{font:600 11px/1 ui-monospace,Menlo,monospace;border:1px solid rgba(0,0,0,.18);border-bottom-width:2px;",
+    "  border-radius:5px;padding:1px 5px;margin:0 1px}",
+    /* paneles */
+    ".mc-pop{position:fixed;right:16px;bottom:68px;z-index:2147483003;border-radius:16px;width:300px;max-width:calc(100vw - 32px);",
+    "  overflow:hidden;animation:mc-in .16s ease-out}",
+    "@keyframes mc-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
+    ".mc-pop-body{padding:16px}",
+    ".mc-pop h4{margin:0 0 14px;font-size:14px;font-weight:700}",
+    ".mc-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid rgba(0,0,0,.07)}",
+    ".mc-big{font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1}",
+    ".mc-sub{font-size:12px;font-weight:400;opacity:.6;margin-top:3px}",
+    ".mc-list{list-style:none;margin:0;padding:6px;max-height:300px;overflow:auto}",
+    ".mc-person{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px}",
+    ".mc-person:hover{background:rgba(0,0,0,.035)}",
+    ".mc-person .mc-avatar{margin:0;border:0;width:34px;height:34px;font-size:12px}",
+    ".mc-who{flex:1;min-width:0}",
+    ".mc-who b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".mc-status{font-size:12px;font-weight:400;opacity:.65;display:flex;align-items:center;gap:6px;margin-top:1px}",
+    ".mc-status i{width:7px;height:7px;border-radius:50%;background:#14AE5C;display:inline-block}",
+    ".mc-status.mc-away i{background:#B3B3B3}",
+    ".mc-status.mc-typing i{background:#0D99FF}",
+    ".mc-act{height:30px;padding:0 12px;font-size:12px;font-weight:600;border:1px solid rgba(0,0,0,.14);flex:none}",
+    ".mc-act.mc-on{background:#1E1E1E;color:#fff;border-color:#1E1E1E}",
+    ".mc-act.mc-on:hover{background:#000}",
+    ".mc-foot{margin:0;padding:11px 16px 13px;font-size:12px;font-weight:400;opacity:.65;border-top:1px solid rgba(0,0,0,.07);line-height:1.45}",
+    ".mc-divider{height:1px;background:rgba(0,0,0,.07);margin:16px -16px}",
+    ".mc-switch-row{display:flex;align-items:center;gap:12px}",
+    ".mc-switch-row b{display:block;font-weight:600}",
+    ".mc-switch-row small{display:block;font-size:12px;font-weight:400;opacity:.6;margin-top:2px;line-height:1.35}",
+    ".mc-switch{all:unset;flex:none;width:38px;height:22px;border-radius:999px;background:rgba(0,0,0,.18);position:relative;cursor:pointer;transition:background .15s}",
+    ".mc-switch::after{content:'';position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;",
+    "  box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}",
+    ".mc-switch[aria-checked=true]{background:#0D99FF}",
+    ".mc-switch[aria-checked=true]::after{transform:translateX(16px)}",
+    ".mc-switch:focus-visible{outline:2px solid #0D99FF;outline-offset:2px}",
+    ".mc-pop input{box-sizing:border-box;width:100%;font:400 14px " + FONT + ";padding:9px 11px;border-radius:9px;",
     "  border:1px solid rgba(0,0,0,.15);background:transparent;color:inherit;margin-bottom:12px}",
-    ".mc-swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}",
+    ".mc-pop input:focus{outline:2px solid #0D99FF;outline-offset:-1px;border-color:transparent}",
+    ".mc-label{display:block;font-size:12px;font-weight:600;opacity:.6;margin:0 0 6px}",
+    ".mc-swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:16px}",
     ".mc-face{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}",
     ".mc-tag-av{width:16px;height:16px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:-4px;margin:-2px 5px -2px -3px;box-shadow:0 0 0 1.5px rgba(255,255,255,.7)}",
     ".mc-tag-av[hidden]{display:none}",
-    ".mc-photo{display:flex;align-items:center;gap:12px;margin-bottom:14px}",
-    ".mc-photo .mc-avatar{width:52px;height:52px;margin:0;border:0;font-size:17px;flex:none;overflow:hidden}",
+    ".mc-photo{display:flex;align-items:center;gap:12px;margin-bottom:16px}",
+    ".mc-photo .mc-avatar{width:56px;height:56px;margin:0;border:0;font-size:18px}",
     ".mc-photo small{display:block;font-size:11px;font-weight:400;opacity:.6;margin-top:6px;line-height:1.3}",
     ".mc-outline{border:1px solid rgba(0,0,0,.15);padding:7px 11px;font-size:12px;font-weight:600}",
     ".mc-link{all:unset;cursor:pointer;font-size:12px;margin-left:8px;opacity:.7;text-decoration:underline}",
     ".mc-link:hover{opacity:1}",
-    "@media (prefers-color-scheme:dark){.mc-outline{border-color:rgba(255,255,255,.2)}}",
     ".mc-swatch{all:unset;cursor:pointer;aspect-ratio:1;border-radius:50%;box-sizing:border-box}",
     ".mc-swatch[aria-pressed=true]{box-shadow:0 0 0 2px #fff,0 0 0 4px currentColor}",
     ".mc-swatch:focus-visible{outline:2px solid #0D99FF;outline-offset:2px}",
     ".mc-row{display:flex;gap:8px;justify-content:space-between}",
-    ".mc-row .mc-btn{padding:8px 12px;font-weight:600;font-size:13px}",
+    ".mc-row .mc-btn{padding:9px 14px;font-weight:600;font-size:13px}",
     ".mc-primary{background:#1E1E1E;color:#fff}.mc-primary:hover{background:#000}",
-    ".mc-picker{position:fixed;z-index:2147483003;display:flex;gap:2px;border-radius:999px;padding:4px}",
-    ".mc-picker .mc-btn{width:36px;height:36px;font-size:20px;position:relative}",
+    ".mc-picker{position:fixed;z-index:2147483003;display:flex;gap:2px;border-radius:999px;padding:4px;animation:mc-in .16s ease-out}",
+    ".mc-picker .mc-btn{width:38px;height:38px;font-size:21px}",
+    ".mc-picker .mc-btn:hover{transform:scale(1.15)}",
+    /* aviso de primera visita */
+    ".mc-coach{position:fixed;right:16px;bottom:72px;z-index:2147483003;border-radius:14px;padding:16px;width:290px;",
+    "  max-width:calc(100vw - 32px);box-sizing:border-box;animation:mc-in .25s ease-out}",
+    ".mc-coach b{display:block;font-size:14px;margin-bottom:6px}",
+    ".mc-coach p{margin:0 0 14px;font-weight:400;opacity:.75;line-height:1.5}",
+    ".mc-coach::after{content:'';position:absolute;right:34px;bottom:-7px;width:12px;height:12px;background:inherit;",
+    "  border-right:1px solid rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.08);transform:rotate(45deg)}",
     /* modo seguir */
     ".mc-follow{position:fixed;inset:0;border:3px solid;pointer-events:none;z-index:2147482999;display:none}",
     ".mc-follow.mc-on{display:block}",
-    ".mc-follow span{position:absolute;top:0;left:50%;transform:translateX(-50%);font:600 12px/1 " + FONT + ";",
-    "  padding:6px 12px 7px;border-radius:0 0 8px 8px;white-space:nowrap}",
-    "@media (prefers-color-scheme:dark){.mc-presence,.mc-pop,.mc-picker{background:#1f1f1f;border-color:rgba(255,255,255,.1);color:#ccc}",
-    "  .mc-avatar,button.mc-avatar{border-color:#1f1f1f}.mc-btn:hover{background:rgba(255,255,255,.08)}",
-    "  .mc-pop input{border-color:rgba(255,255,255,.2)}.mc-swatch[aria-pressed=true]{box-shadow:0 0 0 2px #1f1f1f,0 0 0 4px currentColor}",
-    "  .mc-primary{background:#fff;color:#1E1E1E}.mc-primary:hover{background:#eee}}"
+    ".mc-follow button{all:unset;pointer-events:auto;cursor:pointer;position:absolute;top:0;left:50%;transform:translateX(-50%);",
+    "  font:600 12px/1 " + FONT + ";padding:7px 12px 8px;border-radius:0 0 9px 9px;white-space:nowrap}",
+    ".mc-follow button span{font-weight:500;opacity:.8;margin-left:8px}",
+    ".mc-follow button:hover span{opacity:1;text-decoration:underline}",
+    ".mc-follow button:focus-visible{outline:2px solid #0D99FF}",
+    /* modo oscuro */
+    "@media (prefers-color-scheme:dark){",
+    "  .mc-presence,.mc-pop,.mc-picker,.mc-coach{background:#1f1f1f;border-color:rgba(255,255,255,.1);color:#EEE}",
+    "  .mc-avatar{border-color:#1f1f1f}.mc-btn:hover,.mc-btn[aria-expanded=true]{background:rgba(255,255,255,.08)}",
+    "  .mc-sep{background:rgba(255,255,255,.12)}.mc-avatar.mc-more{background:#333;color:#ddd}",
+    "  .mc-pill-btn,.mc-primary,.mc-act.mc-on{background:#fff;color:#1E1E1E;border-color:#fff}",
+    "  .mc-pill-btn:hover,.mc-primary:hover,.mc-act.mc-on:hover{background:#e6e6e6}",
+    "  .mc-act,.mc-outline,.mc-pop input{border-color:rgba(255,255,255,.2)}",
+    "  .mc-head,.mc-foot{border-color:rgba(255,255,255,.08)}.mc-divider{background:rgba(255,255,255,.08)}",
+    "  .mc-person:hover{background:rgba(255,255,255,.05)}.mc-switch{background:rgba(255,255,255,.2)}",
+    "  .mc-swatch[aria-pressed=true]{box-shadow:0 0 0 2px #1f1f1f,0 0 0 4px currentColor}",
+    "  .mc-pop kbd,.mc-coach kbd{border-color:rgba(255,255,255,.25)}",
+    "  .mc-coach::after{border-color:rgba(255,255,255,.1)}}"
   ].join("\n");
 
-  var EYE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-  var EYE_OFF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.6 3.5M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2l20 20"/></svg>';
-  var SMILE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>';
+  function icon(paths, size) {
+    return '<svg width="' + (size || 18) + '" height="' + (size || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+      ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+  }
+  var ICON_CHAT = icon('<path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.5-5.2A8.5 8.5 0 1 1 21 12z"/>');
+  var ICON_SMILE = icon('<circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01"/>');
+  var ICON_PEOPLE = icon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>', 16);
+  var ICON_CHEV = '<svg class="mc-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>';
+  var ICON_EYE_OFF = icon('<path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.6 3.5M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2l20 20"/>', 16);
 
   function cursorSVG(color) {
     return '<svg width="20" height="22" viewBox="0 0 20 22" fill="none">' +
@@ -335,34 +408,94 @@
     input.setAttribute("aria-label", "Mensaje de chat del cursor");
 
     var followBox = el("div", "mc-follow", document.body);
-    var followLabel = el("span", "", followBox);
+    var followLabel = el("button", "", followBox);
+    followLabel.type = "button";
+    followLabel.addEventListener("click", function () { unfollow(); });
 
-    var presence = null, avatars = null, countBtn = null, toggleBtn = null, reactBtn = null;
+    // Píldora: [Personas] | [Chat] [Reaccionar] | [Tu perfil]
+    // Cada botón dice lo que hace (tooltip + atajo) y abre un panel explicativo.
+    var presence = null, peopleBtn = null, chatBtn = null, reactBtn = null, meBtn = null;
+    var tooltip = null, coach = null, coachTimer = null;
     if (opts.presence !== false) {
       presence = el("div", "mc-presence", document.body);
-      countBtn = el("button", "mc-btn mc-count", presence);
-      countBtn.type = "button";
-      countBtn.title = "Ver estadísticas";
-      countBtn.addEventListener("click", function () { togglePop("stats"); });
-      var hints = [];
-      if (opts.chat !== false) hints.push("<b>/</b> chat");
-      if (reactions) hints.push("<b>E</b> reacciones");
-      if (hints.length) el("span", "mc-hint", presence).innerHTML = hints.join(" · ");
-      avatars = el("div", "mc-avatars", presence);
+      presence.setAttribute("role", "toolbar");
+      presence.setAttribute("aria-label", "Personas en esta página");
+      peopleBtn = pillButton("mc-btn mc-people", "Ver quién está aquí", "", function () { togglePop("people"); });
+      if (opts.chat !== false || reactions) el("span", "mc-sep", presence);
+      if (opts.chat !== false) {
+        chatBtn = pillButton("mc-btn mc-icon mc-chat-btn", "Escribir junto a tu cursor", "/", function () {
+          closePop(); closePicker(); openChat();
+        }, ICON_CHAT);
+      }
       if (reactions) {
-        reactBtn = el("button", "mc-btn mc-icon mc-react-btn", presence);
-        reactBtn.type = "button"; reactBtn.innerHTML = SMILE;
-        reactBtn.title = "Reaccionar (E)"; reactBtn.setAttribute("aria-label", "Reaccionar");
-        reactBtn.addEventListener("click", function () {
-          var r = reactBtn.getBoundingClientRect();
+        reactBtn = pillButton("mc-btn mc-icon mc-react-btn", "Reaccionar", "E", function () {
+          if (picker) return closePicker();
+          var r = presence.getBoundingClientRect();
           openPicker(r.right, r.top - 8, true);
-        });
+        }, ICON_SMILE);
       }
-      if (opts.toggle !== false) {
-        toggleBtn = el("button", "mc-btn mc-icon", presence);
-        toggleBtn.type = "button";
-        toggleBtn.addEventListener("click", function () { setGhost(!ghost); });
-      }
+      el("span", "mc-sep", presence);
+      meBtn = pillButton("mc-btn mc-me-btn", "Tu perfil", "", function () { togglePop("profile"); });
+      var ghostBar = el("div", "mc-ghost-bar", presence);
+      ghostBar.innerHTML = ICON_EYE_OFF;
+      el("span", "", ghostBar).textContent = "Cursores ocultos";
+      var showBtn = el("button", "mc-btn mc-pill-btn", ghostBar);
+      showBtn.type = "button"; showBtn.textContent = "Mostrar";
+      showBtn.addEventListener("click", function () { setGhost(false); });
+      tooltip = el("div", "mc-tooltip", document.body);
+      tooltip.setAttribute("aria-hidden", "true");
+    }
+
+    function pillButton(cls, label, kbd, onClick, iconHTML) {
+      var b = el("button", cls, presence);
+      b.type = "button";
+      b.dataset.tip = label;
+      if (kbd) { b.dataset.kbd = kbd; b.setAttribute("aria-keyshortcuts", kbd); }
+      b.setAttribute("aria-label", label);
+      if (iconHTML) b.innerHTML = iconHTML;
+      b.addEventListener("click", function () { hideTip(); onClick(); });
+      b.addEventListener("mouseenter", function () { showTip(b); });
+      b.addEventListener("mouseleave", hideTip);
+      b.addEventListener("focus", function () { try { if (b.matches(":focus-visible")) showTip(b); } catch (e) {} });
+      b.addEventListener("blur", hideTip);
+      return b;
+    }
+    function showTip(b) {
+      if (!tooltip || b.getAttribute("aria-expanded") === "true") return;
+      tooltip.textContent = b.dataset.tip;
+      if (b.dataset.kbd) el("kbd", "", tooltip).textContent = b.dataset.kbd;
+      tooltip.classList.add("mc-on");
+      var r = b.getBoundingClientRect(), w = tooltip.offsetWidth, h = tooltip.offsetHeight;
+      tooltip.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
+      tooltip.style.top = (r.top - h - 8) + "px";
+    }
+    function hideTip() { if (tooltip) tooltip.classList.remove("mc-on"); }
+    function setExpanded() {
+      if (peopleBtn) peopleBtn.setAttribute("aria-expanded", String(!!openPop && openPop.kind === "people"));
+      if (meBtn) meBtn.setAttribute("aria-expanded", String(!!openPop && openPop.kind === "profile"));
+      if (reactBtn) reactBtn.setAttribute("aria-expanded", String(!!picker));
+    }
+
+    // Aviso de primera visita: qué es esto y cómo se usa (una sola vez)
+    function showCoach() {
+      if (!presence || ghost || coach || opts.onboarding === false || store("localStorage", "mc:onboarded")) return;
+      coach = el("div", "mc-coach", document.body);
+      coach.setAttribute("role", "dialog");
+      coach.setAttribute("aria-label", "Cómo funciona");
+      el("b", "", coach).textContent = "👋 No estás solo en esta página";
+      var tips = [];
+      if (opts.chat !== false) tips.push("<kbd>/</kbd> para escribir junto a tu cursor");
+      if (reactions) tips.push("<kbd>E</kbd> para reaccionar");
+      el("p", "", coach).innerHTML = "Abajo ves quién más está mirando. Pulsa sobre las caras para ver quiénes son y seguirles." +
+        (tips.length ? " Atajos: " + tips.join(" y ") + "." : "");
+      var ok = el("button", "mc-btn mc-pill-btn", coach);
+      ok.type = "button"; ok.textContent = "Entendido";
+      ok.addEventListener("click", dismissCoach);
+    }
+    function dismissCoach() {
+      clearTimeout(coachTimer);
+      store("localStorage", "mc:onboarded", true);
+      if (coach) { coach.remove(); coach = null; }
     }
 
     function paintLocalTag() { localTag.style.background = me.color; localTag.style.color = textOn(me.color); }
@@ -705,15 +838,19 @@
       picker.style.left = Math.max(8, Math.min(innerWidth - w - 8, left)) + "px";
       picker.style.top = Math.max(8, Math.min(innerHeight - h - 8, top)) + "px";
       if (fromButton) picker.querySelector("button").focus();
+      dismissCoach();
+      setExpanded();
     }
-    function closePicker() { if (picker) { picker.remove(); picker = null; } }
+    function closePicker() { if (picker) { picker.remove(); picker = null; } setExpanded(); }
 
     // ---- seguir a alguien ----
     function paintFollow(p) {
       followBox.style.borderColor = p.color;
       followLabel.style.background = p.color;
       followLabel.style.color = textOn(p.color);
-      followLabel.textContent = "Siguiendo a " + p.name + " · Esc para salir";
+      followLabel.textContent = "Siguiendo a " + p.name;
+      el("span", "", followLabel).textContent = "Dejar de seguir ✕";
+      followLabel.setAttribute("aria-label", "Dejar de seguir a " + p.name);
     }
     function follow(id) {
       var p = peers[id];
@@ -731,13 +868,14 @@
       renderPresence();
     }
 
-    // ---- popovers: estadísticas y edición de identidad ----
-    function closePop() { if (openPop) { openPop.el.remove(); openPop = null; } }
+    // ---- paneles: personas y perfil ----
+    function closePop() { if (openPop) { openPop.el.remove(); openPop = null; } setExpanded(); }
     function togglePop(kind) {
       if (openPop && openPop.kind === kind) return closePop();
-      closePop(); closePicker();
-      if (kind === "stats") return openStats();
-      if (kind === "edit") return openEdit();
+      closePop(); closePicker(); hideTip(); dismissCoach();
+      if (kind === "people" && !ghost) openPeople();
+      else if (kind === "profile") openProfile();
+      setExpanded();
     }
 
     function currentStats() {
@@ -752,99 +890,192 @@
       return n;
     }
 
-    function openStats() {
-      var pop = el("div", "mc-pop", document.body);
-      pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "Estadísticas");
-      el("h4", "", pop).textContent = "Ahora mismo";
-      var rows = [["page", "En esta página"], ["site", "En toda la web"], ["peak", "Pico de hoy en esta página"]];
-      var vals = {};
-      rows.forEach(function (r) {
-        var row = el("div", "mc-stat", pop);
-        el("span", "", row).textContent = r[1];
-        vals[r[0]] = el("b", "", row);
-      });
-      openPop = { kind: "stats", el: pop, update: function (s) {
-        rows.forEach(function (r) { vals[r[0]].textContent = s[r[0]]; });
-      } };
-      openPop.update(currentStats());
+    // Tú primero; luego el resto (sin tus otras pestañas ni bots retirados)
+    function peopleList() {
+      var arr = [{ id: null, me: true, name: me.name, color: me.color, avatar: me.avatar }];
+      for (var id in peers) {
+        var p = peers[id];
+        if (p.name && !p.retired && !p.self) arr.push(p);
+      }
+      return arr;
+    }
+    function statusOf(u) {
+      if (u.me) return ["Tú", "mc-me"];
+      if (u.chat) return ["Escribiendo…", "mc-typing"];
+      if (!u.visible || u.idle) return ["Ausente", "mc-away"];
+      return ["Activo", ""];
+    }
+    function face(cls, u, parent) {
+      var a = el("span", "mc-avatar" + (cls ? " " + cls : ""), parent);
+      a.style.background = u.color; a.style.color = textOn(u.color);
+      avatarFace(a, u.name, u.avatar);
+      return a;
     }
 
-    function openEdit() {
-      var pop = el("div", "mc-pop", document.body), color = me.color, avatar = me.avatar || "";
-      pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "Tu cursor");
-      el("h4", "", pop).textContent = "Tu cursor";
-
-      // Foto: se elige del ordenador, se recorta y se reduce en el navegador
-      var photo = el("div", "mc-photo", pop);
-      var preview = el("div", "mc-avatar", photo);
-      var info = el("div", "", photo);
-      var file = el("input", "", info);
-      file.type = "file"; file.accept = "image/*"; file.hidden = true;
-      var upBtn = el("button", "mc-btn mc-outline", info); upBtn.type = "button";
-      var rmBtn = el("button", "mc-link", info); rmBtn.type = "button"; rmBtn.textContent = "Quitar";
-      var note = el("small", "", info);
-      var NOTE = "La verán quienes estén en esta página.";
-      note.textContent = NOTE;
-
-      var nameIn = el("input", "", pop);
-      nameIn.value = me.name; nameIn.maxLength = 32; nameIn.setAttribute("aria-label", "Tu nombre");
-
-      function paintPreview() {
-        preview.style.background = color; preview.style.color = textOn(color);
-        avatarFace(preview, nameIn.value.trim() || me.name, avatar);
-        upBtn.textContent = avatar ? "Cambiar foto" : "Subir foto";
-        rmBtn.hidden = !avatar;
+    function openPeople() {
+      var pop = el("div", "mc-pop", document.body);
+      pop.setAttribute("role", "dialog");
+      pop.setAttribute("aria-label", "Personas en esta página");
+      var head = el("div", "mc-head", pop);
+      var big = el("div", "mc-big", head);
+      var txt = el("div", "", head);
+      var title = el("div", "", txt); title.style.fontWeight = "600";
+      var sub = el("div", "mc-sub", txt);
+      var list = el("ul", "mc-list", pop);
+      if (canFollow) {
+        el("p", "mc-foot", pop).innerHTML = "<b>Seguir</b> mueve tu página con la de esa persona para ver lo mismo que ella. " +
+          "Para soltarla, pulsa arriba en el aviso, gira la rueda o pulsa <kbd>Esc</kbd>.";
       }
-      upBtn.addEventListener("click", function () { file.click(); });
-      rmBtn.addEventListener("click", function () { avatar = ""; paintPreview(); });
-      file.addEventListener("change", function () {
-        var f = file.files && file.files[0];
-        file.value = "";
-        if (!f) return;
-        if (!/^image\//.test(f.type)) { note.textContent = "Ese archivo no es una imagen."; return; }
-        upBtn.textContent = "Procesando…";
-        imageToAvatar(f, function (url) {
-          if (url) { avatar = url; note.textContent = NOTE; }
-          else note.textContent = "No se ha podido usar esa imagen. Prueba con otra.";
+      openPop = { kind: "people", el: pop, update: function () {
+        var s = currentStats();
+        big.textContent = s.page;
+        title.textContent = s.page === 1 ? "Solo estás tú, por ahora" : "personas en esta página";
+        sub.textContent = s.site + " en toda la web · pico de hoy: " + s.peak;
+        renderPeopleList(list);
+      } };
+      openPop.update();
+    }
+
+    function renderPeopleList(list) {
+      var arr = peopleList();
+      var key = following + "|" + arr.map(function (u) {
+        return u.id + u.name + u.color + (u.avatar ? u.avatar.length : "") + statusOf(u)[0];
+      }).join("|");
+      if (list._key === key) return;               // no reconstruir sin cambios (no se pierden clics)
+      list._key = key;
+      list.innerHTML = "";
+      arr.forEach(function (u) {
+        var li = el("li", "mc-person", list);
+        face("", u, li);
+        var who = el("div", "mc-who", li);
+        el("b", "", who).textContent = u.name;
+        var st = statusOf(u), status = el("span", "mc-status " + st[1], who);
+        if (!u.me) el("i", "", status);
+        status.appendChild(document.createTextNode(st[0]));
+        var b;
+        if (u.me && editable) {
+          b = el("button", "mc-btn mc-act", li);
+          b.textContent = "Editar";
+          b.setAttribute("aria-label", "Editar tu perfil");
+          b.addEventListener("click", function () { togglePop("profile"); });
+        } else if (!u.me && canFollow) {
+          var on = following === u.id;
+          b = el("button", "mc-btn mc-act" + (on ? " mc-on" : ""), li);
+          b.textContent = on ? "Siguiendo" : "Seguir";
+          b.setAttribute("aria-pressed", String(on));
+          b.setAttribute("aria-label", (on ? "Dejar de seguir a " : "Seguir a ") + u.name);
+          b.addEventListener("mouseenter", function () { if (following === u.id) b.textContent = "Dejar"; });
+          b.addEventListener("mouseleave", function () { if (following === u.id) b.textContent = "Siguiendo"; });
+          b.addEventListener("click", function () { if (following === u.id) unfollow(); else follow(u.id); });
+        }
+        if (b) b.type = "button";
+      });
+    }
+
+    function openProfile() {
+      var pop = el("div", "mc-pop", document.body);
+      pop.setAttribute("role", "dialog");
+      pop.setAttribute("aria-label", "Tu perfil");
+      var body = el("div", "mc-pop-body", pop);
+      el("h4", "", body).textContent = "Tu perfil";
+      openPop = { kind: "profile", el: pop };
+      var nameIn = null;
+
+      if (editable) {
+        var color = me.color, avatar = me.avatar || "";
+
+        // Foto: se elige del ordenador, se recorta y se reduce en el navegador
+        var photo = el("div", "mc-photo", body);
+        var preview = el("div", "mc-avatar", photo);
+        var info = el("div", "", photo);
+        var file = el("input", "", info);
+        file.type = "file"; file.accept = "image/*"; file.hidden = true;
+        var upBtn = el("button", "mc-btn mc-outline", info); upBtn.type = "button";
+        var rmBtn = el("button", "mc-link", info); rmBtn.type = "button"; rmBtn.textContent = "Quitar";
+        var note = el("small", "", info);
+        var NOTE = "La verán quienes estén en esta página.";
+        note.textContent = NOTE;
+
+        var nameLabel = el("label", "mc-label", body); nameLabel.textContent = "Nombre";
+        nameIn = el("input", "", body);
+        nameIn.value = me.name; nameIn.maxLength = 32;
+        nameIn.id = "mc-name-" + uid; nameLabel.htmlFor = nameIn.id;
+
+        el("span", "mc-label", body).textContent = "Color";
+        var sw = el("div", "mc-swatches", body);
+        sw.setAttribute("role", "group"); sw.setAttribute("aria-label", "Color");
+
+        var paintPreview = function () {
+          preview.style.background = color; preview.style.color = textOn(color);
+          avatarFace(preview, nameIn.value.trim() || me.name, avatar);
+          upBtn.textContent = avatar ? "Cambiar foto" : "Subir foto";
+          rmBtn.hidden = !avatar;
+        };
+        var setColor = function (c) {
+          color = c;
+          sw.querySelectorAll(".mc-swatch").forEach(function (o) { o.setAttribute("aria-pressed", String(o.dataset.c === c)); });
           paintPreview();
+        };
+        COLORS.forEach(function (c) {
+          var b = el("button", "mc-swatch", sw);
+          b.type = "button"; b.style.background = c; b.style.color = c; b.dataset.c = c;
+          b.setAttribute("aria-label", "Color " + c);
+          b.addEventListener("click", function () { setColor(c); });
         });
-      });
-      nameIn.addEventListener("input", paintPreview);
+        upBtn.addEventListener("click", function () { file.click(); });
+        rmBtn.addEventListener("click", function () { avatar = ""; paintPreview(); });
+        file.addEventListener("change", function () {
+          var f = file.files && file.files[0];
+          file.value = "";
+          if (!f) return;
+          if (!/^image\//.test(f.type)) { note.textContent = "Ese archivo no es una imagen."; return; }
+          upBtn.textContent = "Procesando…";
+          imageToAvatar(f, function (url) {
+            if (url) { avatar = url; note.textContent = NOTE; }
+            else note.textContent = "No se ha podido usar esa imagen. Prueba con otra.";
+            paintPreview();
+          });
+        });
+        nameIn.addEventListener("input", paintPreview);
+        setColor(color);
 
-      var sw = el("div", "mc-swatches", pop);
-      function setColor(c) {
-        color = c;
-        sw.querySelectorAll(".mc-swatch").forEach(function (o) { o.setAttribute("aria-pressed", String(o.dataset.c === c)); });
-        paintPreview();
+        var row = el("div", "mc-row", body);
+        var dice = el("button", "mc-btn", row); dice.type = "button"; dice.textContent = "🎲 Al azar";
+        dice.title = "Nombre y color al azar";
+        dice.addEventListener("click", function () {         // cambia nombre Y color (nunca repite)
+          var n, c, tries = 0;
+          do { n = randomName(); } while (n === nameIn.value && ++tries < 20);
+          do { c = pick(COLORS); } while (c === color && ++tries < 40);
+          nameIn.value = n;
+          setColor(c);
+        });
+        var save = el("button", "mc-btn mc-primary", row); save.type = "button"; save.textContent = "Guardar";
+        var commit = function () { setIdentity(nameIn.value, color, avatar); closePop(); };
+        save.addEventListener("click", commit);
+        nameIn.addEventListener("keydown", function (e) {
+          e.stopPropagation();
+          if (e.key === "Enter") commit();
+          else if (e.key === "Escape") closePop();
+        });
+      } else {
+        var fixed = el("div", "mc-photo", body);
+        face("", { name: me.name, color: me.color, avatar: me.avatar }, fixed);
+        el("b", "", fixed).textContent = me.name;
       }
-      COLORS.forEach(function (c) {
-        var b = el("button", "mc-swatch", sw);
-        b.type = "button"; b.style.background = c; b.style.color = c; b.dataset.c = c;
-        b.setAttribute("aria-label", "Color " + c);
-        b.addEventListener("click", function () { setColor(c); });
-      });
-      setColor(color);
 
-      var row = el("div", "mc-row", pop);
-      var dice = el("button", "mc-btn", row); dice.type = "button"; dice.textContent = "🎲 Aleatorio";
-      dice.title = "Nombre y color al azar";
-      dice.addEventListener("click", function () {         // cambia nombre Y color (nunca repite)
-        var n, c, tries = 0;
-        do { n = randomName(); } while (n === nameIn.value && ++tries < 20);
-        do { c = pick(COLORS); } while (c === color && ++tries < 40);
-        nameIn.value = n;
-        setColor(c);
-      });
-      var save = el("button", "mc-btn mc-primary", row); save.type = "button"; save.textContent = "Guardar";
-      function commit() { setIdentity(nameIn.value, color, avatar); closePop(); }
-      save.addEventListener("click", commit);
-      nameIn.addEventListener("keydown", function (e) {
-        e.stopPropagation();
-        if (e.key === "Enter") commit();
-        else if (e.key === "Escape") closePop();
-      });
-      openPop = { kind: "edit", el: pop };
-      nameIn.focus(); nameIn.select();
+      if (opts.toggle !== false) {
+        if (editable) el("div", "mc-divider", body);
+        var srow = el("div", "mc-switch-row", body);
+        var stxt = el("div", "", srow); stxt.style.flex = "1";
+        el("b", "", stxt).textContent = "Modo fantasma";
+        el("small", "", stxt).textContent = "Oculta los cursores de los demás y deja de compartir el tuyo.";
+        var swBtn = el("button", "mc-switch", srow);
+        swBtn.type = "button"; swBtn.setAttribute("role", "switch");
+        swBtn.setAttribute("aria-checked", String(ghost));
+        swBtn.setAttribute("aria-label", "Modo fantasma");
+        swBtn.addEventListener("click", function () { setGhost(!ghost); });
+      }
+      if (nameIn) { nameIn.focus(); nameIn.select(); }
     }
 
     // ---- límite de cursores + inactividad (cada segundo) ----
@@ -870,13 +1101,14 @@
         if (capped !== !!p.capped) { p.capped = capped; p.el.classList.toggle("mc-capped", capped); }
       });
       emitStats();
+      if (openPop && openPop.kind === "people") openPop.update();   // "Activo" → "Ausente", etc.
     }
 
     function emitStats() {
       var s = currentStats(), key = s.page + "|" + s.site + "|" + s.peak;
       if (key === statsKey) return;
       statsKey = key;
-      if (openPop && openPop.update) openPop.update(s);
+      if (openPop && openPop.update) openPop.update();
       if (typeof opts.onStats === "function") { try { opts.onStats(s); } catch (e) { /* no rompas la web */ } }
     }
 
@@ -1063,61 +1295,62 @@
       if (moving) kick();
     }
 
-    // ---- presencia ----
+    // ---- presencia (la píldora) ----
     function renderPresence() {
       if (!presence) { emitStats(); return; }
       presence.classList.toggle("mc-ghost", ghost);
-      if (toggleBtn) {
-        toggleBtn.innerHTML = ghost ? EYE_OFF : EYE;
-        var label = ghost ? "Mostrar cursores" : "Ocultar cursores y dejar de compartir el mío";
-        toggleBtn.title = label;
-        toggleBtn.setAttribute("aria-label", label);
-        toggleBtn.setAttribute("aria-pressed", String(ghost));
-      }
-      if (ghost) { countBtn.textContent = "Cursores ocultos"; countBtn.disabled = true; emitStats(); return; }
-      countBtn.disabled = false;
-      var list = [{ id: null, name: me.name, color: me.color, avatar: me.avatar, me: true }];
-      for (var id in peers) if (peers[id].name && !peers[id].retired && !peers[id].self) list.push(peers[id]);
-      countBtn.textContent = list.length === 1 ? "Solo tú" : list.length + " en esta página";
-      emitStats();
-      // solo se reconstruye si cambia algo visible (si no, un clic en un avatar podría perderse)
-      var key = following + "|" + list.map(function (u) {
-        return u.id + u.name + u.color + (u.avatar ? u.avatar.length + u.avatar.slice(-12) : "");
+      if (ghost) { emitStats(); return; }
+      var arr = peopleList(), others = arr.slice(1);
+
+      // Botón "Personas": caras de los demás + cuántos sois
+      var key = arr.length + "|" + following + "|" + others.slice(0, 3).map(function (u) {
+        return u.id + u.name + u.color + (u.avatar ? u.avatar.length : "");
       }).join("|");
-      if (key === avatars._key) return;
-      avatars._key = key;
-      avatars.innerHTML = "";
-      list.slice(0, 6).forEach(function (u) {
-        var clickable = u.me ? editable : canFollow;
-        var a = el(clickable ? "button" : "div", "mc-avatar" + (u.me ? " mc-me" : "") +
-          (u.id !== null && u.id === following ? " mc-following" : ""), avatars);
-        a.style.background = u.color; a.style.color = textOn(u.color);
-        avatarFace(a, u.name, u.avatar);
-        var label = u.me ? u.name + " (tú)" + (editable ? " · cambiar nombre, color y foto" : "")
-          : u.name + (canFollow ? (u.id === following ? " · dejar de seguir" : " · seguir") : "");
-        a.title = label;
-        if (clickable) {
-          a.type = "button";
-          a.setAttribute("aria-label", label);
-          a.addEventListener("click", function () {
-            if (u.me) togglePop("edit");
-            else if (following === u.id) unfollow();
-            else follow(u.id);
+      if (peopleBtn._key !== key) {                // no reconstruir sin cambios (no se pierden clics)
+        peopleBtn._key = key;
+        peopleBtn.innerHTML = "";
+        peopleBtn.classList.toggle("mc-alone", !others.length);
+        if (others.length) {
+          var stack = el("span", "mc-stack", peopleBtn);
+          others.slice(0, 3).forEach(function (u) {
+            var a = face("", u, stack);
+            if (u.id === following) a.style.boxShadow = "0 0 0 2px " + u.color;
           });
+          if (others.length > 3) el("span", "mc-avatar mc-more", stack).textContent = "+" + (others.length - 3);
+          el("span", "", peopleBtn).textContent = arr.length + " aquí";
+          peopleBtn.dataset.tip = "Ver quién está aquí";
+          peopleBtn.setAttribute("aria-label", arr.length + " personas aquí. Ver quiénes son");
+        } else {
+          peopleBtn.innerHTML = ICON_PEOPLE;
+          el("span", "", peopleBtn).textContent = "Solo tú";
+          peopleBtn.dataset.tip = "Aún no hay nadie más";
+          peopleBtn.setAttribute("aria-label", "Solo tú en esta página");
         }
-      });
-      if (list.length > 6) {
-        var more = el("div", "mc-avatar", avatars);
-        more.style.background = "#E6E6E6"; more.style.color = "#333";
-        more.textContent = "+" + (list.length - 6);
       }
+
+      // Botón "Tu perfil": tu cara + flecha
+      var mk = me.name + me.color + (me.avatar ? me.avatar.length : "");
+      if (meBtn._key !== mk) {
+        meBtn._key = mk;
+        meBtn.innerHTML = "";
+        face("", me, meBtn);
+        meBtn.insertAdjacentHTML("beforeend", ICON_CHEV);
+        meBtn.dataset.tip = "Tu perfil · " + me.name;
+        meBtn.setAttribute("aria-label", "Tu perfil: " + me.name);
+      }
+      setExpanded();
+      emitStats();
+      if (openPop && openPop.update) openPop.update();
     }
 
     // ---- chat local ----
     function isTyping(t) {
       return t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
     }
-    function placeLocal() { local.style.transform = "translate3d(" + last.cx + "px," + last.cy + "px,0)"; }
+    function placeLocal() {
+      var x = Math.max(0, Math.min(last.cx, innerWidth - 250)), y = Math.max(0, Math.min(last.cy, innerHeight - 80));
+      local.style.transform = "translate3d(" + x + "px," + y + "px,0)";
+    }
     function openChat() {
       if (!last.has) { last.cx = innerWidth / 2; last.cy = innerHeight / 2; }
       clearTimeout(chatTimer);
@@ -1149,7 +1382,7 @@
     function onVisibility() { send({ visible: !document.hidden && last.has }); }
     function onDown(e) {
       var t = e.target;
-      if (openPop && !openPop.el.contains(t) && !(presence && presence.contains(t))) closePop();
+      if (openPop && !openPop.el.contains(t) && !(presence && presence.contains(t)) && !followBox.contains(t)) closePop();
       if (picker && !picker.contains(t) && t !== reactBtn && !(reactBtn && reactBtn.contains(t))) closePicker();
       if (e.button !== 0 || ghost || (t.closest && t.closest(UI))) return;
       var now = performance.now();
@@ -1205,7 +1438,21 @@
     if (botCount) createBots(botCount);
     renderPresence();
     houseTimer = setInterval(housekeeping, 1000);
+    coachTimer = setTimeout(showCoach, 1500);
     connect();
+
+    // Abre una parte de la píldora desde tu propia interfaz
+    function open(what) {
+      if (what === "chat") { if (ghost) setGhost(false); closePop(); openChat(); }
+      else if (what === "reactions") {
+        if (ghost) setGhost(false);
+        var r = presence ? presence.getBoundingClientRect() : null;
+        if (r) openPicker(r.right, r.top - 8, true); else openPicker(innerWidth / 2, innerHeight / 2, false);
+      } else if (what === "people" || what === "profile") {
+        if (what === "people" && ghost) setGhost(false);
+        if (!(openPop && openPop.kind === what)) togglePop(what);
+      }
+    }
 
     return {
       me: me,
@@ -1216,6 +1463,8 @@
       setRoom: setRoom,
       setGhost: setGhost,
       setIdentity: setIdentity,
+      open: open,
+      close: function () { closePop(); closePicker(); },
       react: react,
       follow: follow,
       unfollow: unfollow,
@@ -1235,8 +1484,8 @@
         global.removeEventListener("touchstart", onUserScrollIntent);
         global.removeEventListener("scroll", onScroll);
         global.removeEventListener("resize", onResize);
-        closePicker(); closePop();
-        [style, layer, local, presence, followBox].forEach(function (n) { if (n) n.remove(); });
+        closePicker(); closePop(); clearTimeout(coachTimer);
+        [style, layer, local, presence, followBox, tooltip, coach].forEach(function (n) { if (n) n.remove(); });
       }
     };
   }

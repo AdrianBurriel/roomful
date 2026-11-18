@@ -45,6 +45,10 @@
   .logo svg{display:block}
   .bar nav{display:flex;gap:2px}
   .bar nav a{font-size:14px;text-decoration:none;color:var(--muted);padding:8px 12px;border-radius:9px}
+  .bar-gh{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;margin-left:8px;border-radius:10px;
+    background:var(--ink);color:var(--canvas);font-size:14px;font-weight:600;text-decoration:none;transition:transform .12s}
+  .bar-gh:hover{transform:translateY(-1px)}
+  .bar-gh:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
   .bar nav a:hover{background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink)}
 
   /* ---------- Frames (secciones como marcos de Figma) ---------- */
@@ -101,14 +105,36 @@
     width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--canvas);font:600 13px var(--mono)}
   .pill-xl .part[data-n]::after{content:"";position:absolute;left:50%;top:-22px;height:16px;border-left:1.5px dashed var(--muted)}
   .pill-xl .part:hover,.pill-xl .part.on{outline-color:var(--sel);background:color-mix(in srgb,var(--sel) 8%,transparent)}
-  .pill-xl .hint b{color:var(--ink)}
+  .pill-xl .sep{width:1.5px;height:30px;background:var(--line);margin:0 4px}
+  .pill-xl .part .stack{margin-right:12px}
+  .avatar.mini{width:42px;height:42px;font-size:15px;margin-right:6px}
+  kbd{font:600 .78em/1 var(--mono);border:1px solid var(--line);border-bottom-width:2.5px;border-radius:6px;padding:.18em .45em;background:var(--surface);color:var(--ink);white-space:nowrap}
+  .mock{border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:0 18px 50px rgba(0,0,0,.08);overflow:hidden}
+  .mock-head{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .mock-head b{font:400 56px/1 var(--serif)}
+  .mock-head strong{display:block;font-size:15px}
+  .mock-head small{display:block;font-size:13px;color:var(--muted)}
+  .mock-head .live{margin:0 0 0 auto}
+  .mock-list{list-style:none;margin:0;padding:8px}
+  .mock-list li{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px}
+  .mock-list li:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+  .mock-list i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:600 13px var(--sans);font-style:normal;color:#fff;flex:none;overflow:hidden}
+  .mock-list div{flex:1;min-width:0}
+  .mock-list strong{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mock-list small{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--c3);display:inline-block}
+  .dot.blue{background:var(--c4)} .dot.grey{background:var(--muted)}
+  .mbtn{font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;border:1px solid var(--line)}
+  .mbtn.on{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+  .card .ghost-art{height:180px}
+  .card .ghost-art .big-eye{width:84px;height:84px}
   .stack{display:flex}
   .stack i{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font:600 15px var(--sans);font-style:normal;
     border:3px solid var(--surface);margin-left:-11px;color:#fff}
   .stack i:first-child{margin-left:0}
   .ico{width:42px;height:42px;display:grid;place-items:center;color:var(--ink)}
 
-  .legend{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:28px}
+  .legend{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:28px}
   .legend a{display:block;text-decoration:none;padding:18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s, transform .15s}
   .legend a:hover{border-color:var(--sel);transform:translateY(-2px)}
   .legend .num{margin-bottom:14px}
@@ -128,8 +154,6 @@
 
   /* ---------- 02 · Chat ---------- */
   .keys{display:flex;gap:14px;align-items:center;margin-top:30px;flex-wrap:wrap}
-  .key{min-width:64px;height:64px;padding:0 18px;border-radius:14px;display:grid;place-items:center;font:500 26px var(--mono);
-    background:var(--surface);border:1px solid var(--line);box-shadow:0 4px 0 var(--line), 0 6px 14px rgba(0,0,0,.06)}
   .keys small{font-size:14px;color:var(--muted)}
   .scene{position:relative;height:340px;border-radius:14px;background:var(--canvas);border:1px solid var(--line);overflow:hidden;
     background-image:radial-gradient(var(--dot) 1.1px, transparent 1.2px);background-size:22px 22px}
@@ -206,6 +230,7 @@
 
   footer{padding:60px 0 140px;color:var(--muted);font-size:14px}
   footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:28px}
+  .legal{display:flex;flex-direction:column;gap:6px}
   .gh{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:600;text-decoration:none;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);transition:border-color .15s}
   .gh:hover{border-color:var(--sel)}
   .gh:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
@@ -221,7 +246,6 @@
   @media (max-width:640px){
     .wrap,.top{padding:0 16px}
     .pill-xl{zoom:.5}
-    .pill-xl .hint{display:none}
     .anatomy{padding:56px 8px 16px}
     .stats{grid-template-columns:1fr}
     .stats div{border-left:0;border-top:1px solid var(--line)}
@@ -241,13 +265,15 @@
       Píldora
     </a>
     <nav aria-label="Secciones">
-      <a href="#contador">Contador</a>
+      <a href="#personas">Personas</a>
       <a href="#chat">Chat</a>
-      <a href="#avatares">Avatares</a>
       <a href="#reacciones">Reacciones</a>
-      <a href="#privacidad">Privacidad</a>
+      <a href="#perfil">Tu perfil</a>
       <a href="#integrar">Integrar</a>
     </nav>
+    <a class="bar-gh" href="https://github.com/AdrianBurriel/cursores-colaborativos" target="_blank" rel="noopener" aria-label="Ver el proyecto en GitHub (se abre en otra pestaña)">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span>
+    </a>
   </div>
 </div>
 
@@ -256,52 +282,54 @@
   <div class="wrap">
     <div class="kicker"><span class="num">↘</span> Guía de la píldora</div>
     <h1>Esta página tiene <em>gente</em> dentro.</h1>
-    <p class="lede">Todo lo que pasa entre los visitantes se controla desde una sola pieza: la píldora de abajo a la derecha. Aquí la desmontamos parte por parte, y cada demo funciona de verdad.</p>
+    <p class="lede">Todo lo que pasa entre los visitantes se controla desde una sola pieza: la píldora de abajo a la derecha. Tiene cuatro partes; aquí te enseñamos cada una, y todas las demos funcionan de verdad.</p>
 
     <div class="frame anatomy" data-size="Píldora · escala 2×">
       <span class="frame-label">Anatomía</span>
       <div class="pill-xl" aria-label="Réplica ampliada de la píldora">
-        <span class="part" data-n="1" data-for="contador"><span data-stat="label">4 en esta página</span></span>
-        <span class="part hint" data-n="2" data-for="chat"><b>/</b>&nbsp;chat · <b>E</b>&nbsp;reacciones</span>
-        <span class="part" data-n="3" data-for="avatares">
-          <span class="stack"><i class="avatar me" data-me-initials style="width:42px;height:42px;font-size:15px">TÚ</i><i style="background:var(--c4)">AZ</i><i style="background:var(--c1)">NV</i><i style="background:var(--c3)">QT</i></span>
+        <span class="part" data-n="1" data-for="personas">
+          <span class="stack"><i style="background:var(--c4)">AZ</i><i style="background:var(--c1)">TT</i><i style="background:var(--c3)">KL</i></span>
+          <span data-stat="label">4 aquí</span>
         </span>
-        <span class="part ico" data-n="4" data-for="reacciones"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg></span>
-        <span class="part ico" data-n="5" data-for="privacidad"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <span class="sep"></span>
+        <span class="part ico" data-n="2" data-for="chat"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.5-5.2A8.5 8.5 0 1 1 21 12z"/></svg></span>
+        <span class="part ico" data-n="3" data-for="reacciones"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg></span>
+        <span class="sep"></span>
+        <span class="part" data-n="4" data-for="perfil"><i class="avatar me mini" data-me-initials>TÚ</i><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:.45"><path d="M18 15l-6-6-6 6"/></svg></span>
       </div>
     </div>
 
     <div class="legend">
-      <a href="#contador" data-for="contador"><span class="num">1</span><strong>Contador</strong><span>Cuánta gente hay y las estadísticas en vivo.</span></a>
-      <a href="#chat" data-for="chat"><span class="num">2</span><strong>Atajos</strong><span>Escribe junto a tu cursor o lanza una reacción.</span></a>
-      <a href="#avatares" data-for="avatares"><span class="num">3</span><strong>Avatares</strong><span>Sigue a alguien o cambia tu nombre y color.</span></a>
-      <a href="#reacciones" data-for="reacciones"><span class="num">4</span><strong>Reacciones</strong><span>Emojis que flotan desde tu cursor.</span></a>
-      <a href="#privacidad" data-for="privacidad"><span class="num">5</span><strong>El ojo</strong><span>Desaparece cuando quieras.</span></a>
+      <a href="#personas" data-for="personas"><span class="num">1</span><strong>Personas</strong><span>Quién está aquí, qué hace y a quién seguir.</span></a>
+      <a href="#chat" data-for="chat"><span class="num">2</span><strong>Chat</strong><span>Escribe junto a tu cursor. Atajo: <kbd>/</kbd></span></a>
+      <a href="#reacciones" data-for="reacciones"><span class="num">3</span><strong>Reacciones</strong><span>Emojis que flotan desde tu cursor. Atajo: <kbd>E</kbd></span></a>
+      <a href="#perfil" data-for="perfil"><span class="num">4</span><strong>Tu perfil</strong><span>Nombre, color, foto y modo fantasma.</span></a>
     </div>
   </div>
 </header>
 
-<!-- ============ 01 CONTADOR ============ -->
-<section id="contador">
+<!-- ============ 01 PERSONAS ============ -->
+<section id="personas">
   <div class="wrap">
     <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label">01 — Contador</span>
+      <span class="frame-label">01 — Personas</span>
       <div>
-        <div class="kicker"><span class="num">1</span> El número de la izquierda</div>
+        <div class="kicker"><span class="num">1</span> Las caras de la izquierda</div>
         <h2 class="h2">¿Quién más <em>anda</em> por aquí?</h2>
-        <p class="lede">La píldora siempre dice cuántas personas están en esta misma página. Púlsala para ver también cuántas hay en toda la web y el pico del día.</p>
+        <p class="lede">Las caras y el número te dicen cuánta gente hay en esta página. Púlsalas y verás quién es cada uno, si está activo, escribiendo o ausente, y un botón para <b>seguirle</b>: tu página irá a donde vaya esa persona.</p>
         <div class="actions">
-          <button class="btn solid" type="button" data-open="stats">Abrir estadísticas</button>
+          <button class="btn solid" type="button" data-open="people">Ver quién está aquí</button>
         </div>
+        <p class="note">Las cifras salen de la misma fuente que la píldora (<span class="mono">onStats</span>), así que puedes ponerlas donde quieras de tu web.</p>
       </div>
-      <div>
-        <div class="live">En directo</div>
-        <div class="stats">
-          <div><b data-stat="page">–</b><span>en esta página</span></div>
-          <div><b data-stat="site">–</b><span>en toda la web</span></div>
-          <div><b data-stat="peak">–</b><span>pico de hoy aquí</span></div>
-        </div>
-        <p class="note">Estas cifras salen de la misma fuente que la píldora (<span class="mono">onStats</span>), así que puedes ponerlas donde quieras de tu web.</p>
+      <div class="mock" aria-hidden="true">
+        <div class="mock-head"><b data-stat="page">–</b><div><strong>personas en esta página</strong><small><span data-stat="site">–</span> en toda la web · pico de hoy: <span data-stat="peak">–</span></small></div><span class="live">En directo</span></div>
+        <ul class="mock-list">
+          <li><i class="avatar me" data-me-initials>TÚ</i><div><strong data-me-name>Tú</strong><small>Tú</small></div><span class="mbtn">Editar</span></li>
+          <li><i style="background:var(--c4)">AZ</i><div><strong>Ajolote Zen</strong><small><em class="dot"></em>Activo</small></div><span class="mbtn">Seguir</span></li>
+          <li><i style="background:var(--c1)">TT</i><div><strong>Tapir Turbo</strong><small><em class="dot blue"></em>Escribiendo…</small></div><span class="mbtn on">Siguiendo</span></li>
+          <li><i style="background:var(--c3)">KL</i><div><strong>Koala Lunar</strong><small><em class="dot grey"></em>Ausente</small></div><span class="mbtn">Seguir</span></li>
+        </ul>
       </div>
     </div>
   </div>
@@ -311,7 +339,7 @@
 <section id="chat">
   <div class="wrap">
     <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label">02 — Atajos · Chat</span>
+      <span class="frame-label">02 — Chat</span>
       <div class="scene" aria-hidden="true">
         <div class="fake" style="left:16%;top:22%">
           <svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--me)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
@@ -323,54 +351,25 @@
         </div>
       </div>
       <div>
-        <div class="kicker"><span class="num">2</span> El texto pequeño</div>
+        <div class="kicker"><span class="num">2</span> El bocadillo</div>
         <h2 class="h2">Habla <em>donde</em> estás mirando.</h2>
-        <p class="lede">Pulsa la barra y escribe: tu mensaje aparece pegado a tu cursor, en directo, letra a letra. Enter lo deja unos segundos y Esc lo borra.</p>
-        <div class="keys"><span class="key">/</span><small>pruébalo ahora, en cualquier parte de la página</small></div>
+        <p class="lede">Pulsa el bocadillo o la tecla <kbd>/</kbd> y escribe: tu mensaje aparece pegado a tu cursor, en directo. <kbd>Enter</kbd> lo deja unos segundos y <kbd>Esc</kbd> lo borra.</p>
+        <div class="actions"><button class="btn solid" type="button" data-open="chat">Escribir algo</button></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ 03 AVATARES ============ -->
-<section id="avatares">
-  <div class="wrap">
-    <div class="frame" data-size="W Fill · H Hug">
-      <span class="frame-label">03 — Avatares</span>
-      <div class="kicker"><span class="num">3</span> Los círculos de colores</div>
-      <h2 class="h2">Cada círculo es <em>alguien</em>. El primero eres tú.</h2>
-      <div class="duo">
-        <div class="card">
-          <div class="avatar me" data-me-initials>TÚ</div>
-          <h3>Tu avatar: <span data-me-name>Tú</span></h3>
-          <p>Púlsalo para cambiar tu nombre, tu color o poner una foto desde tu ordenador. Lo recordamos para la próxima vez. ¿Sin ideas? El dado te da un nombre y un color al azar.</p>
-          <button class="btn" type="button" data-open="edit">Editar mi cursor</button>
-        </div>
-        <div class="card">
-          <div class="follow-demo" aria-hidden="true">
-            <span>Siguiendo a Narval Pixel · Esc para salir</span>
-            <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c6)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c6);color:#fff">Narval Pixel</div></div>
-          </div>
-          <h3>Los de los demás</h3>
-          <p>Pulsa el avatar de otra persona para seguirla: tu página se desplaza sola para no perderla de vista. Si giras la rueda o pulsas Esc, recuperas el control.</p>
-          <button class="btn" type="button" data-open="follow">Seguir a alguien</button>
-          <p class="note" data-follow-note hidden>Ahora mismo no hay nadie más. Abre esta página en otra pestaña y vuelve a probar.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ 04 REACCIONES ============ -->
+<!-- ============ 03 REACCIONES ============ -->
 <section id="reacciones">
   <div class="wrap">
     <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label">04 — Reacciones</span>
+      <span class="frame-label">03 — Reacciones</span>
       <div>
-        <div class="kicker"><span class="num">4</span> La carita</div>
+        <div class="kicker"><span class="num">3</span> La carita</div>
         <h2 class="h2">Aplaude sin <em>decir</em> nada.</h2>
-        <p class="lede">La carita abre los emojis. Con teclado es más rápido: pulsa <b>E</b> donde tengas el cursor y elige. Salen flotando desde ahí y los ve todo el mundo.</p>
-        <div class="keys"><span class="key">E</span><small>pruébalo, o pulsa cualquiera de estos emojis</small></div>
+        <p class="lede">La carita abre los emojis. Con teclado es más rápido: pulsa <kbd>E</kbd> donde tengas el cursor y elige. Salen flotando desde ahí y los ve todo el mundo.</p>
+        <p class="note">Pruébalo aquí mismo: pulsa cualquiera de estos emojis.</p>
       </div>
       <div class="emoji-grid" data-mc-target>
         <button type="button" data-react="❤️">❤️</button>
@@ -386,22 +385,33 @@
   </div>
 </section>
 
-<!-- ============ 05 PRIVACIDAD ============ -->
-<section id="privacidad">
+<!-- ============ 04 TU PERFIL ============ -->
+<section id="perfil">
   <div class="wrap">
-    <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label">05 — El ojo</span>
-      <div class="ghost-art" aria-hidden="true">
-        <div class="fake" style="left:18%;top:20%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c1)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c1);color:#fff">Tapir Turbo</div></div>
-        <div class="fake" style="left:62%;top:66%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c4)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c4);color:#fff">Koala Lunar</div></div>
-        <div class="big-eye" data-eye></div>
-      </div>
-      <div>
-        <div class="kicker"><span class="num">5</span> El ojo</div>
-        <h2 class="h2">Modo <em>fantasma</em>.</h2>
-        <p class="lede">¿Quieres leer tranquilo? El ojo oculta todos los cursores y deja de compartir el tuyo. No te quedas a medias: te desconectas, así que nadie te ve ni en la lista. Lo recordamos para tu próxima visita.</p>
-        <div class="actions"><button class="btn solid" type="button" data-open="ghost">Activar modo fantasma</button></div>
-        <div class="state" data-ghost-state>● Visible para los demás</div>
+    <div class="frame" data-size="W Fill · H Hug">
+      <span class="frame-label">04 — Tu perfil</span>
+      <div class="kicker"><span class="num">4</span> Tu cara, a la derecha</div>
+      <h2 class="h2">Tú decides <em>cómo</em> te ven. O si te ven.</h2>
+      <div class="duo">
+        <div class="card">
+          <div class="avatar me" data-me-initials>TÚ</div>
+          <h3><span data-me-name>Tú</span></h3>
+          <p>Cambia tu nombre, tu color o pon una foto desde tu ordenador. ¿Sin ideas? El dado elige nombre y color al azar. Lo recordamos para la próxima vez.</p>
+          <button class="btn" type="button" data-open="profile">Editar mi perfil</button>
+        </div>
+        <div class="card">
+          <div class="ghost-art" aria-hidden="true">
+            <div class="fake" style="left:14%;top:22%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c1)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c1);color:#fff">Tapir Turbo</div></div>
+            <div class="fake" style="left:58%;top:62%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c4)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c4);color:#fff">Koala Lunar</div></div>
+            <div class="big-eye" data-eye></div>
+          </div>
+          <h3>Modo <em>fantasma</em></h3>
+          <p>Oculta los cursores de los demás y deja de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.</p>
+          <div class="actions" style="margin-top:20px;align-items:center">
+            <button class="btn" type="button" data-open="ghost">Activar modo fantasma</button>
+            <span class="state" data-ghost-state style="margin:0">● Visible para los demás</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -475,7 +485,10 @@
 
 <footer>
   <div class="wrap">
-    <span>Píldora · hecho con <span class="mono">multicursor.js</span></span>
+    <div class="legal">
+      <span>Píldora · hecho con <span class="mono">multicursor.js</span></span>
+      <span>© <span data-year>2026</span> Adrián Burriel. Todos los derechos reservados.</span>
+    </div>
     <a class="gh" href="https://github.com/AdrianBurriel/cursores-colaborativos" target="_blank" rel="noopener">
       <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
       Ver el proyecto en GitHub
@@ -499,7 +512,7 @@
 
   var mc = window.mc = MultiCursor.init({
     bots: 2,
-    botTargets: "h1, h2, h3, .lede, .btn, .key, .legend a, .stats div, .card, .emoji-grid button, .zone, .selectme, pre",
+    botTargets: "h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, pre",
     botPhrases: ["Hola 👋", "¿Qué hace el ojo?", "Pulsa la E, ya verás", "Me encanta esta tipografía",
       "¿Me sigues? 🏃", "Esto es muy Figma", "Probando el chat…", "Capibaras al poder 🦫", "¿Cuántos somos?"],
     onStats: function (s) {
@@ -507,10 +520,12 @@
         $$('[data-stat="' + k + '"]').forEach(function (el) { el.textContent = s[k]; });
       });
       $$('[data-stat="label"]').forEach(function (el) {
-        el.textContent = s.page > 1 ? s.page + " en esta página" : "Solo tú";
+        el.textContent = s.page > 1 ? s.page + " aquí" : "Solo tú";
       });
     }
   });
+
+  $$("[data-year]").forEach(function (el) { el.textContent = new Date().getFullYear(); });
 
   // Pinta la página con tu color y tu nombre (y se actualiza si los cambias)
   var lastKey = "";
@@ -549,16 +564,7 @@
     }
     var what = b.getAttribute("data-open");
     if (what === "ghost") { mc.setGhost(!mc.ghost); syncMe(); return; }
-    if (mc.ghost) mc.setGhost(false);
-    setTimeout(function () {                       // tras el mousedown que cierra popovers
-      if (what === "stats") { var c = $(".mc-count"); c && c.click(); }
-      else if (what === "edit") { var me = $(".mc-avatar.mc-me"); me && me.click(); }
-      else if (what === "follow") {
-        var other = $("button.mc-avatar:not(.mc-me)");
-        $("[data-follow-note]").hidden = !!other;
-        if (other) other.click();
-      }
-    }, 0);
+    setTimeout(function () { mc.open(what); }, 0);   // tras el mousedown que cierra paneles
   });
 
   // Demo de clics: tú también ves tu onda (los demás la ven siempre)
