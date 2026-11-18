@@ -79,6 +79,7 @@
         coachBody: "Down here you can see who else is looking. Click the faces to see who they are and follow them.",
         coachShortcuts: "Shortcuts:", coachChat: "<kbd>/</kbd> to write next to your cursor",
         coachReact: "<kbd>E</kbd> to react", and: "and", gotIt: "Got it",
+        coachButtons: "In the pill:", coachChatTouch: "💬 to write", coachReactTouch: "🙂 to react",
         following: "Following {name}", stopFollowing: "Stop following ✕",
         stopFollowingName: "Stop following {name}", followName: "Follow {name}",
         you: "You", typing: "Typing…", away: "Away", active: "Active",
@@ -86,6 +87,8 @@
         siteAndPeak: "{site} on the whole site · today's peak: {peak}",
         followHelp: "<b>Follow</b> moves your page along with that person's, so you see what they see. " +
           "To let go, click the banner at the top, scroll, or press <kbd>Esc</kbd>.",
+        followHelpTouch: "<b>Follow</b> moves your page along with that person's, so you see what they see. " +
+          "To let go, tap the banner at the top or swipe to scroll.",
         edit: "Edit", editProfile: "Edit your profile",
         follow: "Follow", followingBtn: "Following", stop: "Stop",
         uploadPhoto: "Upload photo", changePhoto: "Change photo", remove: "Remove",
@@ -118,6 +121,7 @@
         coachBody: "Abajo ves quién más está mirando. Pulsa sobre las caras para ver quiénes son y seguirles.",
         coachShortcuts: "Atajos:", coachChat: "<kbd>/</kbd> para escribir junto a tu cursor",
         coachReact: "<kbd>E</kbd> para reaccionar", and: "y", gotIt: "Entendido",
+        coachButtons: "En la píldora:", coachChatTouch: "💬 para escribir", coachReactTouch: "🙂 para reaccionar",
         following: "Siguiendo a {name}", stopFollowing: "Dejar de seguir ✕",
         stopFollowingName: "Dejar de seguir a {name}", followName: "Seguir a {name}",
         you: "Tú", typing: "Escribiendo…", away: "Ausente", active: "Activo",
@@ -125,6 +129,8 @@
         siteAndPeak: "{site} en toda la web · pico de hoy: {peak}",
         followHelp: "<b>Seguir</b> mueve tu página con la de esa persona para ver lo mismo que ella. " +
           "Para soltarla, pulsa arriba en el aviso, gira la rueda o pulsa <kbd>Esc</kbd>.",
+        followHelpTouch: "<b>Seguir</b> mueve tu página con la de esa persona para ver lo mismo que ella. " +
+          "Para soltarla, toca el aviso de arriba o desliza para hacer scroll.",
         edit: "Editar", editProfile: "Editar tu perfil",
         follow: "Seguir", followingBtn: "Siguiendo", stop: "Dejar",
         uploadPhoto: "Subir foto", changePhoto: "Cambiar foto", remove: "Quitar",
@@ -285,7 +291,6 @@
     ".mc-presence.mc-ghost>.mc-ghost-bar{display:flex}",
     ".mc-pill-btn{height:30px;padding:0 14px;font-weight:600;background:#1E1E1E;color:#fff}",
     ".mc-pill-btn:hover{background:#000}",
-    "@media (hover:none){.mc-chat-btn{display:none}}",
     /* tooltip with keyboard shortcut */
     ".mc-tooltip{position:fixed;left:0;top:0;z-index:2147483004;pointer-events:none;background:#1E1E1E;color:#fff;",
     "  font:500 12px/1 " + FONT + ";padding:7px 9px;border-radius:7px;white-space:nowrap;opacity:0;transform:translateY(4px);",
@@ -737,6 +742,7 @@
     // Every button says what it does (tooltip + shortcut) and opens a self-explanatory panel.
     var presence = null, peopleBtn = null, chatBtn = null, reactBtn = null, meBtn = null;
     var ghostText = null, showBtn = null, tooltip = null, coach = null, coachTimer = null;
+    var lastInput = "mouse", lastTouchAt = -1e9, touchStart = null, chatDocked = false;
     if (opts.presence !== false) {
       presence = el("div", "mc-presence", document.body);
       presence.setAttribute("role", "toolbar");
@@ -818,10 +824,11 @@
       coach.setAttribute("aria-label", t("coachLabel"));
       el("b", "", coach).textContent = t("coachTitle");
       var tips = [];
-      if (opts.chat !== false) tips.push(t("coachChat"));
-      if (reactions) tips.push(t("coachReact"));
+      var touchUI = isTouchUI();
+      if (opts.chat !== false) tips.push(t(touchUI ? "coachChatTouch" : "coachChat"));
+      if (reactions) tips.push(t(touchUI ? "coachReactTouch" : "coachReact"));
       el("p", "", coach).innerHTML = t("coachBody") +
-        (tips.length ? " " + t("coachShortcuts") + " " + tips.join(" " + t("and") + " ") + "." : "");
+        (tips.length ? " " + t(touchUI ? "coachButtons" : "coachShortcuts") + " " + tips.join(" " + t("and") + " ") + "." : "");
       var ok = el("button", "mc-btn mc-pill-btn", coach);
       ok.type = "button"; ok.textContent = t("gotIt");
       ok.addEventListener("click", dismissCoach);
@@ -1284,7 +1291,7 @@
       var title = el("div", "", txt); title.style.fontWeight = "600";
       var sub = el("div", "mc-sub", txt);
       var list = el("ul", "mc-list", pop);
-      if (canFollow) el("p", "mc-foot", pop).innerHTML = t("followHelp");
+      if (canFollow) el("p", "mc-foot", pop).innerHTML = t(isTouchUI() ? "followHelpTouch" : "followHelp");
       openPop = { kind: "people", el: pop, update: function () {
         var s = currentStats();
         big.textContent = s.page;
@@ -1707,11 +1714,26 @@
       return node && (node.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName));
     }
     function placeLocal() {
-      var x = Math.max(0, Math.min(last.cx, innerWidth - 250)), y = Math.max(0, Math.min(last.cy, innerHeight - 80));
+      var x, y;
+      if (chatDocked) {
+        // Touch: no pointer to stick to, so dock it bottom-left, above the
+        // on-screen keyboard (visualViewport) or above the pill when it's closed.
+        var vv = global.visualViewport, bottom = vv ? vv.offsetTop + vv.height : innerHeight;
+        var keyboard = vv && vv.height < innerHeight * 0.8;
+        var lift = !keyboard && presence ? innerHeight - presence.getBoundingClientRect().top + 8 : 12;
+        x = (vv ? vv.offsetLeft : 0) + 12;
+        y = bottom - lift - 48;
+      } else {
+        x = Math.max(0, Math.min(last.cx, innerWidth - 250)); y = Math.max(0, Math.min(last.cy, innerHeight - 80));
+      }
       local.style.transform = "translate3d(" + x + "px," + y + "px,0)";
     }
+    function onViewport() { if (local.classList.contains("mc-open")) placeLocal(); }
     function openChat() {
-      if (!last.has) { last.cx = innerWidth / 2; last.cy = innerHeight / 2; }
+      chatDocked = lastInput === "touch";
+      if (coach) dismissCoach();                   // you found the chat: no need for the hint
+      if (!last.has) { last.cx = innerWidth / 2; last.cy = innerHeight / 2; last.has = chatDocked; }
+      if (chatDocked) sendPosition();             // so others see your message somewhere
       clearTimeout(chatTimer);
       closePicker();
       placeLocal();
@@ -1731,7 +1753,32 @@
     }
 
     // ---- events ----
+    // Touch screens have no hover pointer: the finger plays the cursor. Touching
+    // the page puts your cursor there, and it travels with the content as you
+    // scroll, so others see where you are reading. Touches on Roomful's own UI
+    // (the pill, panels…) don't move it.
+    function isTouchUI() { return lastInput === "touch" || (!!global.matchMedia && matchMedia("(hover: none)").matches); }
+    function onTouchStart(e) {
+      var p = e.touches && e.touches[0];
+      if (!p) return;
+      lastInput = "touch"; lastTouchAt = performance.now();
+      touchStart = { x: p.clientX, y: p.clientY };
+      if (e.target && e.target.closest && e.target.closest(UI)) return;
+      last.cx = p.clientX; last.cy = p.clientY; last.has = true;
+      sendPosition();
+    }
+    function onTouchMove(e) {
+      var p = e.touches && e.touches[0];
+      if (!p) return;
+      lastTouchAt = performance.now();
+      // A real swipe (not a tap) means you're taking back control of scrolling.
+      if (following !== null && touchStart && Math.abs(p.clientX - touchStart.x) + Math.abs(p.clientY - touchStart.y) > 12) unfollow();
+      if (e.target && e.target.closest && e.target.closest(UI)) return;
+      last.cx = p.clientX; last.cy = p.clientY; last.has = true;
+      sendPosition();
+    }
     function onMove(e) {
+      if (performance.now() - lastTouchAt > 800) lastInput = "mouse";   // not the mouse event a tap emulates
       last.cx = e.clientX; last.cy = e.clientY; last.has = true;
       if (local.classList.contains("mc-open")) placeLocal();
       sendPosition();
@@ -1786,7 +1833,12 @@
     document.addEventListener("keydown", onKey);
     document.addEventListener("selectionchange", onSelectionChange);
     global.addEventListener("wheel", onUserScrollIntent, { passive: true });
-    global.addEventListener("touchstart", onUserScrollIntent, { passive: true });
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: true });
+    if (global.visualViewport) {
+      visualViewport.addEventListener("resize", onViewport);
+      visualViewport.addEventListener("scroll", onViewport);
+    }
     global.addEventListener("scroll", onScroll, { passive: true });
     global.addEventListener("resize", onResize);
     input.addEventListener("keydown", onInputKey);
@@ -1844,7 +1896,12 @@
         document.removeEventListener("keydown", onKey);
         document.removeEventListener("selectionchange", onSelectionChange);
         global.removeEventListener("wheel", onUserScrollIntent);
-        global.removeEventListener("touchstart", onUserScrollIntent);
+        document.removeEventListener("touchstart", onTouchStart);
+        document.removeEventListener("touchmove", onTouchMove);
+        if (global.visualViewport) {
+          visualViewport.removeEventListener("resize", onViewport);
+          visualViewport.removeEventListener("scroll", onViewport);
+        }
         global.removeEventListener("scroll", onScroll);
         global.removeEventListener("resize", onResize);
         closePicker(); closePop(); clearTimeout(coachTimer);

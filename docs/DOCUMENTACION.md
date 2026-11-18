@@ -212,9 +212,17 @@ Estados especiales:
 | `E` | Abrir/cerrar el selector de emojis junto al cursor |
 | `1`–`9` (con el selector abierto) | Lanzar ese emoji (atajo oculto) |
 | `Esc` | Cerrar paneles y selector; dejar de seguir |
-| Rueda, `↑` `↓` `RePág` `AvPág` `Inicio` `Fin` `Espacio`, tocar la pantalla | Dejar de seguir (recuperas el control del scroll) |
+| Rueda, `↑` `↓` `RePág` `AvPág` `Inicio` `Fin` `Espacio`, deslizar en una pantalla táctil | Dejar de seguir (recuperas el control del scroll) |
 
 Los atajos no se activan mientras escribes en un campo de texto de la página.
+
+### En móvil y tablet
+
+- **Tu dedo es tu cursor:** al tocar o deslizar la página, tu cursor se coloca ahí y viaja con el contenido al hacer scroll, así los demás ven por dónde vas leyendo. Tocar la píldora o sus paneles no lo mueve.
+- **Chat:** el botón 💬 abre el campo de mensaje abajo, encima del teclado; los demás ven tu mensaje junto a tu cursor.
+- **Reacciones:** el botón 🙂.
+- **Seguir** se detiene al deslizar para hacer scroll; un simple toque no lo corta.
+- El aviso de bienvenida y los textos de ayuda hablan de botones en vez de atajos de teclado.
 
 ## 8. Comportamientos en detalle
 

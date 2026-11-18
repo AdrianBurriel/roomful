@@ -212,9 +212,17 @@ Special states:
 | `E` | Open/close the emoji picker next to your cursor |
 | `1`–`9` (with the picker open) | Send that emoji (hidden shortcut) |
 | `Esc` | Close panels and picker; stop following |
-| Wheel, `↑` `↓` `PgUp` `PgDn` `Home` `End` `Space`, touching the screen | Stop following (you get scrolling back) |
+| Wheel, `↑` `↓` `PgUp` `PgDn` `Home` `End` `Space`, swiping on a touch screen | Stop following (you get scrolling back) |
 
 Shortcuts are ignored while you type in a text field on the page.
+
+### On phones and tablets
+
+- **Your finger is your cursor:** touching or swiping the page puts your cursor there, and it travels with the content as you scroll, so others see where you are reading. Touches on the pill and its panels don't move it.
+- **Chat:** the 💬 button opens the message field docked at the bottom, above the keyboard; others see your message next to your cursor.
+- **Reactions:** the 🙂 button.
+- **Following** stops when you swipe to scroll; a simple tap doesn't stop it.
+- The welcome hint and the help texts talk about buttons instead of keyboard shortcuts.
 
 ## 8. Behavior in detail
 
