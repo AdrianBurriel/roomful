@@ -523,6 +523,9 @@
     var prefix = cfg.prefix || "roomful";
     var client = null, chan = null, site = null, closed = false;
     var state = {}, peak = 0, statsTimer = null, helloTimer = null;
+    // Peers we know by name, state received from peers we don't know yet, and
+    // when we last asked each of them to introduce themselves.
+    var known = {}, pending = {}, asked = {}, lastIntro = 0;
     function noop() {}
 
     function emit(obj) { if (!closed && sock.onmessage) sock.onmessage({ data: JSON.stringify(obj) }); }
@@ -538,8 +541,25 @@
       Promise.all([chan.presence.get(), site.presence.get()]).then(function (r) {
         var n = r[0].length;
         if (n > peak) peak = n;
+        // Anyone in the room we still can't draw (e.g. idle since we arrived)?
+        r[0].forEach(function (m) { if (m.clientId !== id && !known[m.clientId]) ask(m.clientId); });
         emit({ t: "stats", room: n, site: Math.max(n, r[1].length), peak: peak });
       }).catch(noop);
+    }
+    // Our full state, right now (no timer: it must work in background tabs too,
+    // where browsers slow timers down).
+    function introduce() {
+      var now = Date.now();
+      if (closed || !state.name || now - lastIntro < 500) return;
+      lastIntro = now;
+      chan.publish("u", abCopy(state)).catch(noop);
+    }
+    // Ask a peer we can't draw yet (no name) to introduce themselves.
+    function ask(cid) {
+      var now = Date.now();
+      if (closed || (asked[cid] && now - asked[cid] < 3000)) return;
+      asked[cid] = now;
+      chan.publish("w", { id: cid }).catch(noop);
     }
     // Someone came in: send them our full state so they can draw us right away.
     function hello() {
@@ -549,11 +569,23 @@
       }, 100 + Math.random() * 600);
     }
     function onUpdate(msg) {
-      if (msg.clientId === id) return;
+      var cid = msg.clientId;
+      if (cid === id) return;
       var p = abPatch(msg.data);
       if (!p) return;
-      p.t = "update"; p.id = msg.clientId;
+      if (!known[cid]) {
+        // We missed their introduction: keep what arrives and ask for the rest,
+        // instead of drawing a nameless grey cursor.
+        var q = pending[cid] || (pending[cid] = {});
+        for (var k in p) q[k] = p[k];
+        if (!q.name) { ask(cid); return; }
+        p = q; delete pending[cid]; known[cid] = true;
+      }
+      p.t = "update"; p.id = cid;
       emit(p);
+    }
+    function onWho(msg) {
+      if (msg.clientId !== id && msg.data && msg.data.id === id) introduce();
     }
     function onEvent(msg) {
       if (msg.clientId === id) return;
@@ -565,7 +597,10 @@
     function onPresence(pm) {
       if (pm.clientId !== id) {
         if (pm.action === "enter") hello();
-        else if (pm.action === "leave") emit({ t: "leave", id: pm.clientId });
+        else if (pm.action === "leave") {
+          delete known[pm.clientId]; delete pending[pm.clientId]; delete asked[pm.clientId];
+          emit({ t: "leave", id: pm.clientId });
+        }
       }
       stats();
     }
@@ -601,7 +636,8 @@
       });
       chan = client.channels.get(prefix + ":room:" + encodeURIComponent(room));
       site = client.channels.get(prefix + ":site");
-      return Promise.all([chan.subscribe("u", onUpdate), chan.subscribe("e", onEvent), chan.presence.subscribe(onPresence)])
+      return Promise.all([chan.subscribe("u", onUpdate), chan.subscribe("e", onEvent), chan.subscribe("w", onWho),
+        chan.presence.subscribe(onPresence)])
         .then(function () { return Promise.all([chan.presence.enter(), site.presence.enter()]); })
         .then(function () {
           if (closed) return;

@@ -4,7 +4,7 @@
 
 **Turn any website into a room full of people.** Every page becomes a room: visitors see each other's cursors in real time, Figma multiplayer style, each one with a fun name ("Zen Capybara", "Ninja Axolotl"…). From a pill in the corner, their door to the room, they can see who's in, chat next to their cursor, react with emojis, follow someone and choose how they show up.
 
-🔴 **Live demo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app). Open it in two windows (or on your phone and your computer) and watch your cursors meet.
+🔴 **Live demo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app). Open it in two different browsers (or on your phone and your computer) and watch your cursors meet. Tabs of the same browser count as you, so they don't show each other.
 
 - **One script** (`multicursor.js`), no dependencies.
 - **Minimal server** (`server.py`) using only the Python standard library, or Docker. Or no server at all: **Vercel + Ably**.
