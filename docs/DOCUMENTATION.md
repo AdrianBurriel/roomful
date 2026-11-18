@@ -1,4 +1,4 @@
-# Full documentation · Multicursor
+# Full documentation · Roomful
 
 🇬🇧 **English** · 🇪🇸 [Español](DOCUMENTACION.md)
 

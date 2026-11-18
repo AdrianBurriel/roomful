@@ -1,4 +1,4 @@
-# Multicursor
+# Roomful
 
 🇬🇧 **English** · 🇪🇸 [Español](README.es.md)
 
