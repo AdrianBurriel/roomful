@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) · 🇪🇸 **Español**
 
-**Cursores multijugador al estilo Figma para cualquier web.** Cada visitante ve en tiempo real los cursores de las demás personas que están en la misma página, cada uno con un nombre divertido ("Capibara Zen", "Ajolote Ninja"…). Desde una píldora en la esquina pueden ver quién está, chatear junto al cursor, reaccionar con emojis, seguir a otra persona y personalizar su perfil.
+**Convierte cualquier web en una sala llena de gente.** Cada página es una sala: los visitantes ven los cursores de los demás en tiempo real, al estilo multijugador de Figma, cada uno con un nombre divertido ("Capibara Zen", "Ajolote Ninja"…). Desde una píldora en la esquina, su puerta a la sala, pueden ver quién hay, chatear junto al cursor, reaccionar con emojis, seguir a otra persona y elegir cómo aparecen.
 
 - **Un solo script** (`multicursor.js`), sin dependencias.
 - **Servidor mínimo** (`server.py`) escrito solo con la librería estándar de Python, o con Docker.

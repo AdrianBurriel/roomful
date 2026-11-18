@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇪🇸 [Español](DOCUMENTACION.md)
 
-Technical reference for the `multicursor.js` integration and its `server.py` server. For a quick introduction, see the [README](../README.md).
+Technical reference for Roomful: the `multicursor.js` integration that turns every page into a room, and the `server.py` server that keeps it full. For a quick introduction, see the [README](../README.md).
 
 ## Contents
 
@@ -28,7 +28,7 @@ Technical reference for the `multicursor.js` integration and its `server.py` ser
 
 ## 1. What it is and how it works
 
-Every visitor to a website sees, in real time, the cursors of the other people on the same page, Figma multiplayer style. Each cursor carries a random name ("Zen Capybara", "Ninja Axolotl"…). In the bottom-right corner, a **pill** shows who's here and lets people chat, react, follow someone and edit their profile.
+Roomful turns every page of a website into a **room**. Everyone on the same page is in the same room and sees, in real time, everybody else's cursor, Figma multiplayer style. Each cursor carries a random name ("Zen Capybara", "Ninja Axolotl"…). In the bottom-right corner, a **pill**, the door to the room, shows who's in and lets people chat, react, follow someone and edit their profile.
 
 There are two pieces:
 
@@ -219,6 +219,8 @@ Shortcuts are ignored while you type in a text field on the page.
 
 ### 8.1 Rooms
 
+The room is the heart of Roomful: you see the cursors, messages and reactions of the people in your same room.
+
 - By default, the room is `location.pathname` without trailing slash (`/pricing/` → `/pricing`). Query and hash don't count.
 - In SPAs route changes are detected (checked every second) and the client reconnects to the new room.
 - The server limits the name to 128 characters and uses `/` when empty.
@@ -270,13 +272,13 @@ Everything is **per browser and domain**: another browser, another device, a pri
 
 ### 8.8 Bots
 
-Fake visitors so the page never looks empty.
+The room's regulars: fake visitors so a room never looks empty.
 
 - They are **local**: each visitor sees their own and they never travel through the server.
 - They move along smooth curves towards real elements on the page (`botTargets`) and take short pauses.
 - **They take turns so they're not annoying:** each bot alternates between "visiting" your screen (7–16 s) and "away" off screen (12–30 s). Usually only one is visiting.
 - They talk at most once per visit, in roughly half of their visits, and never two at once. Sometimes they click (22 % on arrival) or react (5 %).
-- **They retire** once there are `botsRetireAt` real people, and come back if the page empties.
+- **They retire** once there are `botsRetireAt` real people, and come back if the room empties.
 - They don't appear if the visitor has *reduce motion* enabled (`prefers-reduced-motion`).
 - They count in the pill's numbers (see [§8.9](#89-stats)).
 

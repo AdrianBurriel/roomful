@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇪🇸 [Español](README.es.md)
 
-**Figma-style multiplayer cursors for any website.** Every visitor sees, in real time, the cursors of the other people on the same page, each one with a fun name ("Zen Capybara", "Ninja Axolotl"…). From a pill in the corner they can see who's here, chat next to their cursor, react with emojis, follow someone and customize their profile.
+**Turn any website into a room full of people.** Every page becomes a room: visitors see each other's cursors in real time, Figma multiplayer style, each one with a fun name ("Zen Capybara", "Ninja Axolotl"…). From a pill in the corner, their door to the room, they can see who's in, chat next to their cursor, react with emojis, follow someone and choose how they show up.
 
 - **One script** (`multicursor.js`), no dependencies.
 - **Minimal server** (`server.py`) using only the Python standard library, or Docker.

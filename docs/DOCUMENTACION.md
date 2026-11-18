@@ -2,7 +2,7 @@
 
 🇬🇧 [English](DOCUMENTATION.md) · 🇪🇸 **Español**
 
-Referencia técnica de la integración `multicursor.js` y de su servidor `server.py`. Para una introducción rápida, mira el [README](../README.es.md).
+Referencia técnica de Roomful: la integración `multicursor.js`, que convierte cada página en una sala, y el servidor `server.py`, que la mantiene llena. Para una introducción rápida, mira el [README](../README.es.md).
 
 ## Índice
 
@@ -28,7 +28,7 @@ Referencia técnica de la integración `multicursor.js` y de su servidor `server
 
 ## 1. Qué es y cómo funciona
 
-Cada visitante de una web ve en tiempo real los cursores de las demás personas que están en la misma página, al estilo del espacio multijugador de Figma. Cada cursor lleva un nombre aleatorio ("Capibara Zen", "Ajolote Ninja"…). Abajo a la derecha hay una **píldora** que muestra quién está y permite chatear, reaccionar, seguir a otra persona y editar tu perfil.
+Roomful convierte cada página de una web en una **sala**. Todos los que están en la misma página están en la misma sala y ven en tiempo real los cursores de los demás, al estilo del espacio multijugador de Figma. Cada cursor lleva un nombre aleatorio ("Capibara Zen", "Ajolote Ninja"…). Abajo a la derecha, una **píldora**, la puerta a la sala, muestra quién hay y permite chatear, reaccionar, seguir a otra persona y editar tu perfil.
 
 Son dos piezas:
 
@@ -219,6 +219,8 @@ Los atajos no se activan mientras escribes en un campo de texto de la página.
 
 ### 8.1 Salas
 
+La sala es el corazón de Roomful: ves los cursores, mensajes y reacciones de quienes están en tu misma sala.
+
 - Por defecto, la sala es `location.pathname` sin barra final (`/precios/` → `/precios`). La query y el hash no cuentan.
 - En SPAs se detecta el cambio de ruta (comprobación cada segundo) y se reconecta a la nueva sala.
 - El servidor limita el nombre a 128 caracteres y usa `/` si viene vacío.
@@ -270,13 +272,13 @@ Todo es por **navegador y dominio**: en otro navegador, otro dispositivo, una ve
 
 ### 8.8 Bots
 
-Usuarios ficticios para que la página no parezca vacía.
+Los habituales de la sala: visitantes ficticios para que ninguna sala parezca vacía.
 
 - Son **locales**: cada visitante ve los suyos y no viajan por el servidor.
 - Se mueven en curvas suaves hacia elementos reales de la página (`botTargets`) y hacen pequeñas pausas.
 - **Se turnan para no molestar:** cada bot alterna entre "de visita" en tu pantalla (7–16 s) y "a lo suyo" fuera de ella (12–30 s). Normalmente solo hay uno de visita.
 - Hablan como mucho una vez por visita, en la mitad de las visitas aproximadamente, y nunca dos a la vez. A veces hacen clic (22 % al llegar) o reaccionan (5 %).
-- **Se retiran** cuando hay `botsRetireAt` personas reales y vuelven si la página se vacía.
+- **Se retiran** cuando hay `botsRetireAt` personas reales y vuelven si la sala se vacía.
 - No aparecen si el visitante tiene activado *reducir movimiento* (`prefers-reduced-motion`).
 - Cuentan en las cifras de la píldora (ver [§8.9](#89-estadísticas)).
 

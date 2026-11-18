@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pill Anatomy · Roomful</title>
+<title>Roomful · Your website, with people in it</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="description" content="Figma-style multiplayer cursors for any website: see who is on the page, chat next to your cursor, react, follow people and customize your profile.">
+<meta name="description" content="Roomful turns any website into a room full of people: see who's in, chat next to your cursor, react, follow others and choose how you show up.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -291,9 +291,9 @@
 <!-- ============ HERO ============ -->
 <header class="hero">
   <div class="wrap">
-    <div class="kicker"><span class="num">↘</span> <span data-i18n="heroKicker">A guide to the pill</span></div>
-    <h1 data-i18n="heroTitle">This page has <em>people</em> in it.</h1>
-    <p class="lede" data-i18n="heroLede">Everything that happens between visitors is controlled from a single piece: the pill in the bottom-right corner. It has four parts; here we show you each one, and every demo really works.</p>
+    <div class="kicker"><span class="num">↘</span> <span data-i18n="heroKicker">Come on in</span></div>
+    <h1 data-i18n="heroTitle">This page is a <em>room</em>. And it's full.</h1>
+    <p class="lede" data-i18n="heroLede">Everyone reading it right now is in here with you. You meet them through one small piece: the pill in the bottom-right corner, your door to the room. It has four parts; here's each one, and every demo is real.</p>
 
     <div class="frame anatomy" data-size="Pill · 2× scale" data-i18n-attr="data-size:anatomySize">
       <span class="frame-label" data-i18n="anatomyLabel">Anatomy</span>
@@ -311,10 +311,10 @@
     </div>
 
     <div class="legend">
-      <a href="#people" data-for="people"><span class="num">1</span><strong data-i18n="legPeople">People</strong><span data-i18n="legPeopleText">Who's here, what they're doing and who to follow.</span></a>
-      <a href="#chat" data-for="chat"><span class="num">2</span><strong data-i18n="legChat">Chat</strong><span data-i18n="legChatText">Write next to your cursor. Shortcut: <kbd>/</kbd></span></a>
-      <a href="#reactions" data-for="reactions"><span class="num">3</span><strong data-i18n="legReactions">Reactions</strong><span data-i18n="legReactionsText">Emojis that float up from your cursor. Shortcut: <kbd>E</kbd></span></a>
-      <a href="#profile" data-for="profile"><span class="num">4</span><strong data-i18n="legProfile">Your profile</strong><span data-i18n="legProfileText">Name, color, photo and ghost mode.</span></a>
+      <a href="#people" data-for="people"><span class="num">1</span><strong data-i18n="legPeople">People</strong><span data-i18n="legPeopleText">Who's in the room, what they're up to and who to follow.</span></a>
+      <a href="#chat" data-for="chat"><span class="num">2</span><strong data-i18n="legChat">Chat</strong><span data-i18n="legChatText">Say something right next to your cursor. Shortcut: <kbd>/</kbd></span></a>
+      <a href="#reactions" data-for="reactions"><span class="num">3</span><strong data-i18n="legReactions">Reactions</strong><span data-i18n="legReactionsText">Emojis that float up for the whole room. Shortcut: <kbd>E</kbd></span></a>
+      <a href="#profile" data-for="profile"><span class="num">4</span><strong data-i18n="legProfile">Your profile</strong><span data-i18n="legProfileText">How you show up: name, color, photo… or ghost mode.</span></a>
     </div>
   </div>
 </header>
@@ -326,15 +326,15 @@
       <span class="frame-label" data-i18n="s1Label">01 — People</span>
       <div>
         <div class="kicker"><span class="num">1</span> <span data-i18n="s1Kicker">The faces on the left</span></div>
-        <h2 class="h2" data-i18n="s1Title">Who else is <em>hanging</em> around?</h2>
-        <p class="lede" data-i18n="s1Lede">The faces and the number tell you how many people are on this page. Click them to see who each one is, whether they're active, typing or away, and a button to <b>follow</b> them: your page will go wherever that person goes.</p>
+        <h2 class="h2" data-i18n="s1Title">Who else is in the <em>room</em>?</h2>
+        <p class="lede" data-i18n="s1Lede">The faces and the number tell you how full the room is. Click them to see who each person is, whether they're active, typing or stepped away, and a button to <b>follow</b> them: you'll go wherever they go.</p>
         <div class="actions">
-          <button class="btn solid" type="button" data-open="people" data-i18n="s1Btn">See who's here</button>
+          <button class="btn solid" type="button" data-open="people" data-i18n="s1Btn">See who's in the room</button>
         </div>
         <p class="note" data-i18n="s1Note">The numbers come from the same source as the pill (<span class="mono">onStats</span>), so you can show them anywhere on your site.</p>
       </div>
       <div class="mock" aria-hidden="true">
-        <div class="mock-head"><b data-stat="page">–</b><div><strong data-i18n="mockPeopleHere">people on this page</strong><small><span data-stat="site">–</span> <span data-i18n="mockSite">on the whole site · today's peak:</span> <span data-stat="peak">–</span></small></div><span class="live" data-i18n="live">Live</span></div>
+        <div class="mock-head"><b data-stat="page">–</b><div><strong data-i18n="mockPeopleHere">people in this room</strong><small><span data-stat="site">–</span> <span data-i18n="mockSite">on the whole site · today's peak:</span> <span data-stat="peak">–</span></small></div><span class="live" data-i18n="live">Live</span></div>
         <ul class="mock-list">
           <li><i class="avatar me" data-me-initials>ME</i><div><strong data-me-name>You</strong><small data-i18n="mockYou">You</small></div><span class="mbtn" data-i18n="mockEdit">Edit</span></li>
           <li><i style="background:var(--c4)">ZA</i><div><strong data-i18n="botAxolotl">Zen Axolotl</strong><small><em class="dot"></em><span data-i18n="mockActive">Active</span></small></div><span class="mbtn" data-i18n="mockFollow">Follow</span></li>
@@ -364,7 +364,7 @@
       <div>
         <div class="kicker"><span class="num">2</span> <span data-i18n="s2Kicker">The speech bubble</span></div>
         <h2 class="h2" data-i18n="s2Title">Talk <em>where</em> you're looking.</h2>
-        <p class="lede" data-i18n="s2Lede">Click the speech bubble or press <kbd>/</kbd> and type: your message appears next to your cursor, live. <kbd>Enter</kbd> keeps it for a few seconds and <kbd>Esc</kbd> clears it.</p>
+        <p class="lede" data-i18n="s2Lede">Click the speech bubble or press <kbd>/</kbd> and type: your message appears next to your cursor, live, for the whole room. <kbd>Enter</kbd> keeps it for a few seconds and <kbd>Esc</kbd> clears it.</p>
         <div class="actions"><button class="btn solid" type="button" data-open="chat" data-i18n="s2Btn">Write something</button></div>
       </div>
     </div>
@@ -379,7 +379,7 @@
       <div>
         <div class="kicker"><span class="num">3</span> <span data-i18n="s3Kicker">The smiley</span></div>
         <h2 class="h2" data-i18n="s3Title">Applaud without <em>saying</em> a word.</h2>
-        <p class="lede" data-i18n="s3Lede">The smiley opens the emojis. With the keyboard it's faster: press <kbd>E</kbd> wherever your cursor is and pick one. They float up from there and everyone sees them.</p>
+        <p class="lede" data-i18n="s3Lede">The smiley opens the emojis. With the keyboard it's faster: press <kbd>E</kbd> wherever your cursor is and pick one. They float up from there and the whole room sees them.</p>
         <p class="note" data-i18n="s3Note">Try it right here: click any of these emojis.</p>
       </div>
       <div class="emoji-grid" data-mc-target>
@@ -407,7 +407,7 @@
         <div class="card">
           <div class="avatar me" data-me-initials>ME</div>
           <h3><span data-me-name>You</span></h3>
-          <p data-i18n="s4Text">Change your name, your color or add a photo from your computer. Out of ideas? The dice picks a random name and color. We'll remember it for next time.</p>
+          <p data-i18n="s4Text">Change your name, your color or add a photo from your computer. Out of ideas? The dice picks a random name and color. We'll remember you next time you walk in.</p>
           <button class="btn" type="button" data-open="profile" data-i18n="s4Btn">Edit my profile</button>
         </div>
         <div class="card">
@@ -417,7 +417,7 @@
             <div class="big-eye" data-eye></div>
           </div>
           <h3 data-i18n="ghostTitle"><em>Ghost</em> mode</h3>
-          <p data-i18n="ghostText">Hides other people's cursors and stops sharing yours. You disconnect completely: nobody sees you, not even in the list.</p>
+          <p data-i18n="ghostText">Walk through the room unseen: other cursors disappear and yours stops being shared. You disconnect completely: nobody sees you, not even in the list.</p>
           <div class="actions" style="margin-top:20px;align-items:center">
             <button class="btn" type="button" data-open="ghost">Turn on ghost mode</button>
             <span class="state" data-ghost-state style="margin:0">● Visible to others</span>
@@ -432,12 +432,12 @@
 <section>
   <div class="wrap">
     <div class="kicker"><span class="num">+</span> <span data-i18n="extrasKicker">What happens without touching the pill</span></div>
-    <h2 class="h2" data-i18n="extrasTitle">And on top of that, <em>without doing a thing</em>…</h2>
+    <h2 class="h2" data-i18n="extrasTitle">And the room notices, <em>without you doing a thing</em>…</h2>
     <div class="trio">
       <div class="frame" data-size="Clicks" data-i18n-attr="data-size:clicksLabel">
         <span class="frame-label" data-i18n="clicksLabel">Clicks</span>
         <h3 data-i18n="clicksTitle">Your clicks <em>show</em></h3>
-        <p data-i18n="clicksText">Every click leaves a ripple in your color on other people's screens.</p>
+        <p data-i18n="clicksText">Every click leaves a ripple in your color for everyone in the room.</p>
         <div class="zone" data-zone data-i18n="clicksZone">click here</div>
       </div>
       <div class="frame" data-size="Selection" data-i18n-attr="data-size:selLabel">
@@ -449,7 +449,7 @@
       <div class="frame" data-size="Idle" data-i18n-attr="data-size:idleLabel">
         <span class="frame-label" data-i18n="idleLabel">Idle</span>
         <h3 data-i18n="idleTitle">If you leave, <em>it shows</em></h3>
-        <p data-i18n="idleText">After 30 seconds without moving, your cursor fades and takes a nap: zzz.</p>
+        <p data-i18n="idleText">After 30 seconds without moving, your cursor fades and dozes off in a corner: zzz.</p>
         <div class="idle-demo" aria-hidden="true">
           <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c2)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c2);color:#1e1e1e" data-i18n="botSloth">Zen Sloth</div><div class="zzz" style="color:var(--c2)"><span>z</span><span>z</span><span>z</span></div></div>
         </div>
@@ -461,8 +461,8 @@
       <div class="bots">
         <div class="stack" aria-hidden="true"><i style="background:var(--c5)">ZC</i><i style="background:var(--c2);color:#1e1e1e">FQ</i></div>
         <div>
-          <h3 style="font-size:26px;margin-bottom:8px" data-i18n="botsTitle">If you're the first one here, you <em>won't</em> be alone.</h3>
-          <p data-i18n="botsText">When the page is empty, a couple of companion visitors wander around, look at things and say hi now and then. As soon as real people arrive, they quietly step out.</p>
+          <h3 style="font-size:26px;margin-bottom:8px" data-i18n="botsTitle">Walked into an empty room? You <em>won't</em> be alone.</h3>
+          <p data-i18n="botsText">When nobody's around, a couple of regulars wander in, look around and say hi now and then. As soon as real people arrive, they quietly head for the door.</p>
         </div>
       </div>
     </div>
@@ -475,7 +475,7 @@
     <div class="frame" data-size="Code" data-i18n-attr="data-size:codeSize">
       <span class="frame-label" data-i18n="intLabel">Integrate</span>
       <div class="kicker"><span class="num">&lt;/&gt;</span> <span data-i18n="intKicker">For developers</span></div>
-      <h2 class="h2" style="margin-bottom:28px" data-i18n="intTitle">Two lines and your site has <em>people</em>.</h2>
+      <h2 class="h2" style="margin-bottom:28px" data-i18n="intTitle">Two lines and your site is a <em>roomful</em>.</h2>
       <div class="code">
       <button class="copy" type="button" data-copy data-i18n="copy">Copy</button>
 <pre><code data-i18n="code"><span class="c">&lt;!-- 1. The script --&gt;</span>
@@ -521,46 +521,46 @@
     navLabel: "Secciones", navPeople: "Personas", navChat: "Chat", navReactions: "Reacciones",
     navProfile: "Tu perfil", navIntegrate: "Integrar", langLabel: "Idioma",
     ghLabel: "Ver el proyecto en GitHub (se abre en otra pestaña)",
-    heroKicker: "Guía de la píldora",
-    heroTitle: "Esta página tiene <em>gente</em> dentro.",
-    heroLede: "Todo lo que pasa entre los visitantes se controla desde una sola pieza: la píldora de abajo a la derecha. Tiene cuatro partes; aquí te enseñamos cada una, y todas las demos funcionan de verdad.",
+    heroKicker: "Adelante, pasa",
+    heroTitle: "Esta página es una <em>sala</em>. Y está llena.",
+    heroLede: "Todos los que la están leyendo ahora mismo están aquí contigo. Te los presenta una sola pieza: la píldora de abajo a la derecha, tu puerta a la sala. Tiene cuatro partes; aquí te enseñamos cada una, y todas las demos funcionan de verdad.",
     anatomySize: "Píldora · escala 2×", anatomyLabel: "Anatomía", pillReplica: "Réplica ampliada de la píldora",
-    legPeople: "Personas", legPeopleText: "Quién está aquí, qué hace y a quién seguir.",
-    legChat: "Chat", legChatText: "Escribe junto a tu cursor. Atajo: <kbd>/</kbd>",
-    legReactions: "Reacciones", legReactionsText: "Emojis que flotan desde tu cursor. Atajo: <kbd>E</kbd>",
-    legProfile: "Tu perfil", legProfileText: "Nombre, color, foto y modo fantasma.",
+    legPeople: "Personas", legPeopleText: "Quién hay en la sala, qué hace y a quién seguir.",
+    legChat: "Chat", legChatText: "Di algo justo al lado de tu cursor. Atajo: <kbd>/</kbd>",
+    legReactions: "Reacciones", legReactionsText: "Emojis que flotan para toda la sala. Atajo: <kbd>E</kbd>",
+    legProfile: "Tu perfil", legProfileText: "Cómo apareces: nombre, color, foto… o modo fantasma.",
     s1Label: "01 — Personas", s1Kicker: "Las caras de la izquierda",
-    s1Title: "¿Quién más <em>anda</em> por aquí?",
-    s1Lede: "Las caras y el número te dicen cuánta gente hay en esta página. Púlsalas y verás quién es cada uno, si está activo, escribiendo o ausente, y un botón para <b>seguirle</b>: tu página irá a donde vaya esa persona.",
-    s1Btn: "Ver quién está aquí",
+    s1Title: "¿Quién más hay en la <em>sala</em>?",
+    s1Lede: "Las caras y el número te dicen cómo de llena está la sala. Púlsalas y verás quién es cada uno, si está activo, escribiendo o se ha ausentado, y un botón para <b>seguirle</b>: irás a donde vaya esa persona.",
+    s1Btn: "Ver quién hay en la sala",
     s1Note: "Las cifras salen de la misma fuente que la píldora (<span class=\"mono\">onStats</span>), así que puedes ponerlas donde quieras de tu web.",
-    mockPeopleHere: "personas en esta página", mockSite: "en toda la web · pico de hoy:", live: "En directo",
+    mockPeopleHere: "personas en esta sala", mockSite: "en toda la web · pico de hoy:", live: "En directo",
     mockYou: "Tú", mockEdit: "Editar", mockActive: "Activo", mockTyping: "Escribiendo…", mockAway: "Ausente",
     mockFollow: "Seguir", mockFollow2: "Seguir", mockFollowing: "Siguiendo",
     botAxolotl: "Ajolote Zen", botAxolotl2: "Ajolote Zen", botTapir: "Tapir Turbo", botTapir2: "Tapir Turbo",
     botKoala: "Koala Lunar", botKoala2: "Koala Lunar", botSloth: "Perezoso Zen",
     s2Label: "02 — Chat", s2Kicker: "El bocadillo", s2Title: "Habla <em>donde</em> estás mirando.",
-    s2Lede: "Pulsa el bocadillo o la tecla <kbd>/</kbd> y escribe: tu mensaje aparece pegado a tu cursor, en directo. <kbd>Enter</kbd> lo deja unos segundos y <kbd>Esc</kbd> lo borra.",
+    s2Lede: "Pulsa el bocadillo o la tecla <kbd>/</kbd> y escribe: tu mensaje aparece pegado a tu cursor, en directo, para toda la sala. <kbd>Enter</kbd> lo deja unos segundos y <kbd>Esc</kbd> lo borra.",
     s2Btn: "Escribir algo", bubbleMe: "¿Os gusta este titular?", bubbleOther: "¡Mucho! 🙌",
     s3Label: "03 — Reacciones", s3Kicker: "La carita", s3Title: "Aplaude sin <em>decir</em> nada.",
-    s3Lede: "La carita abre los emojis. Con teclado es más rápido: pulsa <kbd>E</kbd> donde tengas el cursor y elige. Salen flotando desde ahí y los ve todo el mundo.",
+    s3Lede: "La carita abre los emojis. Con teclado es más rápido: pulsa <kbd>E</kbd> donde tengas el cursor y elige. Salen flotando desde ahí y los ve toda la sala.",
     s3Note: "Pruébalo aquí mismo: pulsa cualquiera de estos emojis.",
     s4Label: "04 — Tu perfil", s4Kicker: "Tu cara, a la derecha", s4Title: "Tú decides <em>cómo</em> te ven. O si te ven.",
-    s4Text: "Cambia tu nombre, tu color o pon una foto desde tu ordenador. ¿Sin ideas? El dado elige nombre y color al azar. Lo recordamos para la próxima vez.",
+    s4Text: "Cambia tu nombre, tu color o pon una foto desde tu ordenador. ¿Sin ideas? El dado elige nombre y color al azar. Te recordaremos la próxima vez que entres.",
     s4Btn: "Editar mi perfil", ghostTitle: "Modo <em>fantasma</em>",
-    ghostText: "Oculta los cursores de los demás y deja de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.",
-    extrasKicker: "Lo que pasa sin tocar la píldora", extrasTitle: "Y además, <em>sin hacer nada</em>…",
+    ghostText: "Pasa por la sala sin que te vean: desaparecen los cursores de los demás y dejas de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.",
+    extrasKicker: "Lo que pasa sin tocar la píldora", extrasTitle: "Y la sala se entera, <em>sin que hagas nada</em>…",
     clicksLabel: "Clics", clicksTitle: "Tus clics se <em>notan</em>",
-    clicksText: "Cada clic deja una onda de tu color en la pantalla de los demás.", clicksZone: "haz clic aquí",
+    clicksText: "Cada clic deja una onda de tu color para todos los de la sala.", clicksZone: "haz clic aquí",
     selLabel: "Selección", selTitle: "Lo que <em>subrayas</em> se ve",
     selText: "Selecciona texto y los demás lo verán resaltado con tu color, aunque su pantalla sea distinta.",
     selDemo: "Selecciona esta frase y mira la otra pestaña: <mark>aparece resaltada</mark> con tu color.",
     idleLabel: "Reposo", idleTitle: "Si te vas, <em>se nota</em>",
-    idleText: "Tras 30 segundos sin moverte, tu cursor se atenúa y se echa una siesta: zzz.",
-    botsSize: "Compañía", botsLabel: "Nunca vacía", botsTitle: "Si llegas el primero, <em>no</em> estarás solo.",
-    botsText: "Cuando la página está vacía, un par de visitantes de compañía se pasean, curiosean y saludan de vez en cuando. En cuanto llega gente de verdad, se retiran discretamente.",
+    idleText: "Tras 30 segundos sin moverte, tu cursor se atenúa y se echa una siesta en un rincón: zzz.",
+    botsSize: "Compañía", botsLabel: "Nunca vacía", botsTitle: "¿Entras en una sala vacía? <em>No</em> estarás solo.",
+    botsText: "Cuando no hay nadie, un par de habituales se pasean, curiosean y saludan de vez en cuando. En cuanto llega gente de verdad, se van discretamente hacia la puerta.",
     codeSize: "Código", intLabel: "Integrar", intKicker: "Para desarrolladores",
-    intTitle: "Dos líneas y tu web tiene <em>gente</em>.", copy: "Copiar",
+    intTitle: "Dos líneas y tu web se llena de <em>gente</em>.", copy: "Copiar",
     code: '<span class="c">&lt;!-- 1. El script --&gt;</span>\n&lt;<span class="k">script</span> src=<span class="s">"/multicursor.js"</span>&gt;&lt;/<span class="k">script</span>&gt;\n\n<span class="c">&lt;!-- 2. Conéctalo a tu servidor --&gt;</span>\n&lt;<span class="k">script</span>&gt;\n  MultiCursor.<span class="f">init</span>({\n    url: <span class="s">"wss://cursores.tuweb.com/ws"</span>,\n    lang: <span class="s">"es"</span>,\n    bots: <span class="s">2</span>,\n    onStats: s =&gt; console.<span class="f">log</span>(s.page, <span class="s">"personas aquí"</span>)\n  });\n&lt;/<span class="k">script</span>&gt;',
     madeWith: "Roomful · hecho con <span class=\"mono\">multicursor.js</span>",
     ghFooter: "Ver el proyecto en GitHub"
@@ -569,10 +569,10 @@
   var DYN = {
     en: { here: "{n} here", alone: "Just you", ghostOn: "○ Ghost mode: nobody sees you", ghostOff: "● Visible to others",
           ghostBtnOn: "Become visible again", ghostBtnOff: "Turn on ghost mode", copied: "Copied!",
-          title: "Pill Anatomy · Roomful", me: "ME" },
+          title: "Roomful · Your website, with people in it", me: "ME" },
     es: { here: "{n} aquí", alone: "Solo tú", ghostOn: "○ Modo fantasma: nadie te ve", ghostOff: "● Visible para los demás",
           ghostBtnOn: "Volver a ser visible", ghostBtnOff: "Activar modo fantasma", copied: "¡Copiado!",
-          title: "Anatomía de la Píldora · Roomful", me: "TÚ" }
+          title: "Roomful · Tu web, con gente dentro", me: "TÚ" }
   };
   var LANG_KEY = "multicursor:lang";
 
