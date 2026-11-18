@@ -528,7 +528,3 @@ cursores-colaborativos/
 ├── README.md              # English
 └── README.es.md           # Spanish
 ```
-
----
-
-© Adrián Burriel. All rights reserved.

@@ -151,7 +151,3 @@ Dockerfile              Imagen de despliegue
 docs/DOCUMENTATION.md   Documentación completa (inglés)
 docs/DOCUMENTACION.md   Documentación completa (español)
 ```
-
-## Derechos
-
-© Adrián Burriel. Todos los derechos reservados. Este repositorio no incluye una licencia de uso: no se permite copiarlo, modificarlo ni redistribuirlo sin permiso expreso del autor.
