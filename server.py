@@ -44,22 +44,68 @@ RATE_BURST = 80            # ráfaga máxima
 PING_EVERY = 20            # seg
 DEAD_AFTER = 60            # seg sin recibir nada → conexión muerta
 
+STATS_EVERY = 3           # seg entre envíos de estadísticas
+
 rooms = {}                 # room -> {id: Client}
+peaks = {}                 # room -> (fecha, pico de usuarios simultáneos ese día)
 _ids = itertools.count(1)
 
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+NOT_EMOJI_RE = re.compile(r"[A-Za-z0-9<>&\"'\s]")
+
+
+def _is_num(v, limit):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and abs(v) < limit
+
+
+def _is_path(v):
+    return isinstance(v, list) and len(v) <= 64 and all(isinstance(i, int) and 0 <= i < 100000 for i in v)
+
+
+def _is_selection(v):
+    """Selección de texto: rutas de nodos DOM + offsets (o null si no hay)."""
+    if v is None:
+        return True
+    return (isinstance(v, dict) and set(v) == {"a", "ao", "f", "fo"}
+            and _is_path(v["a"]) and _is_path(v["f"])
+            and isinstance(v["ao"], int) and 0 <= v["ao"] < 1e6
+            and isinstance(v["fo"], int) and 0 <= v["fo"] < 1e6)
+
+
+def _is_emoji(v):
+    return isinstance(v, str) and 0 < len(v) <= 8 and not NOT_EMOJI_RE.search(v)
+
+
+EVENT_KINDS = {"click", "reaction"}
 FIELDS = {
     "name": lambda v: isinstance(v, str) and 0 < len(v) <= 32,
     "color": lambda v: isinstance(v, str) and bool(COLOR_RE.match(v)),
-    "x": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and abs(v) < 1e6,
-    "y": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and abs(v) < 1e7,
+    "x": lambda v: _is_num(v, 1e6),
+    "y": lambda v: _is_num(v, 1e7),
     "visible": lambda v: isinstance(v, bool),
     "chat": lambda v: isinstance(v, str) and len(v) <= 140,
+    "sel": _is_selection,
 }
 
 
 def total_clients():
     return sum(len(r) for r in rooms.values())
+
+
+def today():
+    return time.strftime("%Y-%m-%d")
+
+
+def note_peak(room):
+    n, d = len(rooms.get(room, {})), today()
+    day, peak = peaks.get(room, (d, 0))
+    peaks[room] = (d, max(n, peak if day == d else 0))
+
+
+def room_stats(room):
+    day, peak = peaks.get(room, (today(), 0))
+    return {"t": "stats", "room": len(rooms.get(room, {})), "site": total_clients(),
+            "peak": peak if day == today() else len(rooms.get(room, {}))}
 
 
 # ---------------------------------------------------------------- WebSocket --
@@ -170,6 +216,8 @@ async def ws_session(reader, writer, headers, query):
         "peers": [{"id": c.id, **c.state} for c in members.values() if c.state.get("name")],
     })
     members[me.id] = me
+    note_peak(room)
+    me.send(room_stats(room))
     try:
         while True:
             opcode, data = await ws_read_message(reader)
@@ -186,7 +234,21 @@ async def ws_session(reader, writer, headers, query):
                 msg = json.loads(data)
             except ValueError:
                 continue
-            if not isinstance(msg, dict) or msg.get("t") != "update":
+            if not isinstance(msg, dict):
+                continue
+            if msg.get("t") == "event":  # efímero: se reenvía pero no se guarda
+                kind, x, y = msg.get("kind"), msg.get("x"), msg.get("y")
+                if kind not in EVENT_KINDS or not _is_num(x, 1e6) or not _is_num(y, 1e7) or not me.state.get("name"):
+                    continue
+                out = {"t": "event", "id": me.id, "kind": kind, "x": x, "y": y}
+                if kind == "reaction":
+                    if not _is_emoji(msg.get("emoji")):
+                        continue
+                    out["emoji"] = msg["emoji"]
+                broadcast(room, out, exclude=me)
+                await writer.drain()
+                continue
+            if msg.get("t") != "update":
                 continue
             patch = {k: v for k, v in msg.items() if k in FIELDS and FIELDS[k](v)}
             if not patch:
@@ -221,6 +283,24 @@ async def heartbeat():
                     c.writer.close()  # el bucle de lectura falla y limpia la sala
                 else:
                     c.send_raw(ping)
+
+
+async def stats_loop():
+    """Envía a cada sala sus estadísticas (solo cuando cambian)."""
+    last = {}
+    while True:
+        await asyncio.sleep(STATS_EVERY)
+        d = today()
+        for r in [r for r, (day, _) in peaks.items() if day != d and r not in rooms]:
+            peaks.pop(r, None)  # limpia picos de días anteriores de salas vacías
+        for room in list(rooms):
+            s = room_stats(room)
+            key = (s["room"], s["site"], s["peak"])
+            if last.get(room) != key:
+                last[room] = key
+                broadcast(room, s)
+        for r in [r for r in last if r not in rooms]:
+            last.pop(r)
 
 
 # --------------------------------------------------------------------- HTTP --
@@ -275,6 +355,7 @@ async def handle(reader, writer):
 async def main():
     server = await asyncio.start_server(handle, HOST, PORT)
     asyncio.ensure_future(heartbeat())
+    asyncio.ensure_future(stats_loop())
     print(f"→ http://localhost:{PORT}  (WebSocket en /ws)  · Ctrl+C para parar")
     if ALLOWED_ORIGINS:
         print("  Orígenes permitidos:", ", ".join(sorted(ALLOWED_ORIGINS)))
