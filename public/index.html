@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe Multiplayer</title>
+<style>
+  :root{
+    --bg:#F5F5F3; --surface:#FFFFFF; --line:#D9D9D6; --line-strong:#B5B5B0;
+    --ink:#1E1E1E; --muted:#6B6B66; --fill:#E8E8E5; --fill-2:#DEDEDA;
+    --accent:#0D99FF; --note:#FFE77A; --note-ink:#5A4A00;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#161616; --surface:#1F1F1F; --line:#2E2E2E; --line-strong:#454545;
+      --ink:#EDEDED; --muted:#9A9A95; --fill:#2A2A2A; --fill-2:#333;
+      --note:#4A3F0A; --note-ink:#FFE77A;
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;overflow-x:clip}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);
+    background-image:radial-gradient(var(--line) 1px, transparent 1px);background-size:24px 24px}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  h1,h2,h3{margin:0;letter-spacing:-.02em;line-height:1.15}
+  p{margin:0;color:var(--muted)}
+  a{color:inherit}
+
+  /* Anotaciones de UX */
+  .anno{display:inline-flex;align-items:center;gap:8px;font:500 11px/1 var(--mono);text-transform:uppercase;
+    letter-spacing:.08em;color:var(--accent);margin-bottom:20px}
+  .anno::before{content:"";width:8px;height:8px;border:1.5px solid currentColor;border-radius:2px}
+  .note{position:absolute;background:var(--note);color:var(--note-ink);font:12px/1.4 var(--mono);padding:10px 12px;
+    width:190px;transform:rotate(-2deg);box-shadow:0 6px 14px rgba(0,0,0,.08);border-radius:2px}
+
+  section{padding:88px 0;border-top:1px dashed var(--line-strong);position:relative}
+
+  /* Placeholder de imagen con aspa */
+  .ph{position:relative;background:var(--fill);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .ph svg{position:absolute;inset:0;width:100%;height:100%}
+  .ph svg line{stroke:var(--line-strong);stroke-width:1}
+  .ph span{position:absolute;left:12px;bottom:10px;font:11px var(--mono);color:var(--muted)}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border-radius:10px;
+    font:600 14px var(--sans);text-decoration:none;border:1.5px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink)}
+  .btn.primary{background:var(--ink);color:var(--bg)}
+  .bar{height:10px;border-radius:5px;background:var(--fill-2)}
+
+  /* Nav */
+  nav{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 85%,transparent);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:32px;height:64px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700}
+  .logo i{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--ink);display:grid;place-items:center;font:600 11px var(--mono);font-style:normal}
+  nav ul{display:flex;gap:24px;list-style:none;margin:0;padding:0;font-size:14px;color:var(--muted)}
+  nav ul a{text-decoration:none}
+  nav .btn{height:36px;margin-left:auto;font-size:13px}
+
+  /* Hero */
+  .hero{border-top:0;padding-top:72px}
+  .hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:56px;align-items:center}
+  .hero h1{font-size:clamp(36px,5.2vw,62px);margin-bottom:20px}
+  .hero p{font-size:18px;max-width:480px;margin-bottom:32px}
+  .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .hero .ph{aspect-ratio:4/3.4}
+  .pill{display:inline-block;font:500 12px var(--mono);padding:6px 10px;border:1px solid var(--line-strong);border-radius:999px;margin-bottom:24px;color:var(--muted);background:var(--surface)}
+
+  .logos{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:72px}
+  .logos div{height:36px;border-radius:8px;background:var(--fill)}
+
+  /* Features */
+  .head{max-width:620px;margin-bottom:48px}
+  .head h2{font-size:clamp(28px,3.4vw,42px);margin-bottom:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px}
+  .card .ico{width:44px;height:44px;border-radius:12px;border:1.5px dashed var(--line-strong);margin-bottom:20px}
+  .card h3{font-size:19px;margin-bottom:10px}
+  .card p{font-size:15px}
+
+  /* Split */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+  .split .ph{aspect-ratio:1/1}
+  .list{display:grid;gap:18px;margin-top:28px}
+  .list div{display:grid;grid-template-columns:28px 1fr;gap:14px;align-items:start}
+  .list b{width:28px;height:28px;border-radius:50%;background:var(--fill);display:grid;place-items:center;font:600 12px var(--mono)}
+
+  /* Stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+  .stats div{padding:32px 28px;border-left:1px solid var(--line)}
+  .stats div:first-child{border-left:0}
+  .stats strong{display:block;font-size:40px;letter-spacing:-.03em;margin-bottom:6px}
+
+  /* Testimonios */
+  .quote{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:24px}
+  .quote p{color:var(--ink);font-size:16px}
+  .who{display:flex;gap:12px;align-items:center}
+  .who i{width:40px;height:40px;border-radius:50%;background:var(--fill-2)}
+  .who small{display:block;color:var(--muted);font-size:13px}
+
+  /* Pricing */
+  .price{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px;display:flex;flex-direction:column;gap:18px}
+  .price.hl{border:2px solid var(--ink);position:relative}
+  .price.hl::after{content:"Recomendado";position:absolute;top:-12px;left:28px;background:var(--ink);color:var(--bg);font:600 11px var(--mono);padding:5px 9px;border-radius:6px}
+  .price .amount{font-size:44px;font-weight:700;letter-spacing:-.03em}
+  .price .amount small{font-size:15px;color:var(--muted);font-weight:400}
+  .price ul{list-style:none;padding:0;margin:0;display:grid;gap:12px;font-size:14px;color:var(--muted)}
+  .price li::before{content:"✓";margin-right:10px;color:var(--ink)}
+  .price .btn{margin-top:auto}
+
+  /* FAQ */
+  .faq{max-width:760px}
+  details{border-bottom:1px solid var(--line);padding:20px 0}
+  summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between}
+  summary::after{content:"+";font:400 22px/1 var(--mono);color:var(--muted)}
+  details[open] summary::after{content:"–"}
+  details p{margin-top:12px}
+
+  /* CTA */
+  .band{background:var(--ink);color:var(--bg);border-radius:24px;padding:64px;display:flex;justify-content:space-between;align-items:center;gap:32px}
+  .band h2{font-size:clamp(26px,3vw,38px);max-width:520px}
+  .band .btn{border-color:var(--bg);color:var(--bg)}
+  .band .btn.primary{background:var(--bg);color:var(--ink)}
+
+  footer{padding:56px 0 120px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+  footer .wrap{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:32px}
+  footer h4{margin:0 0 14px;color:var(--ink);font-size:13px}
+  footer ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+
+  /* Toast de bienvenida */
+  .toast{position:fixed;left:16px;bottom:16px;z-index:50;max-width:340px;background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:16px 18px;box-shadow:0 10px 30px rgba(0,0,0,.12);font-size:14px}
+  .toast b{display:block;margin-bottom:4px}
+  .toast p{font-size:13px}
+  .toast button{position:absolute;top:8px;right:10px;border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer}
+
+  @media (max-width: 860px){
+    .hero-grid,.split{grid-template-columns:1fr;gap:40px}
+    .grid3{grid-template-columns:1fr}
+    .stats{grid-template-columns:1fr 1fr}
+    .stats div:nth-child(3){border-left:0}
+    .stats div:nth-child(n+3){border-top:1px solid var(--line)}
+    .logos{grid-template-columns:repeat(3,1fr)}
+    nav ul{display:none}
+    .band{flex-direction:column;align-items:flex-start;padding:40px 28px}
+    footer .wrap{grid-template-columns:1fr 1fr}
+    .note{display:none}
+    section{padding:64px 0}
+    .wrap{padding:0 16px}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><i>Lo</i> Loremify</div>
+    <ul>
+      <li><a href="#features">Producto</a></li>
+      <li><a href="#how">Cómo funciona</a></li>
+      <li><a href="#pricing">Precios</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a class="btn" href="#pricing">Empezar</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="anno">01 — Hero</div>
+    <div class="hero-grid">
+      <div>
+        <span class="pill">● Lorem ipsum v2.0 ya disponible</span>
+        <h1>Lorem ipsum dolor sit amet, consectetur.</h1>
+        <p>Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
+        <div class="cta">
+          <a class="btn primary" href="#pricing">Call to action</a>
+          <a class="btn" href="#how">Acción secundaria</a>
+        </div>
+      </div>
+      <div class="ph"><svg preserveAspectRatio="none" viewBox="0 0 100 100"><line x1="0" y1="0" x2="100" y2="100"/><line x1="100" y1="0" x2="0" y2="100"/></svg><span>IMG · 4:3.4 · producto</span></div>
+    </div>
+    <div class="logos" aria-hidden="true"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <div class="note" style="right:24px;top:28px">Abre esta página en otra pestaña o en otro dispositivo de tu red 👀</div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="anno">02 — Features</div>
+    <div class="head">
+      <h2>Ut enim ad minim veniam, quis nostrud.</h2>
+      <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="ico"></div><h3>Excepteur sint</h3><p>Occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim.</p></div>
+      <div class="card"><div class="ico"></div><h3>Sed ut perspiciatis</h3><p>Unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p></div>
+      <div class="card"><div class="ico"></div><h3>Nemo enim ipsam</h3><p>Voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur.</p></div>
+      <div class="card"><div class="ico"></div><h3>Neque porro</h3><p>Quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.</p></div>
+      <div class="card"><div class="ico"></div><h3>Quis autem vel</h3><p>Eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae.</p></div>
+      <div class="card"><div class="ico"></div><h3>At vero eos</h3><p>Et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="anno">03 — Cómo funciona</div>
+    <div class="split">
+      <div class="ph"><svg preserveAspectRatio="none" viewBox="0 0 100 100"><line x1="0" y1="0" x2="100" y2="100"/><line x1="100" y1="0" x2="0" y2="100"/></svg><span>IMG · 1:1 · ilustración</span></div>
+      <div>
+        <h2 style="font-size:clamp(28px,3.4vw,42px);margin-bottom:14px">Temporibus autem quibusdam et aut officiis.</h2>
+        <p>Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias.</p>
+        <div class="list">
+          <div><b>1</b><div><strong>Lorem ipsum</strong><p>Nam libero tempore, cum soluta nobis est eligendi.</p></div></div>
+          <div><b>2</b><div><strong>Dolor sit amet</strong><p>Omnis voluptas assumenda est, omnis dolor repellendus.</p></div></div>
+          <div><b>3</b><div><strong>Consectetur</strong><p>Similique sunt in culpa qui officia deserunt mollitia.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="anno">04 — Métricas</div>
+    <div class="stats">
+      <div><strong>00k+</strong><p>Lorem ipsum</p></div>
+      <div><strong>00%</strong><p>Dolor sit amet</p></div>
+      <div><strong>0.0×</strong><p>Consectetur</p></div>
+      <div><strong>00</strong><p>Adipiscing elit</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="anno">05 — Testimonios</div>
+    <div class="head"><h2>Quis nostrum exercitationem ullam.</h2></div>
+    <div class="grid3">
+      <div class="quote"><p>“Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio praesent libero.”</p><div class="who"><i></i><div><strong>Nombre Apellido</strong><small>Cargo · Empresa</small></div></div></div>
+      <div class="quote"><p>“Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet duis sagittis.”</p><div class="who"><i></i><div><strong>Nombre Apellido</strong><small>Cargo · Empresa</small></div></div></div>
+      <div class="quote"><p>“Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent.”</p><div class="who"><i></i><div><strong>Nombre Apellido</strong><small>Cargo · Empresa</small></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="anno">06 — Precios</div>
+    <div class="head"><h2>Curabitur sodales ligula in libero.</h2><p>Sed dignissim lacinia nunc. Curabitur tortor. Pellentesque nibh.</p></div>
+    <div class="grid3">
+      <div class="price"><strong>Básico</strong><div class="amount">0€ <small>/mes</small></div><ul><li>Lorem ipsum dolor</li><li>Sit amet consectetur</li><li>Adipiscing elit</li></ul><a class="btn" href="#">Elegir</a></div>
+      <div class="price hl"><strong>Pro</strong><div class="amount">00€ <small>/mes</small></div><ul><li>Todo lo de Básico</li><li>Sed do eiusmod</li><li>Tempor incididunt</li><li>Ut labore et dolore</li></ul><a class="btn primary" href="#">Elegir</a></div>
+      <div class="price"><strong>Equipo</strong><div class="amount">00€ <small>/mes</small></div><ul><li>Todo lo de Pro</li><li>Magna aliqua</li><li>Quis nostrud</li></ul><a class="btn" href="#">Contactar</a></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="anno">07 — FAQ</div>
+    <div class="faq">
+      <details open><summary>¿Lorem ipsum dolor sit amet?</summary><p>Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></details>
+      <details><summary>¿Ut enim ad minim veniam?</summary><p>Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p></details>
+      <details><summary>¿Duis aute irure dolor?</summary><p>In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p></details>
+      <details><summary>¿Excepteur sint occaecat?</summary><p>Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p></details>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="anno">08 — CTA final</div>
+    <div class="band">
+      <h2>Nam libero tempore, cum soluta nobis est eligendi.</h2>
+      <div class="cta"><a class="btn primary" href="#">Call to action</a><a class="btn" href="#">Saber más</a></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><div class="logo" style="margin-bottom:12px"><i>Lo</i> Loremify</div><p>Lorem ipsum dolor sit amet.<br>© 2026 Placeholder S.L.</p></div>
+    <div><h4>Producto</h4><ul><li>Lorem</li><li>Ipsum</li><li>Dolor</li></ul></div>
+    <div><h4>Empresa</h4><ul><li>Sit amet</li><li>Consectetur</li><li>Adipiscing</li></ul></div>
+    <div><h4>Legal</h4><ul><li>Privacidad</li><li>Términos</li><li>Cookies</li></ul></div>
+  </div>
+</footer>
+
+<div class="toast" id="toast">
+  <button aria-label="Cerrar" onclick="this.parentNode.remove()">×</button>
+  <b>Esta página es multijugador</b>
+  <p>Ábrela en otra pestaña (o en el móvil de al lado) y verás los cursores de los demás. Pulsa <b style="display:inline">/</b> para escribir junto a tu cursor.</p>
+</div>
+
+<!-- ↓↓ La integración: estas dos líneas son todo lo que necesita cualquier web ↓↓ -->
+<script src="/multicursor.js"></script>
+<script>
+  window.mc = MultiCursor.init();
+  document.querySelector('#toast b').textContent = 'Eres ' + mc.me.name;
+</script>
+</body>
+</html>
