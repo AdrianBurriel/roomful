@@ -14,6 +14,12 @@
  *   anchor    'center' | 'left' — referencia horizontal para mapear posiciones
  *             entre pantallas de distinto ancho. 'center' encaja con layouts
  *             centrados con max-width (lo habitual).               ('center')
+ *   bots      Nº de usuarios ficticios que navegan la página para que
+ *             nunca se vea vacía. Son locales: cada visitante ve los suyos. (0)
+ *   botChat   Los bots escriben mensajes de vez en cuando        (true)
+ *   botTargets Selector CSS de elementos hacia los que se mueven los bots
+ *             (por defecto: enlaces, botones, titulares, imágenes, tarjetas…)
+ *   botPhrases Array de frases para el chat de los bots
  *
  * Devuelve { me, peers, destroy() }.
  *
@@ -33,7 +39,16 @@
   var COLORS = ["#F24E1E", "#FF7262", "#A259FF", "#1ABCFE", "#0ACF83", "#FFC700",
     "#FF4FA3", "#7B61FF", "#14AE5C", "#0D99FF", "#F5A524", "#E5484D"];
 
-  var SEND_EVERY_MS = 40;   // ~25 envíos/seg como máximo
+  var BOT_PHRASES = ["Hola 👋", "¿Habéis visto este botón?", "Lorem ipsum, mi idioma favorito",
+    "Me quedo con el plan Pro 👀", "Esto queda genial", "¿Quién ha movido el hero?",
+    "Capibaras al poder 🦫", "Ese hover está muy fino", "¿Alguien más por aquí?", "Mola el wireframe",
+    "Voy a por un café ☕", "Sígueme 🏃"];
+  var BOT_TARGETS = "a, button, .btn, h1, h2, h3, p, img, svg, .card, .ph, summary, li, [data-mc-target]";
+
+  var BOT_HERE_MS = [7000, 16000];   // tiempo que un bot pasa en tu pantalla
+  var BOT_AWAY_MS = [12000, 30000];  // tiempo que pasa en otras zonas de la página
+
+  var SEND_EVERY_MS = 40; // ~25 envíos/seg como máximo
   var LERP = 0.28;          // suavizado de cursores remotos (0..1)
   var CHAT_LINGER_MS = 4000;
 
@@ -116,6 +131,7 @@
     var ws = null, myId = null, destroyed = false, retry = 0, retryTimer = null;
     var last = { cx: 0, cy: 0, has: false, sent: 0, pending: null };
     var chatTimer = null, raf = 0;
+    var bots = [];
 
     // ---- DOM ----
     var style = el("style"); style.textContent = CSS; document.head.appendChild(style);
@@ -176,7 +192,7 @@
         var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
         if (m.t === "welcome") {
           myId = m.id;
-          Object.keys(peers).forEach(removePeer);
+          clearRealPeers();
           (m.peers || []).forEach(upsertPeer);
         } else if (m.t === "update") {
           upsertPeer(m);
@@ -186,7 +202,7 @@
         renderPresence();
       };
       ws.onclose = function () {
-        Object.keys(peers).forEach(removePeer);
+        clearRealPeers();
         renderPresence();
         scheduleRetry();
       };
@@ -228,11 +244,144 @@
       if (p) { p.el.remove(); delete peers[id]; }
     }
 
+    function clearRealPeers() {
+      Object.keys(peers).forEach(function (id) { if (!peers[id].bot) removePeer(id); });
+    }
+
+    // ---- bots: usuarios ficticios ----
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+    // Elige un punto "interesante" (un botón, un titular...) en coordenadas compartidas.
+    // here=true → dentro de lo que el visitante ve; here=false → fuera de su vista
+    // (devuelve null si la página es tan corta que no hay "fuera").
+    function pickBotTarget(here) {
+      var vis = [], out = [], vh = innerHeight, vw = document.documentElement.clientWidth;
+      var els = document.querySelectorAll(opts.botTargets || BOT_TARGETS);
+      for (var i = 0; i < els.length; i++) {
+        if (els[i].closest(".mc-presence,.mc-local,.mc-layer")) continue;
+        var r = els[i].getBoundingClientRect();
+        if (r.width < 4 || r.height < 4) continue;
+        if (r.bottom > 80 && r.top < vh - 60 && r.right > 0 && r.left < vw) vis.push(r);
+        else if (r.bottom < -40 || r.top > vh + 40) out.push(r);
+      }
+      if (!here && !out.length) return null;
+      var inView = here;
+      var pool = here ? vis : out;
+      var px, py;
+      if (!pool.length) {
+        px = rand(vw * 0.2, vw * 0.8); py = rand(vh * 0.2, vh * 0.8);
+      } else {
+        var r2 = pick(pool);
+        px = r2.left + r2.width * rand(0.15, 0.85);
+        py = r2.top + r2.height * rand(0.25, 0.75);
+        if (inView) py = Math.max(80, Math.min(vh - 60, py));
+      }
+      return { x: px + window.scrollX - originX(), y: py + window.scrollY };
+    }
+
+    function createBots(n) {
+      var names = {}, colors = {};
+      names[me.name] = 1; colors[me.color] = 1;
+      for (var i = 0; i < n; i++) {
+        var name, color, tries = 0;
+        do { name = pick(ANIMALS) + " " + pick(ADJECTIVES); } while (names[name] && ++tries < 50);
+        do { color = pick(COLORS); } while (colors[color] && ++tries < 100);
+        names[name] = 1; colors[color] = 1;
+        // El primero empieza de visita; el resto, por otras zonas de la página.
+        var now = performance.now(), here = i === 0;
+        var start = pickBotTarget(here) || pickBotTarget(true), id = "bot-" + i;
+        upsertPeer({ id: id, name: name, color: color, x: start.x, y: start.y, visible: true });
+        peers[id].bot = true;
+        bots.push({ id: id, seg: null, waitUntil: now + rand(200, 2000), chat: null,
+          here: here, modeUntil: now + (here ? rand(BOT_HERE_MS[0], BOT_HERE_MS[1]) : rand(4000, 12000)),
+          nextChat: now + rand(4000, 8000) });
+      }
+      renderPresence();
+    }
+
+    // Alterna cada bot entre "de visita" (en tu pantalla) y "a lo suyo" (fuera de ella).
+    // Normalmente solo hay uno de visita a la vez, y a ratos ninguno.
+    function updateBotMode(b, now) {
+      if (now < b.modeUntil || b.chat) return;
+      var visiting = bots.filter(function (o) { return o.here && o !== b; }).length;
+      if (b.here) {
+        b.here = false;
+        b.modeUntil = now + rand(BOT_AWAY_MS[0], BOT_AWAY_MS[1]);
+      } else if (visiting === 0 || Math.random() < 0.15) {
+        b.here = true;
+        b.modeUntil = now + rand(BOT_HERE_MS[0], BOT_HERE_MS[1]);
+        // en ~la mitad de las visitas dice algo; en el resto solo curiosea
+        b.nextChat = Math.random() < 0.5 ? now + rand(2500, 6000) : Infinity;
+      } else {
+        b.modeUntil = now + rand(3000, 8000);       // ya hay alguien de visita: espera
+        return;
+      }
+      if (!b.seg) b.waitUntil = now;                 // ponte en marcha ya
+    }
+
+    function updateBots(now) {
+      bots.forEach(function (b) {
+        var p = peers[b.id];
+        if (!p) return;
+        updateBotMode(b, now);
+
+        if (b.seg) {                                   // desplazándose (curva Bézier)
+          var s = b.seg, t = Math.min(1, (now - s.t0) / s.dur), e = ease(t), u = 1 - e;
+          p.x = u*u*u*s.x0 + 3*u*u*e*s.x1 + 3*u*e*e*s.x2 + e*e*e*s.x3;
+          p.y = u*u*u*s.y0 + 3*u*u*e*s.y1 + 3*u*e*e*s.y2 + e*e*e*s.y3;
+          if (t >= 1) { b.seg = null; b.waitUntil = now + (Math.random() < 0.2 ? rand(2500, 5000) : rand(300, 1800)); }
+          return;
+        }
+
+        if (b.chat) {                                  // escribiendo / mostrando mensaje
+          var c = b.chat;
+          if (c.i < c.text.length && now >= c.nextAt) {
+            c.i++; c.nextAt = now + rand(40, 110);
+            upsertPeer({ id: b.id, chat: c.text.slice(0, c.i) });
+            if (c.i === c.text.length) c.until = now + rand(2500, 4000);
+          } else if (c.until && now >= c.until) {
+            b.chat = null;
+            upsertPeer({ id: b.id, chat: "" });
+            b.nextChat = Infinity;                     // un mensaje por visita como mucho
+            b.waitUntil = now + rand(300, 900);
+          }
+          return;
+        }
+
+        var inView = p.y > window.scrollY + 60 && p.y < window.scrollY + innerHeight - 80;
+        var someoneTalking = bots.some(function (o) { return o.chat; });
+        if (opts.botChat !== false && b.here && now >= b.nextChat && inView && !someoneTalking) {
+          b.chat = { text: pick(opts.botPhrases || BOT_PHRASES), i: 0, nextAt: now + rand(300, 700), until: 0 };
+          return;
+        }
+
+        if (now >= b.waitUntil) {                      // nuevo destino
+          var to = pickBotTarget(b.here);
+          if (!to) {                                   // página corta: "se va" ocultándose
+            if (p.visible) upsertPeer({ id: b.id, visible: false });
+            b.waitUntil = now + 1000;
+            return;
+          }
+          if (!p.visible) upsertPeer({ id: b.id, visible: true });
+          var dx = to.x - p.x, dy = to.y - p.y, dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          var nx = -dy / dist, ny = dx / dist, k1 = rand(-0.25, 0.25) * dist, k2 = rand(-0.2, 0.2) * dist;
+          b.seg = { t0: now, dur: Math.max(450, Math.min(1900, 300 + dist * 1.1)),
+            x0: p.x, y0: p.y, x3: to.x, y3: to.y,
+            x1: p.x + dx * 0.3 + nx * k1, y1: p.y + dy * 0.3 + ny * k1,
+            x2: p.x + dx * 0.7 + nx * k2, y2: p.y + dy * 0.7 + ny * k2 };
+        } else if (Math.random() < 0.04) {             // micro-movimientos en reposo
+          p.x += rand(-2, 2); p.y += rand(-2, 2);
+        }
+      });
+    }
+
     // ---- animación ----
     function kick() { if (!raf) raf = requestAnimationFrame(tick); }
-    function tick() {
+    function tick(now) {
       raf = 0;
-      var ox = originX(), moving = false;
+      if (bots.length) updateBots(now || performance.now());
+      var ox = originX(), moving = bots.length > 0;
       var maxX = document.documentElement.scrollWidth - 8;
       Object.keys(peers).forEach(function (id) {
         var p = peers[id];
@@ -321,6 +470,7 @@
     input.addEventListener("blur", function () { if (local.classList.contains("mc-open")) closeChat(true); });
 
     renderPresence();
+    if (opts.bots > 0) createBots(Math.min(12, opts.bots | 0));
     connect();
 
     return {

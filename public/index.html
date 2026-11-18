@@ -83,7 +83,7 @@
   .split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
   .split .ph{aspect-ratio:1/1}
   .list{display:grid;gap:18px;margin-top:28px}
-  .list div{display:grid;grid-template-columns:28px 1fr;gap:14px;align-items:start}
+  .list > div{display:grid;grid-template-columns:28px 1fr;gap:14px;align-items:start}
   .list b{width:28px;height:28px;border-radius:50%;background:var(--fill);display:grid;place-items:center;font:600 12px var(--mono)}
 
   /* Stats */
@@ -298,7 +298,7 @@
 <!-- ↓↓ La integración: estas dos líneas son todo lo que necesita cualquier web ↓↓ -->
 <script src="/multicursor.js"></script>
 <script>
-  window.mc = MultiCursor.init();
+  window.mc = MultiCursor.init({ bots: 2 });
   document.querySelector('#toast b').textContent = 'Eres ' + mc.me.name;
 </script>
 </body>

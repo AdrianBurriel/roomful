@@ -30,6 +30,10 @@ python3 server.py          # → http://localhost:8080
     // presence: true,                   // avatares de quién está conectado
     // chat: true,                       // tecla "/" para escribir junto al cursor
     // anchor: "center",                 // "center" (layouts con max-width) o "left"
+    // bots: 2,                          // usuarios ficticios para que nunca se vea vacía
+    // botChat: true,                    // los bots escriben mensajes de vez en cuando
+    // botTargets: "a, button, h2",      // elementos hacia los que se mueven
+    // botPhrases: ["Hola 👋", "..."],   // frases del chat de los bots
   });
   // mc.me.name, mc.peers, mc.destroy()
 </script>
