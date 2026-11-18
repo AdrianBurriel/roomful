@@ -139,7 +139,7 @@ Vercel serves the site, and [Ably](https://ably.com) carries the real-time traff
 1. Create a free account at [Ably](https://ably.com), create an app and copy its **API key** (the one with *publish*, *subscribe* and *presence*).
 2. In [Vercel](https://vercel.com), **Add New → Project** and import this GitHub repository. Leave the defaults: [`vercel.json`](vercel.json) already says what to publish.
 3. Before deploying, add the environment variable `ABLY_API_KEY` with that key, then press **Deploy**.
-4. Optional but recommended: once you know your URL (`https://roomful-XXXX.vercel.app`), add it to `ALLOWED_ORIGINS` and redeploy.
+4. That's it: by default the function only hands out tokens to pages of the same site. Set `ALLOWED_ORIGINS` only if other sites (or a custom domain on another host) should connect too.
 
 Every push to `main` redeploys automatically. The landing uses Ably when published and `server.py` on `localhost`. Ably's free plan (6 million messages a month, 200 simultaneous connections) is plenty for a demo; a moving cursor sends up to 10 messages per second.
 

@@ -139,7 +139,7 @@ Vercel sirve la web, y [Ably](https://ably.com) lleva el tráfico en tiempo real
 1. Crea una cuenta gratuita en [Ably](https://ably.com), crea una app y copia su **API key** (la que tiene *publish*, *subscribe* y *presence*).
 2. En [Vercel](https://vercel.com), **Add New → Project** e importa este repositorio de GitHub. Deja los valores por defecto: [`vercel.json`](vercel.json) ya indica qué publicar.
 3. Antes de desplegar, añade la variable de entorno `ABLY_API_KEY` con esa clave y pulsa **Deploy**.
-4. Opcional, pero recomendable: cuando sepas tu URL (`https://roomful-XXXX.vercel.app`), ponla en `ALLOWED_ORIGINS` y vuelve a desplegar.
+4. Ya está: por defecto la función solo entrega tokens a las páginas de la propia web. Pon `ALLOWED_ORIGINS` solo si otras webs (o un dominio propio en otro hosting) también deben conectarse.
 
 Cada push a `main` se despliega solo. La landing usa Ably cuando está publicada y `server.py` en `localhost`. El plan gratuito de Ably (6 millones de mensajes al mes, 200 conexiones simultáneas) da de sobra para una demo; un cursor en movimiento envía hasta 10 mensajes por segundo.
 

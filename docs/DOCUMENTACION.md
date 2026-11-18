@@ -431,7 +431,7 @@ MultiCursor.init({ ably: { authUrl: "/api/ably-token" } });
 - **Canales:** uno por sala (`roomful:room:<sala>`) más `roomful:site` para contar a la gente de toda la web. `prefix` cambia `roomful`.
 - **La presencia** dice quién hay en cada sala; cuando alguien entra, todos reenvían su estado para que el recién llegado pueda dibujarlos.
 - **Validación:** no hay servidor en medio, así que el script aplica a cada mensaje que recibe las mismas reglas que `server.py` (§9.4) y descarta lo que no las cumpla.
-- **Tokens:** `api/ably-token.js` (una función de Vercel) firma las peticiones de token con `ABLY_API_KEY`. Los tokens van ligados al id de la conexión, duran una hora y solo permiten los canales `roomful:*`. Con `ALLOWED_ORIGINS`, solo esas webs reciben tokens.
+- **Tokens:** `api/ably-token.js` (una función de Vercel) firma las peticiones de token con `ABLY_API_KEY`. Los tokens van ligados al id de la conexión, duran una hora y solo permiten los canales `roomful:*`. Solo las páginas de la propia web reciben tokens, salvo que `ALLOWED_ORIGINS` indique otras webs.
 - **Ritmo:** las posiciones se envían como mucho cada 100 ms (en vez de 40 ms) para que el plan dure más.
 - **Diferencias con `server.py`:** el pico del día es el máximo que ha visto este visitante, no un récord de todo el servidor; `MAX_PER_ROOM`/`MAX_CLIENTS` dejan paso a los límites de tu plan de Ably.
 
