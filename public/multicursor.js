@@ -123,7 +123,8 @@
 
   var FONT = "Inter,system-ui,-apple-system,'Segoe UI',sans-serif";
   var CSS = [
-    ".mc-layer{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:2147483000}",
+    /* ancho 100% + overflow-x:clip → los cursores nunca generan scroll horizontal en la web anfitriona */
+    ".mc-layer{position:absolute;left:0;top:0;width:100%;height:0;overflow-x:clip;overflow-y:visible;pointer-events:none;z-index:2147483000}",
     ".mc-layer.mc-off{display:none}",
     ".mc-cursor{position:absolute;left:0;top:0;will-change:transform;transition:opacity .3s ease}",
     ".mc-cursor.mc-idle{opacity:.4}",
@@ -884,7 +885,8 @@
       if (ghost) return;
       if (bots.length) updateBots(now || performance.now());
       var ox = originX(), moving = bots.length > 0 || following !== null;
-      var maxX = document.documentElement.scrollWidth - 8;
+      // clientWidth (no scrollWidth): así un cursor lejano nunca provoca scroll horizontal
+      var maxX = document.documentElement.clientWidth - 24;
       for (var id in peers) {
         var p = peers[id];
         var dx = p.x - p.cx, dy = p.y - p.cy;
