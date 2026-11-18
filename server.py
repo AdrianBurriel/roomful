@@ -2,12 +2,19 @@
 """
 Servidor de cursores colaborativos — cero dependencias (solo stdlib, Python 3.8+).
 
-- Sirve los ficheros estáticos de ./public
-- Hace de relay WebSocket en /ws: cada cliente envía su estado (nombre, color,
-  posición, chat...) y el servidor lo reenvía al resto.
+- Relay WebSocket en /ws?room=<sala>: cada cliente publica su estado (nombre,
+  color, posición, chat...) y el servidor lo reenvía al resto de su sala.
+- Sirve los ficheros estáticos de ./public (opcional).
+- /health devuelve el estado en JSON (para el hosting).
 
-Uso:   python3 server.py            -> http://localhost:8080
-       PORT=3000 python3 server.py
+Variables de entorno:
+  PORT             Puerto                                   (8080)
+  HOST             Interfaz                                 (0.0.0.0)
+  ALLOWED_ORIGINS  Dominios permitidos, separados por comas. Vacío = cualquiera.
+                   Ej: https://miweb.com,https://www.miweb.com
+  MAX_PER_ROOM     Máximo de usuarios por sala              (100)
+  MAX_CLIENTS      Máximo de conexiones en total            (5000)
+  STATIC_DIR       Carpeta de estáticos; "" para desactivar (./public)
 """
 import asyncio
 import base64
@@ -18,31 +25,45 @@ import mimetypes
 import os
 import re
 import struct
+import time
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
-ROOT = (Path(__file__).parent / "public").resolve()
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8080"))
+ALLOWED_ORIGINS = {o.strip().rstrip("/") for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()}
+MAX_PER_ROOM = int(os.environ.get("MAX_PER_ROOM", "100"))
+MAX_CLIENTS = int(os.environ.get("MAX_CLIENTS", "5000"))
+_static = os.environ.get("STATIC_DIR", str(Path(__file__).parent / "public"))
+ROOT = Path(_static).resolve() if _static else None
+
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 MAX_FRAME = 16 * 1024
+RATE_PER_SEC = 40          # mensajes/seg sostenidos por cliente
+RATE_BURST = 80            # ráfaga máxima
+PING_EVERY = 20            # seg
+DEAD_AFTER = 60            # seg sin recibir nada → conexión muerta
 
-clients = {}  # id -> Client
+rooms = {}                 # room -> {id: Client}
 _ids = itertools.count(1)
 
-# Campos que un cliente puede publicar, con su validador.
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 FIELDS = {
     "name": lambda v: isinstance(v, str) and 0 < len(v) <= 32,
     "color": lambda v: isinstance(v, str) and bool(COLOR_RE.match(v)),
-    "x": lambda v: isinstance(v, (int, float)) and abs(v) < 1e6,
-    "y": lambda v: isinstance(v, (int, float)) and abs(v) < 1e7,
+    "x": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and abs(v) < 1e6,
+    "y": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and abs(v) < 1e7,
     "visible": lambda v: isinstance(v, bool),
     "chat": lambda v: isinstance(v, str) and len(v) <= 140,
 }
 
 
+def total_clients():
+    return sum(len(r) for r in rooms.values())
+
+
 # ---------------------------------------------------------------- WebSocket --
-def ws_frame(payload: bytes, opcode: int = 0x1) -> bytes:
+def ws_frame(payload, opcode=0x1):
     n = len(payload)
     head = bytes([0x80 | opcode])
     if n < 126:
@@ -71,7 +92,7 @@ async def ws_read_message(reader):
         data = await reader.readexactly(n)
         if mask:
             data = bytes(b ^ mask[i & 3] for i, b in enumerate(data))
-        if opcode >= 0x8:  # control frames: nunca fragmentados
+        if opcode >= 0x8:
             return opcode, data
         if first_opcode is None:
             first_opcode = opcode
@@ -83,54 +104,83 @@ async def ws_read_message(reader):
 
 
 class Client:
-    def __init__(self, cid, writer):
+    def __init__(self, cid, room, writer):
         self.id = cid
+        self.room = room
         self.writer = writer
         self.state = {}
+        self.last_seen = time.monotonic()
+        self.tokens = float(RATE_BURST)
+        self.tokens_at = time.monotonic()
+
+    def send_raw(self, data):
+        if not self.writer.is_closing():
+            self.writer.write(data)
 
     def send(self, obj):
-        if self.writer.is_closing():
-            return
-        self.writer.write(ws_frame(json.dumps(obj, separators=(",", ":")).encode()))
+        self.send_raw(ws_frame(json.dumps(obj, separators=(",", ":")).encode()))
+
+    def allow(self):
+        now = time.monotonic()
+        self.tokens = min(RATE_BURST, self.tokens + (now - self.tokens_at) * RATE_PER_SEC)
+        self.tokens_at = now
+        if self.tokens < 1:
+            return False
+        self.tokens -= 1
+        return True
 
 
-def broadcast(obj, exclude=None):
-    for c in list(clients.values()):
+def broadcast(room, obj, exclude=None):
+    data = ws_frame(json.dumps(obj, separators=(",", ":")).encode())
+    for c in list(rooms.get(room, {}).values()):
         if c is not exclude:
-            c.send(obj)
+            c.send_raw(data)
 
 
-async def ws_session(reader, writer, headers):
+def http_error(writer, code, reason):
+    body = reason.encode()
+    writer.write(f"HTTP/1.1 {code} {reason}\r\nContent-Type: text/plain\r\n"
+                 f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n".encode() + body)
+
+
+def clean_room(raw):
+    room = (raw or "/").strip()[:128]
+    return room or "/"
+
+
+async def ws_session(reader, writer, headers, query):
     key = headers.get("sec-websocket-key")
     if not key:
-        writer.write(b"HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n")
-        return
-    accept = base64.b64encode(hashlib.sha1((key + WS_GUID).encode()).digest()).decode()
-    writer.write(
-        (
-            "HTTP/1.1 101 Switching Protocols\r\n"
-            "Upgrade: websocket\r\nConnection: Upgrade\r\n"
-            f"Sec-WebSocket-Accept: {accept}\r\n\r\n"
-        ).encode()
-    )
+        return http_error(writer, 400, "Bad Request")
+    origin = headers.get("origin", "").rstrip("/")
+    if ALLOWED_ORIGINS and origin not in ALLOWED_ORIGINS:
+        return http_error(writer, 403, "Forbidden")
+    room = clean_room(parse_qs(query).get("room", ["/"])[0])
+    if total_clients() >= MAX_CLIENTS or len(rooms.get(room, {})) >= MAX_PER_ROOM:
+        return http_error(writer, 503, "Service Unavailable")
 
-    me = Client(next(_ids), writer)
-    clients[me.id] = me
+    accept = base64.b64encode(hashlib.sha1((key + WS_GUID).encode()).digest()).decode()
+    writer.write(("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                  f"Sec-WebSocket-Accept: {accept}\r\n\r\n").encode())
+
+    me = Client(next(_ids), room, writer)
+    members = rooms.setdefault(room, {})
     me.send({
-        "t": "welcome",
-        "id": me.id,
-        "peers": [{"id": c.id, **c.state} for c in clients.values() if c is not me and c.state.get("name")],
+        "t": "welcome", "id": me.id, "room": room,
+        "peers": [{"id": c.id, **c.state} for c in members.values() if c.state.get("name")],
     })
+    members[me.id] = me
     try:
         while True:
             opcode, data = await ws_read_message(reader)
+            me.last_seen = time.monotonic()
             if opcode == 0x8:  # close
-                writer.write(ws_frame(b"", 0x8))
+                me.send_raw(ws_frame(b"", 0x8))
                 break
             if opcode == 0x9:  # ping
-                writer.write(ws_frame(data, 0xA))
+                me.send_raw(ws_frame(data, 0xA))
                 continue
-            if opcode != 0x1:
+            if opcode != 0x1 or not me.allow():
                 continue
             try:
                 msg = json.loads(data)
@@ -145,36 +195,51 @@ async def ws_session(reader, writer, headers):
             me.state.update(patch)
             if not me.state.get("name"):
                 continue  # aún no se ha presentado
-            if is_new:
-                broadcast({"t": "update", "id": me.id, **me.state}, exclude=me)
-            else:
-                broadcast({"t": "update", "id": me.id, **patch}, exclude=me)
+            out = me.state if is_new else patch
+            broadcast(room, {"t": "update", "id": me.id, **out}, exclude=me)
             await writer.drain()
     except (asyncio.IncompleteReadError, ConnectionError, OSError):
         pass
     finally:
-        clients.pop(me.id, None)
-        broadcast({"t": "leave", "id": me.id})
+        members = rooms.get(room, {})
+        members.pop(me.id, None)
+        if not members:
+            rooms.pop(room, None)
+        else:
+            broadcast(room, {"t": "leave", "id": me.id})
+
+
+async def heartbeat():
+    """Envía pings y cierra conexiones que ya no responden (wifi caída, móvil dormido...)."""
+    ping = ws_frame(b"", 0x9)
+    while True:
+        await asyncio.sleep(PING_EVERY)
+        now = time.monotonic()
+        for members in list(rooms.values()):
+            for c in list(members.values()):
+                if now - c.last_seen > DEAD_AFTER:
+                    c.writer.close()  # el bucle de lectura falla y limpia la sala
+                else:
+                    c.send_raw(ping)
 
 
 # --------------------------------------------------------------------- HTTP --
-def serve_static(writer, path):
+def serve_static(writer, path, head_only=False):
+    if ROOT is None:
+        return http_error(writer, 404, "Not Found")
     rel = path.lstrip("/") or "index.html"
     target = (ROOT / rel).resolve()
     if target.is_dir():
         target = target / "index.html"
     if (ROOT not in target.parents and target != ROOT) or not target.is_file():
-        body = b"404"
-        writer.write(b"HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n"
-                     b"Content-Length: 3\r\nConnection: close\r\n\r\n" + body)
-        return
+        return http_error(writer, 404, "Not Found")
     body = target.read_bytes()
     ctype = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
     if ctype.startswith("text/") or ctype.endswith("javascript"):
         ctype += "; charset=utf-8"
     writer.write(
         (f"HTTP/1.1 200 OK\r\nContent-Type: {ctype}\r\nContent-Length: {len(body)}\r\n"
-         "Cache-Control: no-cache\r\nConnection: close\r\n\r\n").encode() + body
+         "Cache-Control: no-cache\r\nConnection: close\r\n\r\n").encode() + (b"" if head_only else body)
     )
 
 
@@ -188,13 +253,17 @@ async def handle(reader, writer):
             if ":" in line:
                 k, v = line.split(":", 1)
                 headers[k.strip().lower()] = v.strip()
-        path = target.split("?", 1)[0]
-        if path == "/ws" and headers.get("upgrade", "").lower() == "websocket":
-            await ws_session(reader, writer, headers)
+        url = urlsplit(target)
+        if url.path == "/ws" and headers.get("upgrade", "").lower() == "websocket":
+            await ws_session(reader, writer, headers, url.query)
+        elif url.path == "/health":
+            body = json.dumps({"ok": True, "clients": total_clients(), "rooms": len(rooms)}).encode()
+            writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                         b"Content-Length: " + str(len(body)).encode() + b"\r\nConnection: close\r\n\r\n" + body)
         elif method in ("GET", "HEAD"):
-            serve_static(writer, path)
+            serve_static(writer, url.path, head_only=method == "HEAD")
         else:
-            writer.write(b"HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            http_error(writer, 405, "Method Not Allowed")
         await writer.drain()
     except (asyncio.IncompleteReadError, asyncio.TimeoutError, asyncio.LimitOverrunError,
             ConnectionError, ValueError, OSError):
@@ -205,7 +274,10 @@ async def handle(reader, writer):
 
 async def main():
     server = await asyncio.start_server(handle, HOST, PORT)
+    asyncio.ensure_future(heartbeat())
     print(f"→ http://localhost:{PORT}  (WebSocket en /ws)  · Ctrl+C para parar")
+    if ALLOWED_ORIGINS:
+        print("  Orígenes permitidos:", ", ".join(sorted(ALLOWED_ORIGINS)))
     async with server:
         await server.serve_forever()
 
