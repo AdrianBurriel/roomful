@@ -1,68 +1,46 @@
-# Cursores colaborativos (estilo Figma)
+# Cursores colaborativos
 
-Cada visitante de la web tiene un cursor con un nombre aleatorio ("Capibara Zen", "Ajolote Ninja"…) y ve en tiempo real por dónde se mueven los demás que están en la misma página.
+**Cursores multijugador al estilo Figma para cualquier web.** Cada visitante ve en tiempo real los cursores de las demás personas que están en la misma página, cada uno con un nombre divertido ("Capibara Zen", "Ajolote Ninja"…). Desde una píldora en la esquina pueden ver quién está, chatear junto al cursor, reaccionar con emojis, seguir a otra persona y personalizar su perfil.
 
-## Probarlo
+- **Un solo script** (`multicursor.js`), sin dependencias.
+- **Servidor mínimo** (`server.py`) escrito solo con la librería estándar de Python, o con Docker.
+- **Pensado para reutilizar** en futuros proyectos: una línea para integrarlo, opciones para todo y una API para conectarlo con tu interfaz.
+
+📖 **Documentación completa:** [`docs/DOCUMENTACION.md`](docs/DOCUMENTACION.md)
+
+---
+
+## Inicio rápido
+
+Requisito: Python 3.8 o superior.
 
 ```bash
-python3 server.py          # → http://localhost:8080
+git clone https://github.com/AdrianBurriel/cursores-colaborativos.git
+cd cursores-colaborativos
+python3 server.py            # → http://localhost:8080
 ```
 
-Ábrelo en varias pestañas, o desde el móvil de al lado con `http://<tu-ip-local>:8080`.
+Abre `http://localhost:8080` y, para verte desde fuera, ábrelo también **en otro navegador o en otro dispositivo de tu red** (`http://<tu-ip-local>:8080`). Las pestañas del mismo navegador se reconocen como la misma persona.
 
-## Estructura
+La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía.
 
-| Fichero | Qué es |
+## Qué incluye
+
+| | |
 |---|---|
-| `public/multicursor.js` | **La integración.** Un solo script sin dependencias que reutilizas en cualquier web |
-| `server.py` | Relay WebSocket con salas y servidor estático. Solo usa la librería estándar de Python |
-| `Dockerfile` | Para desplegar el servidor en cualquier hosting que acepte contenedores |
-| `public/index.html` | Web de demo: un wireframe en lorem ipsum |
+| 🖱️ **Cursores en vivo** | Movimiento suavizado, nombre y foto en la etiqueta, una sala por página |
+| 👥 **Personas** | Quién está, su estado (activo, escribiendo, ausente) y estadísticas en directo |
+| 🧭 **Seguir** | Tu página se mueve con la de otra persona para ver lo mismo que ella |
+| 💬 **Chat** | Mensajes que aparecen junto a tu cursor, letra a letra (`/`) |
+| 🎉 **Reacciones** | Emojis que flotan desde tu cursor (`E`) |
+| ✨ **Clics y selección** | Los demás ven tus clics como ondas y el texto que seleccionas |
+| 🙂 **Perfil** | Nombre, color y foto propios, recordados entre visitas |
+| 👻 **Modo fantasma** | Deja de ver cursores y de compartir el tuyo |
+| 😴 **Reposo** | Los cursores quietos se atenúan con unas "zzz" animadas |
+| 🤖 **Bots opcionales** | Visitantes de compañía que se retiran cuando llega gente real |
+| ♿ **Accesible** | Manejable con teclado, etiquetas ARIA, modo oscuro y reducir movimiento |
 
-## Usarlo en otro proyecto
-
-1. Copia `public/multicursor.js` a tu web.
-2. Despliega el servidor (ver más abajo).
-3. Añade a la web:
-
-```html
-<script src="/multicursor.js"></script>
-<script>
-  const mc = MultiCursor.init({
-    url: "wss://cursores.midominio.com/ws",
-    // room: "global",                   // por defecto, una sala por URL (sigue la ruta en SPAs)
-    // name: "Capibara Jefa",            // nombre fijo (si no se indica, es aleatorio)
-    // color: "#A259FF",
-    // avatar: "data:image/webp;base64,…", // foto inicial (≤14 KB); el visitante puede subir la suya
-    // presence: true,                   // la píldora (personas · chat · reacciones · perfil)
-    // onboarding: true,                 // aviso de bienvenida la primera vez
-    // toggle: true,                     // interruptor "modo fantasma" en tu perfil
-    // chat: true,                       // tecla "/" para escribir junto al cursor
-    // reactions: ["❤️","👍","🔥"],      // tecla "E" (o botón 😊) para reaccionar; false = desactivar
-    // clicks: true,                     // ver los clics de los demás como ondas
-    // selection: true,                  // ver el texto que seleccionan los demás
-    // follow: true,                     // botón "Seguir" en el panel de personas
-    // editable: true,                   // editar nombre, color y foto en tu perfil
-    // onStats: s => console.log(s),     // { page, site, peak } cada vez que cambian
-    // anchor: "center",                 // "center" (layouts con max-width) o "left"
-    // maxCursors: 12,                   // máximo visibles (prioriza personas reales y activas)
-    // idleMs: 30000,                    // tras 30 s quieto, el cursor se atenúa
-    // bots: 2,                          // usuarios ficticios para que nunca se vea vacía
-    // botsRetireAt: 2,                  // los bots se van cuando hay N personas reales
-    // botChat: true,                    // los bots escriben mensajes de vez en cuando
-    // botTargets: "a, button, h2",      // elementos hacia los que se mueven
-    // botPhrases: ["Hola 👋", "..."],   // frases del chat de los bots
-  });
-  // mc.me, mc.peers, mc.room, mc.ghost, mc.stats
-  // mc.setRoom("/otra-sala"), mc.setGhost(true), mc.setIdentity("Nombre", "#0D99FF", fotoDataURL),
-  // mc.open("people"|"profile"|"chat"|"reactions"), mc.close(),
-  // mc.react("🎉"), mc.follow(id), mc.unfollow(), mc.destroy()
-</script>
-```
-
-### La píldora
-
-Abajo a la derecha, con cuatro partes. Cada botón tiene un tooltip con su atajo, y la primera visita muestra un aviso de bienvenida (`onboarding: false` para quitarlo).
+## La píldora
 
 ```
  ┌──────────────────────────────────────────┐
@@ -73,64 +51,98 @@ Abajo a la derecha, con cuatro partes. Cada botón tiene un tooltip con su atajo
 
 | Parte | Qué hace | Atajo |
 |---|---|---|
-| **Personas** | Abre la lista de quién está aquí, con su estado (activo, escribiendo o ausente), las estadísticas (en esta página, en la web y pico de hoy) y un botón **Seguir** en cada persona | — |
-| **Chat** | Escribir junto a tu cursor; Enter lo deja unos segundos y Esc lo borra | `/` |
+| **Personas** | Lista de quién está, con su estado, las cifras (en esta página, en la web, pico de hoy) y un botón **Seguir** | — |
+| **Chat** | Escribir junto a tu cursor; `Enter` lo deja unos segundos, `Esc` lo borra | `/` |
 | **Reacciones** | Emojis que flotan desde tu cursor | `E` |
-| **Tu perfil** | Nombre, color y foto (el 🎲 elige nombre y color al azar) y el interruptor de **modo fantasma**. Se recuerda entre visitas | — |
+| **Tu perfil** | Nombre, color, foto, 🎲 al azar y el interruptor de **modo fantasma** | — |
 
-- Cuando sigues a alguien, arriba aparece "Siguiendo a X · Dejar de seguir ✕". También lo sueltas con la rueda del ratón o con Esc.
-- En modo fantasma, la píldora se reduce a "Cursores ocultos · Mostrar".
-- Tus otras pestañas no aparecen como otra persona.
-- Desde tu propia interfaz puedes abrir cualquier parte con `mc.open("people" | "profile" | "chat" | "reactions")`.
+Cada botón muestra un tooltip con su atajo, y la primera visita trae un aviso de bienvenida.
 
-Además, los demás ven tus **clics** como una onda de tu color y el **texto que seleccionas** resaltado con tu color. Si llevas 30 s sin moverte, tu cursor se atenúa y le salen unas "zzz" animadas.
+## Integrarlo en otro proyecto
 
-La selección se comparte como *qué texto* está seleccionado y no como píxeles. Así encaja aunque el texto se reparta en líneas distintas en cada pantalla. Requiere que el DOM de la página sea el mismo para todos, lo normal en una misma URL.
+1. Copia `public/multicursor.js` a tu web.
+2. Despliega `server.py` (abajo).
+3. Añade antes de `</body>`:
 
-### Comportamiento por defecto
+```html
+<script src="/multicursor.js"></script>
+<script>
+  const mc = MultiCursor.init({
+    url: "wss://cursores.midominio.com/ws",   // tu servidor
+    bots: 2,                                   // opcional: compañía cuando la página está vacía
+    onStats: s => console.log(s.page + " personas aquí")
+  });
+</script>
+```
 
-- **Salas por página:** solo ves a quien está en tu misma URL. En SPAs (React, Next, Vue…) detecta solo los cambios de ruta. Para compartir sala en toda la web, usa `room: "global"`.
-- **Modo fantasma:** con el interruptor de tu perfil dejas de ver cursores y de compartir el tuyo. Desconecta del todo, así que los demás tampoco te ven en la presencia. La preferencia se recuerda.
-- **Límite de cursores:** con mucha gente se muestran como máximo `maxCursors`, primero las personas reales y las más activas. Los inactivos se atenúan.
-- **Bots:** se retiran solos cuando ya hay gente real y vuelven si la página se vacía. No aparecen si el usuario tiene activado `prefers-reduced-motion`.
-- **React / Next:** llama a `init()` dentro de un `useEffect` y devuelve `() => mc.destroy()` como limpieza.
+En **React / Next.js**, llámalo dentro de un `useEffect` en el layout raíz y devuelve `() => mc.destroy()`.
+
+### Opciones principales
+
+| Opción | Por defecto | Para qué |
+|---|---|---|
+| `url` | `ws(s)://<host>/ws` | Dirección del servidor |
+| `room` | ruta de la página | Sala; `"global"` para compartirla en toda la web |
+| `bots` | `0` | Visitantes ficticios (máx. 12) |
+| `chat`, `reactions`, `clicks`, `selection`, `follow` | activadas | Activar o desactivar cada función |
+| `editable` | `true` | Dejar que el visitante edite nombre, color y foto |
+| `name`, `color`, `avatar` | aleatorios | Identidad fija o inicial |
+| `onStats` | — | Recibir `{ page, site, peak }` para usarlas en tu interfaz |
+| `onboarding` | `true` | Aviso de bienvenida en la primera visita |
+
+Todas las opciones (más de 20) están en la [documentación](docs/DOCUMENTACION.md#5-opciones-de-multicursorinit).
+
+### API
+
+```js
+mc.open("people" | "profile" | "chat" | "reactions");  // abrir una parte de la píldora
+mc.close();
+mc.react("🎉");
+mc.setIdentity("Capibara Jefa", "#A259FF");
+mc.setGhost(true);
+mc.setRoom("/otra-sala");
+mc.follow(id); mc.unfollow();
+mc.me; mc.peers; mc.room; mc.ghost; mc.stats;
+mc.destroy();
+```
 
 ## Desplegar el servidor
 
-Funciona en cualquier sitio que ejecute Python o Docker (Render, Fly.io, Railway, un VPS…):
+Funciona en cualquier sitio con Python o Docker (Render, Fly.io, Railway, un VPS…), **en una sola instancia**:
 
 ```bash
-docker build -t cursores . && docker run -p 8080:8080 \
-  -e ALLOWED_ORIGINS=https://midominio.com,https://www.midominio.com cursores
+docker build -t cursores .
+docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://midominio.com cursores
 ```
 
 | Variable | Para qué | Por defecto |
 |---|---|---|
-| `ALLOWED_ORIGINS` | Dominios que pueden conectarse (¡ponlo en producción!) | cualquiera |
-| `MAX_PER_ROOM` | Máximo de usuarios por sala | 100 |
-| `MAX_CLIENTS` | Máximo de conexiones en total | 5000 |
-| `STATIC_DIR` | Carpeta de estáticos; `""` para servir solo el WebSocket | `./public` |
+| `ALLOWED_ORIGINS` | Dominios que pueden conectarse (**ponlo en producción**) | cualquiera |
+| `MAX_PER_ROOM` / `MAX_CLIENTS` | Límites de usuarios por sala / en total | 100 / 5000 |
+| `STATIC_DIR` | Carpeta de estáticos (`""` = solo WebSocket) | `./public` |
 | `PORT` / `HOST` | Puerto e interfaz | 8080 / 0.0.0.0 |
 
-Además, el servidor:
-- **Valida las fotos:** solo acepta PNG, JPEG o WebP como data URL de hasta 14 KB. Nunca SVG, que podría llevar código.
-- **Limita los mensajes:** como máximo 40 por segundo por cliente, con ráfagas de hasta 80.
-- **Cierra conexiones muertas:** envía un ping cada 20 s y cierra las que llevan 60 s sin responder.
-- **Ofrece un endpoint de estado:** `GET /health` devuelve el número de clientes y salas.
+El servidor valida cada campo (incluidas las fotos: nunca SVG), limita los mensajes a 40 por segundo por cliente, cierra conexiones muertas y ofrece `GET /health`. En producción, usa HTTPS y `wss://`. La guía completa de despliegue, con la configuración de nginx y una lista de comprobación, está en la [documentación](docs/DOCUMENTACION.md#10-despliegue-en-producción).
 
-En producción, pon el servidor detrás de HTTPS (lo hacen solos la mayoría de hostings) y usa `wss://`.
+## Limitaciones conocidas
 
-## Protocolo
+- **Sin autenticación:** cualquiera con la URL del WebSocket puede entrar en una sala. No sirve para salas privadas tal cual.
+- **Un solo proceso y todo en memoria:** no se puede repartir entre varias instancias sin añadir un canal compartido (p. ej. Redis), y las estadísticas se pierden al reiniciar.
+- **El perfil es por navegador:** en otro navegador o dispositivo se empieza de cero.
+- **Los bots son locales:** cada visitante ve los suyos.
+- **La selección compartida** requiere que todos tengan el mismo contenido en la página.
+- **Sin tests automáticos:** las comprobaciones se han hecho a mano y con clientes WebSocket de prueba.
 
-El protocolo es pequeño, así que es fácil portarlo a Node, Cloudflare Durable Objects, PartyKit, etc.
+## Estructura
 
-- Conexión: `GET /ws?room=<sala>`
-- cliente → servidor:
-  - `{ t:"update", name?, color?, avatar?, x?, y?, visible?, chat?, sel? }`: estado; se guarda y lo reciben también quienes entren después
-  - `{ t:"event", kind:"click"|"reaction", x, y, emoji? }`: evento efímero
-- servidor → cliente:
-  - `{ t:"welcome", id, room, peers:[...] }`, `{ t:"update", id, ...campos }`, `{ t:"leave", id }`
-  - `{ t:"event", id, kind, x, y, emoji? }`
-  - `{ t:"stats", room, site, peak }`: cada 3 s, solo si cambian
+```
+public/multicursor.js   La integración (cliente)
+public/index.html       Landing de demo que explica la píldora
+server.py               Relay WebSocket + estáticos + /health
+Dockerfile              Imagen de despliegue
+docs/DOCUMENTACION.md   Documentación completa
+```
 
-Las coordenadas son `x` = píxeles desde el centro del documento e `y` = píxeles desde arriba del todo de la página. Así los cursores encajan entre pantallas de distinto ancho y se desplazan con el scroll.
+## Derechos
+
+© Adrián Burriel. Todos los derechos reservados. Este repositorio no incluye una licencia de uso: no se permite copiarlo, modificarlo ni redistribuirlo sin permiso expreso del autor.

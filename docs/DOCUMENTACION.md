@@ -1,0 +1,506 @@
+# Documentación completa · Cursores colaborativos
+
+Referencia técnica de la integración `multicursor.js` y de su servidor `server.py`. Para una introducción rápida, mira el [README](../README.md).
+
+## Índice
+
+1. [Qué es y cómo funciona](#1-qué-es-y-cómo-funciona)
+2. [Requisitos](#2-requisitos)
+3. [Puesta en marcha en local](#3-puesta-en-marcha-en-local)
+4. [Integrarlo en un proyecto](#4-integrarlo-en-un-proyecto)
+5. [Opciones de `MultiCursor.init()`](#5-opciones-de-multicursorinit)
+6. [API del objeto devuelto](#6-api-del-objeto-devuelto)
+7. [La píldora y los atajos de teclado](#7-la-píldora-y-los-atajos-de-teclado)
+8. [Comportamientos en detalle](#8-comportamientos-en-detalle)
+9. [El servidor](#9-el-servidor)
+10. [Despliegue en producción](#10-despliegue-en-producción)
+11. [Protocolo WebSocket](#11-protocolo-websocket)
+12. [Seguridad y privacidad](#12-seguridad-y-privacidad)
+13. [Rendimiento, límites y escalado](#13-rendimiento-límites-y-escalado)
+14. [Accesibilidad](#14-accesibilidad)
+15. [Personalización avanzada](#15-personalización-avanzada)
+16. [Solución de problemas](#16-solución-de-problemas)
+17. [Estructura del repositorio](#17-estructura-del-repositorio)
+
+---
+
+## 1. Qué es y cómo funciona
+
+Cada visitante de una web ve en tiempo real los cursores de las demás personas que están en la misma página, al estilo del espacio multijugador de Figma. Cada cursor lleva un nombre aleatorio ("Capibara Zen", "Ajolote Ninja"…). Abajo a la derecha hay una **píldora** que muestra quién está y permite chatear, reaccionar, seguir a otra persona y editar tu perfil.
+
+Son dos piezas:
+
+```
+ Navegador A                          Servidor (server.py)                    Navegador B
+┌──────────────────┐   WebSocket    ┌──────────────────────────┐  WebSocket ┌──────────────────┐
+│ multicursor.js   │ ─────────────▶ │ Relay por salas          │ ─────────▶ │ multicursor.js   │
+│ · envía su estado│ ◀───────────── │ · valida cada campo      │ ◀───────── │ · pinta cursores │
+│ · pinta cursores │                │ · guarda el último estado│            │ · píldora        │
+│ · píldora        │                │ · reenvía al resto       │            │                  │
+└──────────────────┘                │ · estadísticas, límites  │            └──────────────────┘
+                                    └──────────────────────────┘
+```
+
+- **`public/multicursor.js`** (cliente): un único script sin dependencias. Inyecta sus propios estilos (todas las clases empiezan por `mc-`), envía tu posición y tu estado, y dibuja los cursores de los demás y la píldora.
+- **`server.py`** (servidor): un relay WebSocket escrito solo con la librería estándar de Python. No tiene lógica de negocio. Agrupa a los clientes por sala, valida lo que recibe, guarda el último estado de cada uno para quien llegue después y lo reenvía al resto. También puede servir ficheros estáticos.
+
+No hay base de datos. Todo vive en la memoria del servidor y en el navegador de cada visitante.
+
+## 2. Requisitos
+
+| Pieza | Requisito |
+|---|---|
+| Servidor | Python **3.8 o superior**, sin paquetes externos. También funciona con Docker (`python:3.12-slim`). |
+| Navegador | Navegadores modernos de escritorio y móvil. Usa WebSocket, `localStorage`, Canvas (para las fotos) y CSS moderno (`overflow-x: clip`, `:focus-visible`, `aspect-ratio`). Probado en Chrome. |
+| Producción | HTTPS en la web y `wss://` en el WebSocket. La mayoría de hostings lo dan hecho. |
+
+## 3. Puesta en marcha en local
+
+```bash
+git clone https://github.com/AdrianBurriel/cursores-colaborativos.git
+cd cursores-colaborativos
+python3 server.py                 # → http://localhost:8080
+```
+
+- Abre `http://localhost:8080` en **varias pestañas** o en **otro dispositivo de tu red** (`http://<tu-ip-local>:8080`) para ver los cursores. Tus propias pestañas no se muestran entre sí (ver [§8.3](#83-identidad-y-tus-otras-pestañas)), así que para ver tu cursor desde "fuera" usa otro navegador, una ventana privada u otro dispositivo.
+- Otro puerto: `PORT=3000 python3 server.py`.
+- Para pararlo, pulsa `Ctrl+C`.
+- Comprobar que está vivo: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
+
+La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, y arranca con 2 bots.
+
+## 4. Integrarlo en un proyecto
+
+### 4.1 Web estática o con servidor propio
+
+1. Copia `public/multicursor.js` a tu proyecto (o sírvelo desde el servidor de cursores, ver [§10.3](#103-servir-el-script)).
+2. Despliega `server.py` (ver [§10](#10-despliegue-en-producción)).
+3. Añade antes de `</body>`:
+
+```html
+<script src="/multicursor.js"></script>
+<script>
+  const mc = MultiCursor.init({
+    url: "wss://cursores.midominio.com/ws"
+  });
+</script>
+```
+
+Si el servidor de cursores sirve también tu web (como en la demo), puedes omitir `url`: por defecto se conecta a `ws(s)://<mismo host>/ws`.
+
+### 4.2 React / Next.js
+
+```jsx
+import { useEffect } from "react";
+
+export function Cursores() {
+  useEffect(() => {
+    // multicursor.js cargado con <Script src="/multicursor.js" strategy="afterInteractive" />
+    const mc = window.MultiCursor.init({ url: process.env.NEXT_PUBLIC_CURSORES_WS });
+    return () => mc.destroy();   // imprescindible: evita duplicados al desmontar o en StrictMode
+  }, []);
+  return null;
+}
+```
+
+- Monta el componente **una sola vez**, en el layout raíz.
+- Con `room` sin indicar, las salas siguen la ruta automáticamente al navegar: el script comprueba `location.pathname` cada segundo, así que no hace falta llamar a `setRoom()` en cada cambio de página.
+- En Next.js el script toca `window` y `document`: cárgalo solo en el cliente.
+
+### 4.3 Vue / otros frameworks
+
+La misma idea: `init()` al montar el componente raíz y `destroy()` al desmontarlo.
+
+### 4.4 Una sala para toda la web
+
+```js
+MultiCursor.init({ url: "...", room: "global" });
+```
+
+Así todos se ven entre sí aunque estén en páginas distintas. Úsalo solo si las páginas comparten diseño: las posiciones se pintan sobre la página de cada uno.
+
+## 5. Opciones de `MultiCursor.init()`
+
+Todas son opcionales.
+
+| Opción | Tipo | Por defecto | Descripción |
+|---|---|---|---|
+| `url` | string | `ws(s)://<host>/ws` | URL del WebSocket. Puede llevar query (`?token=…`); el script añade `&room=`. |
+| `room` | string | ruta de la página | Sala (máx. 128 caracteres). Sin indicar, una sala por URL (sin barra final) que sigue los cambios de ruta. |
+| `name` | string | aleatorio | Nombre fijo. **Desactiva la edición del perfil** (`editable` pasa a `false`). |
+| `color` | `#RRGGBB` | aleatorio | Color inicial (el visitante puede cambiarlo si `editable`). |
+| `avatar` | data URL | — | Foto inicial: PNG, JPEG o WebP en base64, de 14 000 caracteres como máximo. |
+| `presence` | boolean | `true` | Muestra la píldora. Con `false` solo hay cursores (y `onStats`). |
+| `onboarding` | boolean | `true` | Aviso de bienvenida la primera vez (aparece a los 1,5 s y no vuelve a salir). |
+| `toggle` | boolean | `true` | Interruptor de "modo fantasma" en el panel de perfil. |
+| `chat` | boolean | `true` | Chat junto al cursor (botón 💬 y tecla `/`). |
+| `reactions` | array \| `false` | `["❤️","👍","🔥","😂","🎉","👏","😮","👀"]` | Emojis disponibles (se usan los 9 primeros). `false` las desactiva. |
+| `clicks` | boolean | `true` | Muestra los clics de los demás como ondas de su color. |
+| `selection` | boolean | `true` | Muestra el texto que seleccionan los demás. |
+| `follow` | boolean | `true` | Botón "Seguir" en el panel de personas. |
+| `editable` | boolean | `true` | Permite editar nombre, color y foto. Es `false` si se pasa `name`. |
+| `onStats` | función | — | `({ page, site, peak }) => …` cada vez que cambian las cifras (ver [§8.9](#89-estadísticas)). |
+| `anchor` | `"center"` \| `"left"` | `"center"` | Referencia horizontal de las coordenadas (ver [§8.10](#810-coordenadas)). |
+| `maxCursors` | número | `12` | Máximo de cursores visibles a la vez. |
+| `idleMs` | número (ms) | `30000` | Tiempo sin actividad para considerar a alguien ausente (cursor atenuado + "zzz"). |
+| `bots` | número | `0` | Usuarios ficticios (máx. 12). Ver [§8.8](#88-bots). |
+| `botsRetireAt` | número | `= bots` (mín. 1) | Los bots se retiran cuando hay al menos este número de personas reales. |
+| `botChat` | boolean | `true` | Los bots escriben mensajes de vez en cuando. |
+| `botTargets` | selector CSS | enlaces, botones, títulos, imágenes… | Elementos hacia los que se mueven los bots. Admite `[data-mc-target]`. |
+| `botPhrases` | array | frases genéricas | Frases del chat de los bots. |
+
+## 6. API del objeto devuelto
+
+```js
+const mc = MultiCursor.init({ ... });
+```
+
+| Miembro | Tipo | Descripción |
+|---|---|---|
+| `mc.me` | objeto | `{ name, color, avatar }` del visitante (se actualiza al editar). |
+| `mc.peers` | objeto | Mapa `id → peer` de los demás (incluye bots). Solo lectura. |
+| `mc.room` | getter | Sala actual. |
+| `mc.ghost` | getter | `true` si está en modo fantasma. |
+| `mc.stats` | getter | `{ page, site, peak }` en este momento. |
+| `mc.setRoom(room)` | función | Cambia de sala manualmente (reconecta). Desde ese momento deja de seguir la ruta de la página de forma automática. |
+| `mc.setGhost(bool)` | función | Activa o desactiva el modo fantasma (se recuerda). |
+| `mc.setIdentity(name, color, avatar?)` | función | Cambia la identidad y la guarda. `avatar`: data URL, `""` para quitarla, `undefined` para no tocarla. |
+| `mc.open(part)` | función | Abre `"people"`, `"profile"`, `"chat"` o `"reactions"`. Si está en modo fantasma, lo desactiva (salvo para `"profile"`). |
+| `mc.close()` | función | Cierra paneles y el selector de emojis. |
+| `mc.react(emoji)` | función | Lanza una reacción desde tu cursor (máximo una cada 250 ms). |
+| `mc.follow(id)` / `mc.unfollow()` | función | Empieza o deja de seguir a otra persona. No se puede seguir a uno mismo. |
+| `mc.destroy()` | función | Desconecta, quita todos los elementos y listeners. Úsalo al desmontar. |
+
+## 7. La píldora y los atajos de teclado
+
+```
+ ┌──────────────────────────────────────────┐
+ │ (◐◐◐) 4 aquí │  💬   😊  │  (Tú) ▾        │
+ └──────────────────────────────────────────┘
+    Personas      Chat Reacc.  Tu perfil
+```
+
+| Parte | Qué hace |
+|---|---|
+| **Personas** | Caras de hasta 3 personas + "N aquí" ("Solo tú" si no hay nadie). Abre un panel con las cifras (en esta página, en toda la web, pico de hoy) y la lista de personas con su estado (**Activo**, **Escribiendo…**, **Ausente**) y un botón **Seguir**. Tu fila tiene **Editar**. |
+| **Chat 💬** | Abre un campo de texto junto a tu cursor. Se oculta en pantallas táctiles (no hay cursor). |
+| **Reacciones 😊** | Abre el selector de emojis encima de la píldora. |
+| **Tu perfil ▾** | Foto (subir, cambiar o quitar), nombre, color, 🎲 Al azar (nombre y color), **Guardar** y el interruptor **Modo fantasma**. |
+
+Estados especiales:
+
+- **Siguiendo a alguien:** un marco de su color rodea la pantalla, con el botón "Siguiendo a X · Dejar de seguir ✕" arriba.
+- **Modo fantasma:** la píldora se reduce a "Cursores ocultos · **Mostrar**".
+- **Primera visita:** aviso "👋 No estás solo en esta página" con **Entendido**. Se marca como visto al pulsarlo o al abrir cualquier panel.
+
+### Atajos
+
+| Tecla | Acción |
+|---|---|
+| `/` | Abrir el chat junto al cursor |
+| `Enter` (en el chat) | Enviar; el mensaje se queda 4 s y desaparece |
+| `Esc` (en el chat) | Borrar el mensaje y cerrar |
+| `E` | Abrir/cerrar el selector de emojis junto al cursor |
+| `1`–`9` (con el selector abierto) | Lanzar ese emoji (atajo oculto) |
+| `Esc` | Cerrar paneles y selector; dejar de seguir |
+| Rueda, `↑` `↓` `RePág` `AvPág` `Inicio` `Fin` `Espacio`, tocar la pantalla | Dejar de seguir (recuperas el control del scroll) |
+
+Los atajos no se activan mientras escribes en un campo de texto de la página.
+
+## 8. Comportamientos en detalle
+
+### 8.1 Salas
+
+- Por defecto, la sala es `location.pathname` sin barra final (`/precios/` → `/precios`). La query y el hash no cuentan.
+- En SPAs se detecta el cambio de ruta (comprobación cada segundo) y se reconecta a la nueva sala.
+- El servidor limita el nombre a 128 caracteres y usa `/` si viene vacío.
+
+### 8.2 Conexión y reconexión
+
+- Al conectar se envía nombre, color, foto, id de navegador, posición y selección.
+- Si se cae, reintenta con espera exponencial: 0,5 s, 1 s, 2 s… hasta un máximo de 15 s, con ±20 % de variación para no saturar el servidor tras un reinicio.
+- En modo fantasma no hay conexión.
+
+### 8.3 Identidad y tus otras pestañas
+
+- **Nombre y color aleatorios** se generan por pestaña (`sessionStorage`): cada pestaña nueva recibe uno distinto **hasta que el visitante guarda su perfil**. Desde ese momento, se usa el guardado en todas las pestañas y visitas (`localStorage`).
+- **Id de navegador** (`mc:uid`): 20 caracteres aleatorios, compartidos por todas las pestañas del mismo navegador y dominio. Sirve para que tus otras pestañas no aparezcan como otra persona: no salen en la píldora, no se pueden seguir y no se dibuja su cursor ni sus clics, reacciones o selecciones.
+- Si una pestaña no envía id (por ejemplo, tiene cargada una versión antigua del script), se considera "tú" si tiene tu mismo nombre y color.
+
+### 8.4 Qué se guarda en el navegador
+
+| Clave | Dónde | Contenido |
+|---|---|---|
+| `mc:me` | `sessionStorage` | Identidad aleatoria de la pestaña (si no hay perfil guardado). |
+| `mc:me` | `localStorage` | Perfil guardado: `{ name, color, avatar }`. |
+| `mc:uid` | `localStorage` | Id anónimo del navegador. |
+| `mc:ghost` | `localStorage` | `true` si el modo fantasma está activo. |
+| `mc:onboarded` | `localStorage` | `true` cuando ya se vio el aviso de bienvenida. |
+
+Todo es por **navegador y dominio**: en otro navegador, otro dispositivo, una ventana privada o con `www.` y sin `www.` se empieza de cero. Si el navegador bloquea el almacenamiento, el script sigue funcionando sin recordar nada.
+
+### 8.5 Foto de perfil
+
+- El visitante elige una imagen desde su ordenador. Se **recorta en cuadrado por el centro** y se **reduce en el navegador**: prueba 96, 72 y 56 px, en WebP y luego en JPEG, con calidades decrecientes, hasta que ocupa ≤ 14 000 caracteres (~2–10 KB).
+- Las imágenes transparentes reciben fondo blanco.
+- Se muestra en la píldora, en el panel de personas y en la etiqueta del cursor, y la reciben también quienes entren después.
+
+### 8.6 Chat, clics, reacciones y selección
+
+| Función | Detalle |
+|---|---|
+| Chat | Máx. 140 caracteres. Se envía mientras se escribe (los demás lo ven letra a letra). |
+| Clics | Se envía cada clic izquierdo fuera de la píldora (máx. uno cada 120 ms). Los demás ven una onda de tu color. Tú no ves la tuya. |
+| Reacciones | Tres emojis que suben y se desvanecen desde tu cursor (máx. una cada 250 ms). |
+| Selección | Se comparte **qué texto** está seleccionado (ruta de nodos DOM + posición), no píxeles. Cada navegador lo resalta sobre su propio diseño, así que encaja aunque el texto ocupe líneas distintas. Se ignoran las selecciones dentro de campos de texto y `contenteditable`. Si el DOM de la página no coincide entre visitantes, simplemente no se pinta. |
+
+### 8.7 Reposo y límite de cursores
+
+- Tras `idleMs` (30 s) sin moverse, el cursor se atenúa, le salen "zzz" animadas y en el panel pasa a **Ausente**. También sale como "Ausente" quien tiene la pestaña en segundo plano o el ratón fuera de la ventana.
+- Si hay más de `maxCursors` cursores visibles, se ocultan los sobrantes con esta prioridad: personas reales antes que bots, activos antes que ausentes, y los más recientes primero. A quien sigues nunca se le oculta.
+
+### 8.8 Bots
+
+Usuarios ficticios para que la página no parezca vacía.
+
+- Son **locales**: cada visitante ve los suyos y no viajan por el servidor.
+- Se mueven en curvas suaves hacia elementos reales de la página (`botTargets`) y hacen pequeñas pausas.
+- **Se turnan para no molestar:** cada bot alterna entre "de visita" en tu pantalla (7–16 s) y "a lo suyo" fuera de ella (12–30 s). Normalmente solo hay uno de visita.
+- Hablan como mucho una vez por visita, en la mitad de las visitas aproximadamente, y nunca dos a la vez. A veces hacen clic (22 % al llegar) o reaccionan (5 %).
+- **Se retiran** cuando hay `botsRetireAt` personas reales y vuelven si la página se vacía.
+- No aparecen si el visitante tiene activado *reducir movimiento* (`prefers-reduced-motion`).
+- Cuentan en las cifras de la píldora (ver [§8.9](#89-estadísticas)).
+
+### 8.9 Estadísticas
+
+| Cifra | Cálculo |
+|---|---|
+| `page` | Tú + personas reales en la sala (sin tus otras pestañas) + bots activos. |
+| `site` | Conexiones en todo el servidor + bots activos (nunca menos que `page`). |
+| `peak` | Pico de conexiones simultáneas de hoy en esta sala (según el reloj del servidor) + bots (nunca menos que `page`). |
+
+El servidor envía sus cifras al entrar y luego cada 3 s **solo si cambian**. El pico se guarda en memoria: se pierde al reiniciar el servidor. En modo fantasma, las tres valen 0.
+
+### 8.10 Coordenadas
+
+- `x` = píxeles desde el **centro** del documento (con `anchor: "left"`, desde el borde izquierdo).
+- `y` = píxeles desde **arriba del todo** de la página (no de la pantalla).
+
+Así, en diseños centrados con ancho máximo (lo habitual), un cursor sobre un botón aparece sobre ese mismo botón en pantallas de distinto ancho, y los cursores se desplazan con el scroll. En diseños que cambian mucho entre móvil y escritorio, la posición es aproximada. Los cursores nunca generan scroll horizontal: se recortan al ancho de la ventana.
+
+### 8.11 Modo fantasma
+
+Al activarlo se **cierra la conexión**: no ves cursores y nadie te ve, ni siquiera en la lista de personas. La preferencia se recuerda. Al desactivarlo se reconecta.
+
+## 9. El servidor
+
+### 9.1 Variables de entorno
+
+| Variable | Para qué | Por defecto |
+|---|---|---|
+| `PORT` | Puerto | `8080` |
+| `HOST` | Interfaz | `0.0.0.0` |
+| `ALLOWED_ORIGINS` | Dominios que pueden conectarse, separados por comas, con protocolo (`https://midominio.com,https://www.midominio.com`). Vacío = cualquiera. **Ponlo en producción.** | vacío |
+| `MAX_PER_ROOM` | Máximo de usuarios por sala (al pasarse, responde 503) | `100` |
+| `MAX_CLIENTS` | Máximo de conexiones en total (al pasarse, responde 503) | `5000` |
+| `STATIC_DIR` | Carpeta de ficheros estáticos. `""` para servir solo el WebSocket y `/health` | `./public` |
+
+### 9.2 Rutas
+
+| Ruta | Respuesta |
+|---|---|
+| `GET /ws?room=<sala>` con `Upgrade: websocket` | Conexión WebSocket. 403 si el `Origin` no está permitido, 503 si se supera un límite. |
+| `GET /health` | `200 {"ok": true, "clients": N, "rooms": M}` |
+| `GET` / `HEAD` cualquier otra | Fichero de `STATIC_DIR` (`/` → `index.html`). 404 si no existe o intenta salir de la carpeta. |
+| Otros métodos | 405 |
+
+### 9.3 Límites internos (constantes en `server.py`)
+
+| Constante | Valor | Efecto |
+|---|---|---|
+| `MAX_FRAME` | 16 KB | Un mensaje más grande cierra la conexión. |
+| `RATE_PER_SEC` / `RATE_BURST` | 40 / 80 | Mensajes por segundo por cliente; el exceso se descarta en silencio. |
+| `PING_EVERY` | 20 s | Ping a cada cliente. |
+| `DEAD_AFTER` | 60 s | Sin recibir nada en ese tiempo, se cierra la conexión. |
+| `STATS_EVERY` | 3 s | Frecuencia de revisión de estadísticas. |
+
+### 9.4 Validación de campos
+
+El servidor solo reenvía campos conocidos y válidos; el resto se descarta.
+
+| Campo | Regla |
+|---|---|
+| `name` | Texto de 1 a 32 caracteres |
+| `color` | `#RRGGBB` |
+| `avatar` | `""` o `data:image/(png\|jpeg\|webp);base64,…` de ≤ 14 000 caracteres (nunca SVG) |
+| `uid` | 8–32 caracteres `[a-z0-9]` |
+| `x`, `y` | Números (no booleanos), `|x| < 10⁶`, `|y| < 10⁷` |
+| `visible` | Booleano |
+| `chat` | Texto de hasta 140 caracteres |
+| `sel` | `null` o `{a, ao, f, fo}`: rutas de ≤ 64 índices enteros y offsets enteros |
+| evento `kind` | `"click"` o `"reaction"` |
+| evento `emoji` | 1–8 caracteres sin letras, números, espacios ni `< > & " '` |
+
+Un cliente no se anuncia al resto hasta que envía un `name` válido.
+
+## 10. Despliegue en producción
+
+### 10.1 Docker
+
+```bash
+docker build -t cursores .
+docker run -d -p 8080:8080 \
+  -e ALLOWED_ORIGINS=https://midominio.com,https://www.midominio.com \
+  --restart unless-stopped cursores
+```
+
+La imagen incluye un `HEALTHCHECK` contra `/health`.
+
+### 10.2 Hostings (Render, Fly.io, Railway…)
+
+- **Tipo de servicio:** web service con Docker (usa el `Dockerfile`) o con Python (comando `python3 server.py`).
+- **Puerto:** la mayoría inyectan `PORT`, y el servidor lo respeta.
+- **Health check:** `/health`.
+- **WebSockets:** deben estar permitidos (en estos tres lo están por defecto).
+- **Instancias:** usa **una sola instancia** (ver [§13](#13-rendimiento-límites-y-escalado)).
+
+### 10.3 Servir el script
+
+Hay dos opciones:
+- **Copiar `multicursor.js` a tu web** (recomendado): lo versionas con tu proyecto. En ese caso arranca el servidor con `STATIC_DIR=""` y quedará solo el WebSocket.
+- **Servirlo desde el servidor de cursores:** `<script src="https://cursores.midominio.com/multicursor.js">`. Ten en cuenta que se sirve con `Cache-Control: no-cache`.
+
+### 10.4 Detrás de nginx
+
+```nginx
+location /ws {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header Origin $http_origin;
+    proxy_read_timeout 120s;   # > PING_EVERY, para que nginx no corte conexiones sanas
+}
+```
+
+### 10.5 Lista de comprobación
+
+- [ ] La web va por HTTPS y `url` usa `wss://` (un `ws://` desde una página HTTPS lo bloquea el navegador).
+- [ ] `ALLOWED_ORIGINS` contiene exactamente los dominios de la web, con `https://` y sin barra final.
+- [ ] Una sola instancia del servidor.
+- [ ] `/health` responde.
+- [ ] Probado con dos navegadores distintos (no dos pestañas del mismo).
+
+## 11. Protocolo WebSocket
+
+Mensajes JSON por texto. Conexión: `GET /ws?room=<sala>`.
+
+### Cliente → servidor
+
+```jsonc
+// Estado (se guarda y lo reciben también quienes entren después). Todos los campos son opcionales.
+{ "t": "update", "name": "Capibara Zen", "color": "#A259FF", "avatar": "data:image/webp;base64,…",
+  "uid": "k3j9x0…", "x": -120, "y": 840, "visible": true, "chat": "hola", "sel": null }
+
+// Evento efímero (se reenvía, no se guarda)
+{ "t": "event", "kind": "click", "x": 10, "y": 400 }
+{ "t": "event", "kind": "reaction", "emoji": "🔥", "x": 10, "y": 400 }
+```
+
+### Servidor → cliente
+
+```jsonc
+{ "t": "welcome", "id": 7, "room": "/precios", "peers": [ { "id": 3, "name": "…", "color": "…", "x": 0, "y": 0, … } ] }
+{ "t": "update", "id": 3, "x": 15, "y": 420 }             // solo los campos que cambian
+{ "t": "update", "id": 3, "name": "…", "color": "…", … }  // estado completo la primera vez que alguien se presenta
+{ "t": "leave", "id": 3 }
+{ "t": "event", "id": 3, "kind": "reaction", "emoji": "🔥", "x": 10, "y": 400 }
+{ "t": "stats", "room": 4, "site": 12, "peak": 6 }
+```
+
+Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede portar a Node (`ws`), Cloudflare Durable Objects, PartyKit, etc. manteniendo estos mensajes y las validaciones de [§9.4](#94-validación-de-campos).
+
+## 12. Seguridad y privacidad
+
+- **Sin autenticación:** cualquiera que conozca la URL del WebSocket puede entrar en cualquier sala. No lo uses para salas privadas sin añadir antes un token en la `url` y validarlo en el servidor.
+- **`ALLOWED_ORIGINS`** impide que otras webs usen tu servidor desde el navegador (no frena a un script que falsifique la cabecera `Origin`).
+- **Validación estricta** de cada campo ([§9.4](#94-validación-de-campos)): las fotos solo pueden ser imágenes rasterizadas pequeñas, los "emojis" no pueden ser texto y los colores solo pueden ser hexadecimales.
+- **Sin HTML de usuarios:** nombres, mensajes y emojis se insertan como texto (`textContent`), nunca como HTML.
+- **Lo que ven los demás:** nombre, color, foto, posición del cursor, mensajes de chat, clics, reacciones y qué texto seleccionas, siempre dentro de la misma sala. El panel de perfil avisa de que la foto la verán quienes estén en la página.
+- **Lo que no se guarda:** el servidor no escribe nada en disco; todo está en memoria y desaparece al desconectar o reiniciar.
+- **Modo fantasma:** desconecta del todo.
+- **Id de navegador:** es aleatorio y no está ligado a ningún dato personal.
+
+## 13. Rendimiento, límites y escalado
+
+| Aspecto | Valor |
+|---|---|
+| Envío de posición | Máx. ~25 por segundo por visitante (cada 40 ms) |
+| Animación | Un único `requestAnimationFrame` con suavizado; solo corre si hay algo moviéndose (o bots) |
+| Panel y píldora | Se redibujan solo cuando cambia algo visible |
+| Selección | Máx. 120 rectángulos por persona |
+| Nombre / chat / foto | 32 caracteres / 140 caracteres / 14 000 caracteres |
+| Emojis / bots | 9 / 12 como máximo |
+
+**Escalado:** el servidor es **un solo proceso** con todo en memoria. Con varias instancias, cada una tendría su propia lista de personas y no se verían entre ellas. Si en algún momento hace falta escalar más allá de una máquina, hay que añadir un canal compartido entre instancias (por ejemplo Redis pub/sub) o portar el relay a un servicio pensado para ello (Durable Objects, PartyKit). Para una web normal, un proceso con los límites por defecto (100 por sala, 5000 en total) sobra.
+
+## 14. Accesibilidad
+
+- Todos los controles son `<button>` con `aria-label`; la píldora es un `toolbar`, los paneles son `dialog`, el modo fantasma es un `switch` y "Seguir" usa `aria-pressed`.
+- Se puede usar entero con teclado. El foco visible es un contorno azul y los tooltips también aparecen con el foco.
+- `aria-keyshortcuts` en los botones con atajo.
+- Con `prefers-reduced-motion`: sin bots, sin ondas de clic, reacciones más cortas y "zzz" estáticas.
+- Modo oscuro automático (`prefers-color-scheme`).
+
+## 15. Personalización avanzada
+
+- **Estilos:** todas las clases empiezan por `mc-` (`.mc-presence`, `.mc-pop`, `.mc-cursor`, `.mc-tag`…). Puedes sobrescribirlas desde tu CSS con más especificidad. La capa de cursores usa `z-index: 2147483000` y la píldora está por encima.
+- **Constantes** al principio de `multicursor.js`:
+
+| Constante | Valor | Qué controla |
+|---|---|---|
+| `ANIMALS`, `ADJECTIVES` | listas | Nombres aleatorios ("Animal Adjetivo") |
+| `COLORS` | 12 colores | Paleta de cursores y del editor |
+| `REACTIONS` | 8 emojis | Emojis por defecto |
+| `BOT_PHRASES`, `BOT_TARGETS` | — | Valores por defecto de los bots |
+| `BOT_HERE_MS` / `BOT_AWAY_MS` | 7–16 s / 12–30 s | Ritmo de visitas de los bots |
+| `SEND_EVERY_MS` | 40 | Frecuencia de envío de posición |
+| `LERP` | 0.28 | Suavizado de cursores (1 = sin suavizado) |
+| `CHAT_LINGER_MS` | 4000 | Tiempo que se queda un mensaje tras Enter |
+
+- **Textos:** la interfaz está en español y los textos están en el propio script. Para traducirla, busca los literales en `multicursor.js`.
+
+## 16. Solución de problemas
+
+| Síntoma | Causa probable y solución |
+|---|---|
+| No veo a nadie | ¿Estáis en la misma URL? (salas por página). ¿Son pestañas del mismo navegador? Entonces se reconocen como "tú": prueba con otro navegador o dispositivo. |
+| Conexión rechazada (403) | El dominio no está en `ALLOWED_ORIGINS`. Revisa el protocolo (`https://`) y quita la barra final. |
+| Conexión rechazada (503) | Se ha superado `MAX_PER_ROOM` o `MAX_CLIENTS`. |
+| Funciona en local pero no en producción | Usa `wss://` si la web va por HTTPS; revisa que el proxy reenvíe `Upgrade`/`Connection` ([§10.4](#104-detrás-de-nginx)). |
+| Me veo a mí mismo en la lista | Esa pestaña tiene cargada una versión antigua del script: recárgala. |
+| Al recargar tengo otro nombre | No has guardado el perfil: los aleatorios son por pestaña. Abre "Tu perfil" y pulsa **Guardar**. |
+| Los bots no aparecen | Ya hay suficiente gente real (`botsRetireAt`), el visitante tiene *reducir movimiento* activado o `bots` es 0. |
+| La selección de otro no se resalta | El DOM de su página no coincide con el tuyo (contenido personalizado o dinámico). Es esperado. |
+| "No se ha podido usar esa imagen" | Formato no soportado por el navegador (p. ej. HEIC en algunos) o imagen dañada. Prueba con JPG o PNG. |
+| `address already in use` al arrancar | Ya hay algo en ese puerto: `lsof -i :8080` para verlo, o usa `PORT=3000`. |
+| Paneles duplicados en React | Falta `return () => mc.destroy()` en el `useEffect`. |
+
+## 17. Estructura del repositorio
+
+```
+cursores-colaborativos/
+├── public/
+│   ├── multicursor.js     # La integración (cliente)
+│   └── index.html         # Landing de demo que explica la píldora
+├── server.py              # Relay WebSocket + estáticos + /health
+├── Dockerfile             # Imagen de despliegue
+├── docs/
+│   └── DOCUMENTACION.md   # Este documento
+└── README.md
+```
+
+---
+
+© Adrián Burriel. Todos los derechos reservados.

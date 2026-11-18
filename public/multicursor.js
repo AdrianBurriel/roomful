@@ -1468,7 +1468,8 @@
       get room() { return room; },
       get ghost() { return ghost; },
       get stats() { return currentStats(); },
-      setRoom: setRoom,
+      // Cambio manual de sala: a partir de aquí deja de seguir la ruta automáticamente
+      setRoom: function (r) { autoRoom = false; setRoom(r); },
       setGhost: setGhost,
       setIdentity: setIdentity,
       open: open,
