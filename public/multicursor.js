@@ -460,15 +460,18 @@
   // says who is in each room and messages carry state and events. Since there is
   // no server in between, everything a peer sends is validated here, with the
   // same rules server.py applies.
-  var ABLY_SDK = "https://cdn.ably.com/lib/ably.min-2.js";
+  // Ably Pub/Sub v3 for devices (exposes window.AblyPubSub). Accounts billed by
+  // monthly active users reject the older "ably" v2 SDK (error 40168).
+  var ABLY_SDK = "https://cdn.ably.com/lib/ably.min-3.js";
+  function ablyLib() { return global.AblyPubSub || global.Ably; }
   var ablyLoading = null;
 
   function loadAbly(src) {
-    if (global.Ably) return Promise.resolve(global.Ably);
+    if (ablyLib()) return Promise.resolve(ablyLib());
     if (!ablyLoading) ablyLoading = new Promise(function (ok, ko) {
       var s = document.createElement("script");
       s.src = src; s.async = true;
-      s.onload = function () { global.Ably ? ok(global.Ably) : ko(new Error("Ably SDK missing")); };
+      s.onload = function () { ablyLib() ? ok(ablyLib()) : ko(new Error("Ably SDK missing")); };
       s.onerror = function () { ablyLoading = null; s.remove(); ko(new Error("Ably SDK failed to load")); };
       document.head.appendChild(s);
     });
@@ -587,10 +590,12 @@
 
     loadAbly(cfg.sdk || ABLY_SDK).then(function (Ably) {
       if (closed) return;
-      client = new Ably.Realtime({
+      var options = {
         authUrl: cfg.authUrl || "/api/ably-token", authParams: { clientId: id },
         clientId: id, echoMessages: false, closeOnUnload: true
-      });
+      };
+      // v3: createClient(); v2 (or a custom sdk): new Ably.Realtime()
+      client = Ably.createClient ? Ably.createClient(options) : new Ably.Realtime(options);
       client.connection.on(function (ch) {
         if (ch.current === "failed" || ch.current === "suspended" || ch.current === "closed") die();
       });
