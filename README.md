@@ -6,7 +6,7 @@
 
 🔴 **Live demo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app). Open it in two different browsers (or on your phone and your computer) and watch your cursors meet. Tabs of the same browser count as you, so they don't show each other.
 
-- **One script** (`multicursor.js`), no dependencies.
+- **One script** (`multicursor.js`), no dependencies (with Ably, it loads Ably's SDK from their CDN).
 - **Minimal server** (`server.py`) using only the Python standard library, or Docker. Or no server at all: **Vercel + Ably**.
 - **Built to be reused** in future projects: one line to add it, options for everything and an API to wire it into your own UI.
 - **English and Spanish** built in, with a language switch and the option to add more.
@@ -42,6 +42,7 @@ The demo is a landing page that explains every part of the pill, with demos that
 | 🙂 **Profile** | Your own name, color and photo, remembered between visits |
 | 👻 **Ghost mode** | Stop seeing cursors and stop sharing yours |
 | 😴 **Idle** | Cursors that stop moving fade out with animated "zzz" |
+| 📱 **Phones and tablets** | Your finger is your cursor; chat and reactions from the pill's buttons |
 | 🤖 **Optional bots** | Companion visitors that step out when real people arrive |
 | 🌍 **Languages** | English (default) and Spanish; add your own with `strings` |
 | ♿ **Accessible** | Keyboard friendly, ARIA labels, dark mode and reduced motion |
@@ -62,12 +63,12 @@ The demo is a landing page that explains every part of the pill, with demos that
 | **Reactions** | Emojis that float up from your cursor | `E` |
 | **Your profile** | Name, color, photo, 🎲 random and the **ghost mode** switch | — |
 
-Every button shows a tooltip with its shortcut, and the first visit brings a welcome hint.
+On a computer every button shows a tooltip with its shortcut; on phones and tablets you use the 💬 and 🙂 buttons instead. The first visit brings a welcome hint.
 
 ## Adding it to another project
 
 1. Copy `public/multicursor.js` into your site.
-2. Deploy `server.py` (below).
+2. Deploy `server.py`, or use Vercel + Ably and pass `ably: { authUrl: "/api/ably-token" }` instead of `url` (see [Deploying](#deploying)).
 3. Add before `</body>`:
 
 ```html
@@ -89,6 +90,7 @@ In **React / Next.js**, call it inside a `useEffect` in the root layout and retu
 | Option | Default | Purpose |
 |---|---|---|
 | `url` | `ws(s)://<host>/ws` | Server address |
+| `ably` | — | Use Ably instead of `server.py`, for serverless hosts like Vercel: `{ authUrl: "/api/ably-token" }` |
 | `room` | page path | Room; `"global"` to share one across the whole site |
 | `lang` | `"en"` | Interface language: `"en"`, `"es"` or `"auto"` |
 | `strings` | — | Custom texts or new languages |
@@ -99,7 +101,7 @@ In **React / Next.js**, call it inside a `useEffect` in the root layout and retu
 | `onStats` | — | Get `{ page, site, peak }` to use in your own UI |
 | `onboarding` | `true` | Welcome hint on the first visit |
 
-Every option (25 of them) is in the [documentation](docs/DOCUMENTATION.md#5-multicursorinit-options).
+Every option (26 of them) is in the [documentation](docs/DOCUMENTATION.md#5-multicursorinit-options).
 
 ### API
 
@@ -116,9 +118,13 @@ mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang;
 mc.destroy();
 ```
 
-## Deploying the server
+## Deploying
 
-It runs anywhere with Python or Docker (Render, Fly.io, Railway, a VPS…), **as a single instance**:
+Two ways: on your own server with `server.py`, or on Vercel with Ably and no server at all.
+
+### On your own server
+
+`server.py` runs anywhere with Python or Docker (Render, Fly.io, Railway, a VPS…), **as a single instance**:
 
 ```bash
 docker build -t roomful .
@@ -143,14 +149,15 @@ Vercel serves the site, and [Ably](https://ably.com) carries the real-time traff
 3. Before deploying, add the environment variable `ABLY_API_KEY` with that key, then press **Deploy**.
 4. That's it: by default the function only hands out tokens to pages of the same site. Set `ALLOWED_ORIGINS` only if other sites (or a custom domain on another host) should connect too.
 
-Every push to `main` redeploys automatically. The landing uses Ably when published and `server.py` on `localhost`. Ably's free plan (6 million messages a month, 200 simultaneous connections) is plenty for a demo; a moving cursor sends up to 10 messages per second.
+Every push to `main` redeploys automatically. The landing uses Ably when published and `server.py` on `localhost`. Ably's free plan is plenty for a demo (check its current limits in your Ably dashboard); a moving cursor sends up to 10 messages per second.
 
 ## Known limitations
 
-- **No authentication:** anyone with the WebSocket URL can join a room. Not suitable for private rooms as is.
-- **Single process, everything in memory:** it can't be spread across instances without adding a shared channel (e.g. Redis), and stats are lost on restart.
+- **No authentication:** anyone who can open the page can join its room (with `server.py`, anyone with the WebSocket URL). Not suitable for private rooms as is.
+- **`server.py` is a single process with everything in memory:** it can't be spread across instances without adding a shared channel (e.g. Redis), and stats are lost on restart.
 - **The profile is per browser:** another browser or device starts from scratch.
 - **Bots are local:** each visitor sees their own.
+- **With Ably,** "today's peak" is the highest number each visitor has seen, not a server-wide record, and every message counts towards your Ably plan.
 - **Shared selection** requires everyone to have the same content on the page.
 - **No automated tests:** checks have been done by hand and with test WebSocket clients.
 
