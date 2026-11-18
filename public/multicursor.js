@@ -146,7 +146,8 @@
     ".mc-tag{position:absolute;left:14px;top:16px;font:500 12px/1.2 " + FONT + ";",
     "  padding:4px 8px;border-radius:3px 12px 12px 12px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.18);",
     "  max-width:240px;overflow:hidden;text-overflow:ellipsis}",
-    ".mc-tag .mc-msg{display:none;font-size:14px;font-weight:400;margin-top:3px;white-space:normal;word-break:break-word}",
+    ".mc-tag .mc-msg{display:none;font-size:14px;font-weight:400;margin-top:3px;white-space:normal;word-break:break-word;",
+    "  width:max-content;max-width:216px}",
     ".mc-tag.mc-talking{padding:7px 12px 9px;border-radius:3px 16px 16px 16px}",
     ".mc-tag.mc-talking .mc-msg{display:block}",
     ".mc-tag.mc-talking .mc-name{font-size:10px;opacity:.8}",
@@ -242,8 +243,14 @@
     ".mc-label{display:block;font-size:12px;font-weight:600;opacity:.6;margin:0 0 6px}",
     ".mc-swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:16px}",
     ".mc-face{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}",
-    ".mc-tag-av{width:16px;height:16px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:-4px;margin:-2px 5px -2px -3px;box-shadow:0 0 0 1.5px rgba(255,255,255,.7)}",
+    /* nombre del cursor: foto + texto alineados en una fila, sin salirse de la etiqueta */
+    ".mc-name{display:flex;align-items:center;gap:6px;min-width:0}",
+    ".mc-name>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    ".mc-tag-av{width:18px;height:18px;flex:none;border-radius:50%;object-fit:cover;display:block;",
+    "  box-shadow:0 0 0 1.5px rgba(255,255,255,.75)}",
     ".mc-tag-av[hidden]{display:none}",
+    ".mc-tag.mc-has-av:not(.mc-talking){padding:3px 10px 3px 3px;border-radius:4px 14px 14px 14px}",
+    ".mc-tag.mc-talking .mc-tag-av{width:14px;height:14px}",
     ".mc-photo{display:flex;align-items:center;gap:12px;margin-bottom:16px}",
     ".mc-photo .mc-avatar{width:56px;height:56px;margin:0;border:0;font-size:18px}",
     ".mc-photo small{display:block;font-size:11px;font-weight:400;opacity:.6;margin-top:6px;line-height:1.3}",
@@ -648,6 +655,7 @@
         p.avatar = validAvatar(m.avatar);
         if (p.avatar) p.avEl.src = p.avatar;
         p.avEl.hidden = !p.avatar;
+        p.tag.classList.toggle("mc-has-av", !!p.avatar);
       }
       if ("x" in m || "y" in m || m.chat) setActive(p, performance.now());
       if ("color" in m || !p.el.firstChild) {
