@@ -6,7 +6,7 @@
 
 🔴 **Live demo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app). Open it in two different browsers (or on your phone and your computer) and watch your cursors meet. Tabs of the same browser count as you, so they don't show each other.
 
-- **One script** (`multicursor.js`), no dependencies (with Ably, it loads Ably's SDK from their CDN).
+- **One script** (`roomful.js`), no dependencies (with Ably, it loads Ably's SDK from their CDN).
 - **Minimal server** (`server.py`) using only the Python standard library, or Docker. Or no server at all: **Vercel + Ably**.
 - **Built to be reused** in future projects: one line to add it, options for everything and an API to wire it into your own UI.
 - **English and Spanish** built in, with a language switch and the option to add more.
@@ -67,14 +67,14 @@ On a computer every button shows a tooltip with its shortcut; on phones and tabl
 
 ## Adding it to another project
 
-1. Copy `public/multicursor.js` into your site.
+1. Copy `public/roomful.js` into your site.
 2. Deploy `server.py`, or use Vercel + Ably and pass `ably: { authUrl: "/api/ably-token" }` instead of `url` (see [Deploying](#deploying)).
 3. Add before `</body>`:
 
 ```html
-<script src="/multicursor.js"></script>
+<script src="/roomful.js"></script>
 <script>
-  const mc = MultiCursor.init({
+  const mc = Roomful.init({
     url: "wss://cursors.mydomain.com/ws",   // your server
     lang: "en",                              // "en" | "es" | "auto"
     bots: 2,                                 // optional: company when the page is empty
@@ -101,7 +101,7 @@ In **React / Next.js**, call it inside a `useEffect` in the root layout and retu
 | `onStats` | — | Get `{ page, site, peak }` to use in your own UI |
 | `onboarding` | `true` | Welcome hint on the first visit |
 
-Every option (26 of them) is in the [documentation](docs/DOCUMENTATION.md#5-multicursorinit-options).
+Every option (26 of them) is in the [documentation](docs/DOCUMENTATION.md#5-roomfulinit-options).
 
 ### API
 
@@ -164,7 +164,7 @@ Every push to `main` redeploys automatically. The landing uses Ably when publish
 ## Structure
 
 ```
-public/multicursor.js   The integration (client)
+public/roomful.js   The integration (client)
 public/index.html       Demo landing page explaining the pill (EN/ES)
 server.py               WebSocket relay + static files + /health
 Dockerfile              Deployment image

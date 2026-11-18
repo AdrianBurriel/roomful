@@ -1,9 +1,10 @@
 /*!
- * MultiCursor — Figma-style multiplayer cursors for any website.
+ * Roomful — turn any website into a room full of people: Figma-style
+ * multiplayer cursors, presence, chat and reactions.
  *
  * Minimal usage:
- *   <script src="/multicursor.js"></script>
- *   <script>MultiCursor.init({ url: "wss://my-server.com/ws" });</script>
+ *   <script src="/roomful.js"></script>
+ *   <script>Roomful.init({ url: "wss://my-server.com/ws" });</script>
  *
  * Options (all optional):
  *   url         WebSocket URL                      (ws(s)://<current host>/ws)
@@ -1910,5 +1911,6 @@
     };
   }
 
-  global.MultiCursor = { init: init, languages: Object.keys(I18N) };
+  global.Roomful = { init: init, languages: Object.keys(I18N) };
+  global.MultiCursor = global.Roomful;   // former name, kept so existing integrations keep working
 })(window);

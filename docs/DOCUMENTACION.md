@@ -2,7 +2,7 @@
 
 🇬🇧 [English](DOCUMENTATION.md) · 🇪🇸 **Español**
 
-Referencia técnica de Roomful: la integración `multicursor.js`, que convierte cada página en una sala, y el servidor `server.py`, que la mantiene llena. Para una introducción rápida, mira el [README](../README.es.md).
+Referencia técnica de Roomful: la integración `roomful.js`, que convierte cada página en una sala, y el servidor `server.py`, que la mantiene llena. Para una introducción rápida, mira el [README](../README.es.md).
 
 ## Índice
 
@@ -10,7 +10,7 @@ Referencia técnica de Roomful: la integración `multicursor.js`, que convierte 
 2. [Requisitos](#2-requisitos)
 3. [Puesta en marcha en local](#3-puesta-en-marcha-en-local)
 4. [Integrarlo en un proyecto](#4-integrarlo-en-un-proyecto)
-5. [Opciones de `MultiCursor.init()`](#5-opciones-de-multicursorinit)
+5. [Opciones de `Roomful.init()`](#5-opciones-de-roomfulinit)
 6. [API del objeto devuelto](#6-api-del-objeto-devuelto)
 7. [La píldora y los atajos de teclado](#7-la-píldora-y-los-atajos-de-teclado)
 8. [Comportamientos en detalle](#8-comportamientos-en-detalle)
@@ -35,7 +35,7 @@ Son dos piezas:
 ```
  Navegador A                          Servidor (server.py)                    Navegador B
 ┌──────────────────┐   WebSocket    ┌──────────────────────────┐  WebSocket ┌──────────────────┐
-│ multicursor.js   │ ─────────────▶ │ Relay por salas          │ ─────────▶ │ multicursor.js   │
+│ roomful.js   │ ─────────────▶ │ Relay por salas          │ ─────────▶ │ roomful.js   │
 │ · envía su estado│ ◀───────────── │ · valida cada campo      │ ◀───────── │ · pinta cursores │
 │ · pinta cursores │                │ · guarda el último estado│            │ · píldora        │
 │ · píldora        │                │ · reenvía al resto       │            │                  │
@@ -43,7 +43,7 @@ Son dos piezas:
                                     └──────────────────────────┘
 ```
 
-- **`public/multicursor.js`** (cliente): un único script sin dependencias. Inyecta sus propios estilos (todas las clases empiezan por `mc-`), envía tu posición y tu estado, y dibuja los cursores de los demás y la píldora.
+- **`public/roomful.js`** (cliente): un único script sin dependencias. Inyecta sus propios estilos (todas las clases empiezan por `mc-`), envía tu posición y tu estado, y dibuja los cursores de los demás y la píldora.
 - **`server.py`** (servidor): un relay WebSocket escrito solo con la librería estándar de Python. No tiene lógica de negocio. Agrupa a los clientes por sala, valida lo que recibe, guarda el último estado de cada uno para quien llegue después y lo reenvía al resto. También puede servir ficheros estáticos.
 
 No hay base de datos. Todo vive en la memoria del servidor y en el navegador de cada visitante.
@@ -75,14 +75,14 @@ La demo (`public/index.html`) es una landing que explica la píldora, con demos 
 
 ### 4.1 Web estática o con servidor propio
 
-1. Copia `public/multicursor.js` a tu proyecto (o sírvelo desde el servidor de cursores, ver [§10.3](#103-servir-el-script)).
+1. Copia `public/roomful.js` a tu proyecto (o sírvelo desde el servidor de cursores, ver [§10.3](#103-servir-el-script)).
 2. Despliega `server.py` (ver [§10](#10-despliegue-en-producción)).
 3. Añade antes de `</body>`:
 
 ```html
-<script src="/multicursor.js"></script>
+<script src="/roomful.js"></script>
 <script>
-  const mc = MultiCursor.init({
+  const mc = Roomful.init({
     url: "wss://cursores.midominio.com/ws"
   });
 </script>
@@ -97,8 +97,8 @@ import { useEffect } from "react";
 
 export function Cursores() {
   useEffect(() => {
-    // multicursor.js cargado con <Script src="/multicursor.js" strategy="afterInteractive" />
-    const mc = window.MultiCursor.init({ url: process.env.NEXT_PUBLIC_CURSORES_WS });
+    // roomful.js cargado con <Script src="/roomful.js" strategy="afterInteractive" />
+    const mc = window.Roomful.init({ url: process.env.NEXT_PUBLIC_CURSORES_WS });
     return () => mc.destroy();   // imprescindible: evita duplicados al desmontar o en StrictMode
   }, []);
   return null;
@@ -116,14 +116,14 @@ La misma idea: `init()` al montar el componente raíz y `destroy()` al desmontar
 ### 4.4 Una sala para toda la web
 
 ```js
-MultiCursor.init({ url: "...", room: "global" });
+Roomful.init({ url: "...", room: "global" });
 ```
 
 Así todos se ven entre sí aunque estén en páginas distintas. Úsalo solo si las páginas comparten diseño: las posiciones se pintan sobre la página de cada uno.
 
-## 5. Opciones de `MultiCursor.init()`
+## 5. Opciones de `Roomful.init()`
 
-Todas son opcionales.
+Todas son opcionales. Los nombres anteriores siguen funcionando: `MultiCursor.init()` es un alias de `Roomful.init()`, y `/multicursor.js` sirve el mismo script que `/roomful.js`.
 
 | Opción | Tipo | Por defecto | Descripción |
 |---|---|---|---|
@@ -157,7 +157,7 @@ Todas son opcionales.
 ## 6. API del objeto devuelto
 
 ```js
-const mc = MultiCursor.init({ ... });
+const mc = Roomful.init({ ... });
 ```
 
 | Miembro | Tipo | Descripción |
@@ -178,7 +178,7 @@ const mc = MultiCursor.init({ ... });
 | `mc.follow(id)` / `mc.unfollow()` | función | Empieza o deja de seguir a otra persona. No se puede seguir a uno mismo. |
 | `mc.destroy()` | función | Desconecta, quita todos los elementos y listeners. Úsalo al desmontar. |
 
-Además, `MultiCursor.languages` lista los idiomas incluidos (`["en", "es"]`).
+Además, `Roomful.languages` lista los idiomas incluidos (`["en", "es"]`).
 
 ## 7. La píldora y los atajos de teclado
 
@@ -317,10 +317,10 @@ Al activarlo se **cierra la conexión**: no ves cursores y nadie te ve, ni siqui
 - Incluye **inglés** (por defecto) y **español**. Con `lang: "auto"` se usa el idioma del navegador, o inglés si no está disponible.
 - `mc.setLang("es")` traduce al momento la píldora, los paneles abiertos, los avisos, los tooltips y los **nombres aleatorios**: el tuyo (si no lo has guardado) y los de los bots. Si tu nombre cambia, los demás lo ven actualizado.
 - Cada visitante ve la interfaz en su idioma. Los nombres que se ven son los que envía cada persona.
-- **Textos propios o idiomas nuevos** con `strings`. Las claves están en el diccionario `I18N` al principio de `multicursor.js`; si falta una clave, se usa la versión en inglés.
+- **Textos propios o idiomas nuevos** con `strings`. Las claves están en el diccionario `I18N` al principio de `roomful.js`; si falta una clave, se usa la versión en inglés.
 
 ```js
-MultiCursor.init({
+Roomful.init({
   lang: "fr",
   strings: { fr: { seeWho: "Voir qui est là", chatTip: "Écrire à côté de ton curseur", save: "Enregistrer" /* … */ } }
 });
@@ -403,8 +403,8 @@ La imagen incluye un `HEALTHCHECK` contra `/health`.
 ### 10.3 Servir el script
 
 Hay dos opciones:
-- **Copiar `multicursor.js` a tu web** (recomendado): lo versionas con tu proyecto. En ese caso arranca el servidor con `STATIC_DIR=""` y quedará solo el WebSocket.
-- **Servirlo desde el servidor de cursores:** `<script src="https://cursores.midominio.com/multicursor.js">`. Ten en cuenta que se sirve con `Cache-Control: no-cache`.
+- **Copiar `roomful.js` a tu web** (recomendado): lo versionas con tu proyecto. En ese caso arranca el servidor con `STATIC_DIR=""` y quedará solo el WebSocket.
+- **Servirlo desde el servidor de cursores:** `<script src="https://cursores.midominio.com/roomful.js">`. Ten en cuenta que se sirve con `Cache-Control: no-cache`.
 
 ### 10.4 Detrás de nginx
 
@@ -433,7 +433,7 @@ location /ws {
 Los hostings *serverless* como Vercel no mantienen WebSockets abiertos, así que `server.py` no puede ejecutarse ahí. En su lugar, pasa la opción `ably` y el script habla el mismo protocolo sobre canales de [Ably](https://ably.com):
 
 ```js
-MultiCursor.init({ ably: { authUrl: "/api/ably-token" } });
+Roomful.init({ ably: { authUrl: "/api/ably-token" } });
 ```
 
 - **Canales:** uno por sala (`roomful:room:<sala>`) más `roomful:site` para contar a la gente de toda la web. `prefix` cambia `roomful`.
@@ -509,7 +509,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 ## 15. Personalización avanzada
 
 - **Estilos:** todas las clases empiezan por `mc-` (`.mc-presence`, `.mc-pop`, `.mc-cursor`, `.mc-tag`…). Puedes sobrescribirlas desde tu CSS con más especificidad. La capa de cursores usa `z-index: 2147483000` y la píldora está por encima.
-- **Constantes** al principio de `multicursor.js`:
+- **Constantes** al principio de `roomful.js`:
 
 | Constante | Valor | Qué controla |
 |---|---|---|
@@ -545,7 +545,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 ```
 roomful/
 ├── public/
-│   ├── multicursor.js     # La integración (cliente)
+│   ├── roomful.js     # La integración (cliente)
 │   └── index.html         # Landing de demo que explica la píldora (EN/ES)
 ├── server.py              # Relay WebSocket + estáticos + /health
 ├── Dockerfile             # Imagen de despliegue

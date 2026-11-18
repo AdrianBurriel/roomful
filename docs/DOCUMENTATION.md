@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇪🇸 [Español](DOCUMENTACION.md)
 
-Technical reference for Roomful: the `multicursor.js` integration that turns every page into a room, and the `server.py` server that keeps it full. For a quick introduction, see the [README](../README.md).
+Technical reference for Roomful: the `roomful.js` integration that turns every page into a room, and the `server.py` server that keeps it full. For a quick introduction, see the [README](../README.md).
 
 ## Contents
 
@@ -10,7 +10,7 @@ Technical reference for Roomful: the `multicursor.js` integration that turns eve
 2. [Requirements](#2-requirements)
 3. [Running it locally](#3-running-it-locally)
 4. [Adding it to a project](#4-adding-it-to-a-project)
-5. [`MultiCursor.init()` options](#5-multicursorinit-options)
+5. [`Roomful.init()` options](#5-roomfulinit-options)
 6. [API of the returned object](#6-api-of-the-returned-object)
 7. [The pill and keyboard shortcuts](#7-the-pill-and-keyboard-shortcuts)
 8. [Behavior in detail](#8-behavior-in-detail)
@@ -35,7 +35,7 @@ There are two pieces:
 ```
  Browser A                            Server (server.py)                      Browser B
 ┌──────────────────┐   WebSocket    ┌──────────────────────────┐  WebSocket ┌──────────────────┐
-│ multicursor.js   │ ─────────────▶ │ Relay by room            │ ─────────▶ │ multicursor.js   │
+│ roomful.js   │ ─────────────▶ │ Relay by room            │ ─────────▶ │ roomful.js   │
 │ · sends its state│ ◀───────────── │ · validates every field  │ ◀───────── │ · draws cursors  │
 │ · draws cursors  │                │ · keeps the latest state │            │ · the pill       │
 │ · the pill       │                │ · forwards to the rest   │            │                  │
@@ -43,7 +43,7 @@ There are two pieces:
                                     └──────────────────────────┘
 ```
 
-- **`public/multicursor.js`** (client): a single script with no dependencies. It injects its own styles (every class starts with `mc-`), sends your position and state, and draws other people's cursors and the pill.
+- **`public/roomful.js`** (client): a single script with no dependencies. It injects its own styles (every class starts with `mc-`), sends your position and state, and draws other people's cursors and the pill.
 - **`server.py`** (server): a WebSocket relay written with the Python standard library only. It has no business logic: it groups clients by room, validates what it receives, keeps everyone's latest state for late joiners and forwards it to the rest. It can also serve static files.
 
 There is no database. Everything lives in the server's memory and in each visitor's browser.
@@ -75,14 +75,14 @@ The demo (`public/index.html`) is a landing page that explains the pill, with de
 
 ### 4.1 Static site or your own server
 
-1. Copy `public/multicursor.js` into your project (or serve it from the cursors server, see [§10.3](#103-serving-the-script)).
+1. Copy `public/roomful.js` into your project (or serve it from the cursors server, see [§10.3](#103-serving-the-script)).
 2. Deploy `server.py` (see [§10](#10-production-deployment)).
 3. Add before `</body>`:
 
 ```html
-<script src="/multicursor.js"></script>
+<script src="/roomful.js"></script>
 <script>
-  const mc = MultiCursor.init({
+  const mc = Roomful.init({
     url: "wss://cursors.mydomain.com/ws"
   });
 </script>
@@ -97,8 +97,8 @@ import { useEffect } from "react";
 
 export function Cursors() {
   useEffect(() => {
-    // multicursor.js loaded with <Script src="/multicursor.js" strategy="afterInteractive" />
-    const mc = window.MultiCursor.init({ url: process.env.NEXT_PUBLIC_CURSORS_WS });
+    // roomful.js loaded with <Script src="/roomful.js" strategy="afterInteractive" />
+    const mc = window.Roomful.init({ url: process.env.NEXT_PUBLIC_CURSORS_WS });
     return () => mc.destroy();   // essential: avoids duplicates on unmount and in StrictMode
   }, []);
   return null;
@@ -116,14 +116,14 @@ Same idea: `init()` when the root component mounts and `destroy()` when it unmou
 ### 4.4 One room for the whole site
 
 ```js
-MultiCursor.init({ url: "...", room: "global" });
+Roomful.init({ url: "...", room: "global" });
 ```
 
 Everyone sees each other even on different pages. Only use it when the pages share a layout: positions are drawn on each person's own page.
 
-## 5. `MultiCursor.init()` options
+## 5. `Roomful.init()` options
 
-All of them are optional.
+All of them are optional. The former names still work: `MultiCursor.init()` is an alias of `Roomful.init()`, and `/multicursor.js` serves the same script as `/roomful.js`.
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -157,7 +157,7 @@ All of them are optional.
 ## 6. API of the returned object
 
 ```js
-const mc = MultiCursor.init({ ... });
+const mc = Roomful.init({ ... });
 ```
 
 | Member | Type | Description |
@@ -178,7 +178,7 @@ const mc = MultiCursor.init({ ... });
 | `mc.follow(id)` / `mc.unfollow()` | function | Starts or stops following someone. You can't follow yourself. |
 | `mc.destroy()` | function | Disconnects and removes every element and listener. Use it on unmount. |
 
-`MultiCursor.languages` also lists the built-in languages (`["en", "es"]`).
+`Roomful.languages` also lists the built-in languages (`["en", "es"]`).
 
 ## 7. The pill and keyboard shortcuts
 
@@ -317,10 +317,10 @@ Turning it on **closes the connection**: you don't see cursors and nobody sees y
 - **English** (default) and **Spanish** are built in. With `lang: "auto"` the browser language is used, falling back to English.
 - `mc.setLang("es")` instantly translates the pill, open panels, hints, tooltips and **random names**: yours (if you haven't saved one) and the bots'. If your name changes, others see it updated.
 - Each visitor sees the interface in their own language. The names shown are the ones each person sends.
-- **Custom texts or new languages** via `strings`. The keys live in the `I18N` dictionary at the top of `multicursor.js`; any missing key falls back to English.
+- **Custom texts or new languages** via `strings`. The keys live in the `I18N` dictionary at the top of `roomful.js`; any missing key falls back to English.
 
 ```js
-MultiCursor.init({
+Roomful.init({
   lang: "fr",
   strings: { fr: { seeWho: "Voir qui est là", chatTip: "Écrire à côté de ton curseur", save: "Enregistrer" /* … */ } }
 });
@@ -403,8 +403,8 @@ The image includes a `HEALTHCHECK` against `/health`.
 ### 10.3 Serving the script
 
 Two options:
-- **Copy `multicursor.js` into your site** (recommended): it's versioned with your project. Then start the server with `STATIC_DIR=""` so it only does WebSocket.
-- **Serve it from the cursors server:** `<script src="https://cursors.mydomain.com/multicursor.js">`. Note that it's served with `Cache-Control: no-cache`.
+- **Copy `roomful.js` into your site** (recommended): it's versioned with your project. Then start the server with `STATIC_DIR=""` so it only does WebSocket.
+- **Serve it from the cursors server:** `<script src="https://cursors.mydomain.com/roomful.js">`. Note that it's served with `Cache-Control: no-cache`.
 
 ### 10.4 Behind nginx
 
@@ -433,7 +433,7 @@ location /ws {
 Serverless hosts such as Vercel can't keep WebSockets open, so `server.py` can't run there. Instead, pass the `ably` option and the script speaks the same protocol over [Ably](https://ably.com) channels:
 
 ```js
-MultiCursor.init({ ably: { authUrl: "/api/ably-token" } });
+Roomful.init({ ably: { authUrl: "/api/ably-token" } });
 ```
 
 - **Channels:** one per room (`roomful:room:<room>`) plus `roomful:site` to count people across the whole site. `prefix` changes `roomful`.
@@ -510,7 +510,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 ## 15. Advanced customization
 
 - **Styles:** every class starts with `mc-` (`.mc-presence`, `.mc-pop`, `.mc-cursor`, `.mc-tag`…). Override them from your CSS with higher specificity. The cursor layer uses `z-index: 2147483000` and the pill sits above it.
-- **Constants** at the top of `multicursor.js`:
+- **Constants** at the top of `roomful.js`:
 
 | Constant | Value | What it controls |
 |---|---|---|
@@ -546,7 +546,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 ```
 roomful/
 ├── public/
-│   ├── multicursor.js     # The integration (client)
+│   ├── roomful.js     # The integration (client)
 │   └── index.html         # Demo landing page explaining the pill (EN/ES)
 ├── server.py              # WebSocket relay + static files + /health
 ├── Dockerfile             # Deployment image

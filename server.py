@@ -316,10 +316,15 @@ async def stats_loop():
 
 
 # --------------------------------------------------------------------- HTTP --
+# Former file names that still work, so older integrations keep loading.
+ALIASES = {"multicursor.js": "roomful.js"}
+
+
 def serve_static(writer, path, head_only=False):
     if ROOT is None:
         return http_error(writer, 404, "Not Found")
     rel = path.lstrip("/") or "index.html"
+    rel = ALIASES.get(rel, rel)
     target = (ROOT / rel).resolve()
     if target.is_dir():
         target = target / "index.html"

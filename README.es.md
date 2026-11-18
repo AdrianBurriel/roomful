@@ -6,7 +6,7 @@
 
 🔴 **Demo en directo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app/?lang=es). Ábrela en dos navegadores distintos (o en el móvil y el ordenador) y mira cómo se encuentran vuestros cursores. Las pestañas del mismo navegador cuentan como tú, así que no se ven entre sí.
 
-- **Un solo script** (`multicursor.js`), sin dependencias (con Ably, carga el SDK de Ably desde su CDN).
+- **Un solo script** (`roomful.js`), sin dependencias (con Ably, carga el SDK de Ably desde su CDN).
 - **Servidor mínimo** (`server.py`) escrito solo con la librería estándar de Python, o con Docker. O sin servidor: **Vercel + Ably**.
 - **Pensado para reutilizar** en futuros proyectos: una línea para integrarlo, opciones para todo y una API para conectarlo con tu interfaz.
 - **Inglés y español** incluidos, con selector de idioma y la opción de añadir más.
@@ -67,14 +67,14 @@ En el ordenador cada botón muestra un tooltip con su atajo; en móvil y tablet 
 
 ## Integrarlo en otro proyecto
 
-1. Copia `public/multicursor.js` a tu web.
+1. Copia `public/roomful.js` a tu web.
 2. Despliega `server.py`, o usa Vercel + Ably y pasa `ably: { authUrl: "/api/ably-token" }` en lugar de `url` (mira [Desplegar](#desplegar)).
 3. Añade antes de `</body>`:
 
 ```html
-<script src="/multicursor.js"></script>
+<script src="/roomful.js"></script>
 <script>
-  const mc = MultiCursor.init({
+  const mc = Roomful.init({
     url: "wss://cursores.midominio.com/ws",   // tu servidor
     lang: "es",                                // "en" | "es" | "auto"
     bots: 2,                                   // opcional: compañía cuando la página está vacía
@@ -101,7 +101,7 @@ En **React / Next.js**, llámalo dentro de un `useEffect` en el layout raíz y d
 | `onStats` | — | Recibir `{ page, site, peak }` para usarlas en tu interfaz |
 | `onboarding` | `true` | Aviso de bienvenida en la primera visita |
 
-Todas las opciones (26) están en la [documentación](docs/DOCUMENTACION.md#5-opciones-de-multicursorinit).
+Todas las opciones (26) están en la [documentación](docs/DOCUMENTACION.md#5-opciones-de-roomfulinit).
 
 ### API
 
@@ -164,7 +164,7 @@ Cada push a `main` se despliega solo. La landing usa Ably cuando está publicada
 ## Estructura
 
 ```
-public/multicursor.js   La integración (cliente)
+public/roomful.js   La integración (cliente)
 public/index.html       Landing de demo que explica la píldora (EN/ES)
 server.py               Relay WebSocket + estáticos + /health
 Dockerfile              Imagen de despliegue
