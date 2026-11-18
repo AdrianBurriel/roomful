@@ -33,6 +33,7 @@ python3 server.py          # → http://localhost:8080
     // room: "global",                   // por defecto, una sala por URL (sigue la ruta en SPAs)
     // name: "Capibara Jefa",            // nombre fijo (si no se indica, es aleatorio)
     // color: "#A259FF",
+    // avatar: "data:image/webp;base64,…", // foto inicial (≤14 KB); el visitante puede subir la suya
     // presence: true,                   // píldora con los avatares conectados
     // toggle: true,                     // botón 👁 para ocultar cursores / dejar de compartir el tuyo
     // chat: true,                       // tecla "/" para escribir junto al cursor
@@ -40,7 +41,7 @@ python3 server.py          # → http://localhost:8080
     // clicks: true,                     // ver los clics de los demás como ondas
     // selection: true,                  // ver el texto que seleccionan los demás
     // follow: true,                     // pulsar un avatar para seguir a esa persona
-    // editable: true,                   // pulsar tu avatar para cambiar nombre y color
+    // editable: true,                   // pulsar tu avatar para cambiar nombre, color y foto
     // onStats: s => console.log(s),     // { page, site, peak } cada vez que cambian
     // anchor: "center",                 // "center" (layouts con max-width) o "left"
     // maxCursors: 12,                   // máximo visibles (prioriza personas reales y activas)
@@ -52,7 +53,7 @@ python3 server.py          # → http://localhost:8080
     // botPhrases: ["Hola 👋", "..."],   // frases del chat de los bots
   });
   // mc.me, mc.peers, mc.room, mc.ghost, mc.stats
-  // mc.setRoom("/otra-sala"), mc.setGhost(true), mc.setIdentity("Nombre", "#0D99FF"),
+  // mc.setRoom("/otra-sala"), mc.setGhost(true), mc.setIdentity("Nombre", "#0D99FF", fotoDataURL),
   // mc.react("🎉"), mc.follow(id), mc.unfollow(), mc.destroy()
 </script>
 ```
@@ -62,13 +63,13 @@ python3 server.py          # → http://localhost:8080
 | Acción | Cómo |
 |---|---|
 | Chat junto al cursor | Tecla `/`, luego Enter para enviar o Esc para cancelar |
-| Reaccionar con emoji | Tecla `E` y después un número del 1 al 8 (o clic); en el móvil, botón 😊 de la píldora |
+| Reaccionar con emoji | Tecla `E` y elige un emoji; en el móvil, botón 😊 de la píldora |
 | Seguir a alguien | Clic en su avatar; se deja de seguir con Esc, la rueda del ratón o las flechas |
-| Cambiar nombre y color | Clic en tu avatar; se recuerda entre visitas |
+| Cambiar nombre, color y foto | Clic en tu avatar. La foto se sube desde el ordenador, se recorta y se reduce en el navegador (~2–10 KB). 🎲 elige al azar el nombre y el color. Se recuerda entre visitas |
 | Ver estadísticas | Clic en "N en esta página": personas en la página, en toda la web y pico de hoy |
 | Ocultar cursores | Botón 👁 de la píldora |
 
-Además, los demás ven tus **clics** como una onda de tu color y el **texto que seleccionas** resaltado con tu color. Si llevas 30 s sin moverte, tu cursor se atenúa y muestra 💤.
+Además, los demás ven tus **clics** como una onda de tu color y el **texto que seleccionas** resaltado con tu color. Si llevas 30 s sin moverte, tu cursor se atenúa y le salen unas "zzz" animadas.
 
 La selección se comparte como *qué texto* está seleccionado y no como píxeles. Así encaja aunque el texto se reparta en líneas distintas en cada pantalla. Requiere que el DOM de la página sea el mismo para todos, lo normal en una misma URL.
 
@@ -98,6 +99,7 @@ docker build -t cursores . && docker run -p 8080:8080 \
 | `PORT` / `HOST` | Puerto e interfaz | 8080 / 0.0.0.0 |
 
 Además, el servidor:
+- **Valida las fotos:** solo acepta PNG, JPEG o WebP como data URL de hasta 14 KB. Nunca SVG, que podría llevar código.
 - **Limita los mensajes:** como máximo 40 por segundo por cliente, con ráfagas de hasta 80.
 - **Cierra conexiones muertas:** envía un ping cada 20 s y cierra las que llevan 60 s sin responder.
 - **Ofrece un endpoint de estado:** `GET /health` devuelve el número de clientes y salas.
@@ -110,7 +112,7 @@ El protocolo es pequeño, así que es fácil portarlo a Node, Cloudflare Durable
 
 - Conexión: `GET /ws?room=<sala>`
 - cliente → servidor:
-  - `{ t:"update", name?, color?, x?, y?, visible?, chat?, sel? }`: estado; se guarda y lo reciben también quienes entren después
+  - `{ t:"update", name?, color?, avatar?, x?, y?, visible?, chat?, sel? }`: estado; se guarda y lo reciben también quienes entren después
   - `{ t:"event", kind:"click"|"reaction", x, y, emoji? }`: evento efímero
 - servidor → cliente:
   - `{ t:"welcome", id, room, peers:[...] }`, `{ t:"update", id, ...campos }`, `{ t:"leave", id }`

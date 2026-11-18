@@ -24,7 +24,7 @@
  *   anchor      'center' | 'left' — referencia horizontal para mapear
  *               posiciones entre pantallas de distinto ancho     ('center')
  *   maxCursors  Máximo de cursores visibles (prioriza reales y activos) (12)
- *   idleMs      Tras este tiempo sin moverse, el cursor se atenúa y 💤 (30000)
+ *   idleMs      Tras este tiempo sin moverse, el cursor se atenúa con "zzz" (30000)
  *   bots        Usuarios ficticios para que la página no se vea vacía.
  *               Son locales (cada visitante ve los suyos). Se desactivan
  *               con prefers-reduced-motion.                      (0)
@@ -127,9 +127,19 @@
     ".mc-layer{position:absolute;left:0;top:0;width:100%;height:0;overflow-x:clip;overflow-y:visible;pointer-events:none;z-index:2147483000}",
     ".mc-layer.mc-off{display:none}",
     ".mc-cursor{position:absolute;left:0;top:0;will-change:transform;transition:opacity .3s ease}",
-    ".mc-cursor.mc-idle{opacity:.4}",
-    ".mc-cursor.mc-idle .mc-name::after{content:' 💤'}",
+    /* reposo: el cursor se atenúa y le salen "z" animadas */
+    ".mc-cursor svg,.mc-cursor .mc-tag{transition:opacity .3s ease}",
+    ".mc-cursor.mc-idle svg,.mc-cursor.mc-idle .mc-tag{opacity:.4}",
+    ".mc-zzz{position:absolute;left:22px;top:-16px;display:none;font:800 16px/1 " + FONT + ";pointer-events:none;",
+    "  text-shadow:0 1px 2px rgba(0,0,0,.25)}",
+    ".mc-cursor.mc-idle .mc-zzz{display:block}",
+    ".mc-zzz span{position:absolute;left:0;top:0;opacity:0;animation:mc-z 2.4s ease-in-out infinite}",
+    ".mc-zzz span:nth-child(2){animation-delay:.8s;font-size:13px}",
+    ".mc-zzz span:nth-child(3){animation-delay:1.6s;font-size:11px}",
+    "@keyframes mc-z{0%{transform:translate(0,6px) scale(.6);opacity:0}20%{opacity:1}100%{transform:translate(16px,-20px) scale(1.2);opacity:0}}",
+    "@media (prefers-reduced-motion:reduce){.mc-zzz span{animation:none}.mc-zzz span:first-child{opacity:1}}",
     ".mc-cursor.mc-hidden,.mc-cursor.mc-capped{opacity:0}",
+    ".mc-cursor.mc-self{display:none}",
     ".mc-cursor svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}",
     ".mc-tag{position:absolute;left:14px;top:16px;font:500 12px/1.2 " + FONT + ";",
     "  padding:4px 8px;border-radius:3px 12px 12px 12px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.18);",
@@ -183,6 +193,16 @@
     ".mc-pop input{box-sizing:border-box;width:100%;font:400 14px " + FONT + ";padding:8px 10px;border-radius:8px;",
     "  border:1px solid rgba(0,0,0,.15);background:transparent;color:inherit;margin-bottom:12px}",
     ".mc-swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}",
+    ".mc-face{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}",
+    ".mc-tag-av{width:16px;height:16px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:-4px;margin:-2px 5px -2px -3px;box-shadow:0 0 0 1.5px rgba(255,255,255,.7)}",
+    ".mc-tag-av[hidden]{display:none}",
+    ".mc-photo{display:flex;align-items:center;gap:12px;margin-bottom:14px}",
+    ".mc-photo .mc-avatar{width:52px;height:52px;margin:0;border:0;font-size:17px;flex:none;overflow:hidden}",
+    ".mc-photo small{display:block;font-size:11px;font-weight:400;opacity:.6;margin-top:6px;line-height:1.3}",
+    ".mc-outline{border:1px solid rgba(0,0,0,.15);padding:7px 11px;font-size:12px;font-weight:600}",
+    ".mc-link{all:unset;cursor:pointer;font-size:12px;margin-left:8px;opacity:.7;text-decoration:underline}",
+    ".mc-link:hover{opacity:1}",
+    "@media (prefers-color-scheme:dark){.mc-outline{border-color:rgba(255,255,255,.2)}}",
     ".mc-swatch{all:unset;cursor:pointer;aspect-ratio:1;border-radius:50%;box-sizing:border-box}",
     ".mc-swatch[aria-pressed=true]{box-shadow:0 0 0 2px #fff,0 0 0 4px currentColor}",
     ".mc-swatch:focus-visible{outline:2px solid #0D99FF;outline-offset:2px}",
@@ -191,7 +211,6 @@
     ".mc-primary{background:#1E1E1E;color:#fff}.mc-primary:hover{background:#000}",
     ".mc-picker{position:fixed;z-index:2147483003;display:flex;gap:2px;border-radius:999px;padding:4px}",
     ".mc-picker .mc-btn{width:36px;height:36px;font-size:20px;position:relative}",
-    ".mc-picker .mc-btn small{position:absolute;right:3px;bottom:2px;font-size:8px;opacity:.45}",
     /* modo seguir */
     ".mc-follow{position:fixed;inset:0;border:3px solid;pointer-events:none;z-index:2147482999;display:none}",
     ".mc-follow.mc-on{display:block}",
@@ -217,6 +236,49 @@
     return name.split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase();
   }
 
+  // ---- fotos de perfil: data URL pequeña (≤14 KB) validada en cliente y servidor ----
+  var AVATAR_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/;
+  var AVATAR_MAX = 14000;
+  function validAvatar(v) { return typeof v === "string" && v.length <= AVATAR_MAX && AVATAR_RE.test(v) ? v : ""; }
+
+  // Pinta la foto (o las iniciales si no hay) dentro de un avatar
+  function avatarFace(node, name, avatar) {
+    node.textContent = "";
+    if (avatar) {
+      var img = document.createElement("img");
+      img.className = "mc-face"; img.alt = ""; img.src = avatar;
+      node.appendChild(img);
+    } else {
+      node.textContent = initials(name);
+    }
+  }
+
+  // Recorta al centro en cuadrado y reduce hasta que pese menos de AVATAR_MAX
+  function imageToAvatar(file, cb) {
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      var w = img.naturalWidth, h = img.naturalHeight, s = Math.min(w, h);
+      if (!s) return cb(null);
+      var sizes = [96, 72, 56], types = ["image/webp", "image/jpeg"], qs = [0.85, 0.7, 0.55, 0.4];
+      for (var i = 0; i < sizes.length; i++) {
+        var c = document.createElement("canvas"), ctx = c.getContext("2d");
+        c.width = c.height = sizes[i];
+        ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, sizes[i], sizes[i]);   // fondo para PNG transparentes
+        ctx.drawImage(img, (w - s) / 2, (h - s) / 2, s, s, 0, 0, sizes[i], sizes[i]);
+        for (var t = 0; t < types.length; t++) {
+          for (var q = 0; q < qs.length; q++) {
+            var d = c.toDataURL(types[t], qs[q]);
+            if (d.indexOf("data:" + types[t]) === 0 && d.length <= AVATAR_MAX) return cb(d);
+          }
+        }
+      }
+      cb(null);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); cb(null); };
+    img.src = url;
+  }
+
   function init(opts) {
     opts = opts || {};
     var anchorCenter = (opts.anchor || "center") === "center";
@@ -233,9 +295,18 @@
     var saved = custom || store("sessionStorage", "mc:me") || {};
     var me = {
       name: opts.name || saved.name || randomName(),
-      color: opts.color || saved.color || pick(COLORS)
+      color: opts.color || saved.color || pick(COLORS),
+      avatar: validAvatar(opts.avatar) || validAvatar(saved.avatar)
     };
     if (!custom) store("sessionStorage", "mc:me", me);
+
+    // Id anónimo del navegador, compartido por todas sus pestañas: así tus otras
+    // pestañas se reconocen como "tú" (ni aparecen en la píldora ni se pueden seguir).
+    var uid = store("localStorage", "mc:uid");
+    if (!/^[a-z0-9]{8,32}$/.test(uid || "")) {
+      uid = (Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).replace(/[^a-z0-9]/g, "").slice(0, 20);
+      store("localStorage", "mc:uid", uid);
+    }
 
     var baseUrl = opts.url || ((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
     var autoRoom = opts.room == null;
@@ -333,6 +404,8 @@
       sock.onopen = function () {
         retry = 0;
         var msg = { name: me.name, color: me.color, visible: false };
+        if (me.avatar) msg.avatar = me.avatar;
+        msg.uid = uid;
         if (last.has) { var p = toShared(last.cx, last.cy); msg.x = p.x; msg.y = p.y; msg.visible = !document.hidden; }
         var sel = JSON.parse(lastSelJSON);
         if (sel) msg.sel = sel;
@@ -405,13 +478,16 @@
     }
 
     // ---- identidad editable ----
-    function setIdentity(name, color) {
+    // avatar: data URL de imagen, "" para quitar la foto, undefined para no tocarla
+    function setIdentity(name, color, avatar) {
       name = String(name || "").replace(/\s+/g, " ").trim().slice(0, 32) || me.name;
       color = /^#[0-9a-fA-F]{6}$/.test(color || "") ? color.toUpperCase() : me.color;
       me.name = name; me.color = color;
+      if (avatar !== undefined) me.avatar = validAvatar(avatar);
       store("localStorage", "mc:me", me);       // elegido por el visitante: se recuerda
       paintLocalTag();
-      send({ name: name, color: color });
+      for (var id in peers) markSelf(peers[id]);  // tu nombre/color cambió: revisa quién eres "tú"
+      send({ name: name, color: color, avatar: me.avatar });
       renderPresence();
     }
 
@@ -424,17 +500,32 @@
         p.el = el("div", "mc-cursor mc-hidden", layer);
         p.tag = el("div", "mc-tag");
         p.nameEl = el("div", "mc-name", p.tag);
+        p.avEl = el("img", "mc-tag-av", p.nameEl);
+        p.avEl.alt = ""; p.avEl.hidden = true;
+        p.nameTxt = el("span", "", p.nameEl);
         p.msgEl = el("div", "mc-msg", p.tag);
+        p.zzz = el("div", "mc-zzz");
+        p.zzz.innerHTML = "<span>z</span><span>z</span><span>z</span>";
+        p.zzz.setAttribute("aria-hidden", "true");
       }
       ["name", "color", "x", "y", "visible", "chat"].forEach(function (k) { if (k in m) p[k] = m[k]; });
+      if ("uid" in m) p.uid = m.uid;
+      markSelf(p);
+      if ("avatar" in m) {
+        p.avatar = validAvatar(m.avatar);
+        if (p.avatar) p.avEl.src = p.avatar;
+        p.avEl.hidden = !p.avatar;
+      }
       if ("x" in m || "y" in m || m.chat) setActive(p, performance.now());
       if ("color" in m || !p.el.firstChild) {
         p.el.innerHTML = cursorSVG(p.color);
         p.el.appendChild(p.tag);
+        p.el.appendChild(p.zzz);
+        p.zzz.style.color = p.color;
         p.tag.style.background = p.color;
         p.tag.style.color = textOn(p.color);
       }
-      p.nameEl.textContent = p.name;
+      p.nameTxt.textContent = p.name;
       p.msgEl.textContent = p.chat;
       p.tag.classList.toggle("mc-talking", !!p.chat);
       p.el.classList.toggle("mc-hidden", !p.visible);
@@ -442,6 +533,27 @@
       if ("sel" in m || "color" in m) { if ("sel" in m) p.sel = m.sel; renderSel(p); }
       if (following === p.id && ("color" in m || "name" in m)) paintFollow(p);
       kick();
+    }
+
+    // ¿Es otra pestaña tuya? Manda el id del navegador; si la pestaña no lo envía
+    // (p. ej. sigue con una versión antigua del script), se compara nombre + color.
+    function isSelf(p) {
+      if (p.bot) return false;
+      if (p.uid) return p.uid === uid;
+      return p.name === me.name && p.color === me.color;
+    }
+    function markSelf(p) {
+      var self = isSelf(p);
+      if (self === !!p.self) return;
+      p.self = self;
+      p.el.classList.toggle("mc-self", self);
+      if (self) {
+        if (following === p.id) unfollow();
+        p.selEls.forEach(function (e) { e.remove(); });
+        p.selEls = [];
+      } else if (p.sel) {
+        renderSel(p);
+      }
     }
 
     function setActive(p, now) {
@@ -464,7 +576,7 @@
 
     function realCount() {
       var n = 0;
-      for (var id in peers) if (!peers[id].bot && peers[id].name) n++;
+      for (var id in peers) if (!peers[id].bot && !peers[id].self && peers[id].name) n++;
       return n;
     }
 
@@ -491,7 +603,7 @@
     function renderSel(p) {
       p.selEls.forEach(function (e) { e.remove(); });
       p.selEls = [];
-      if (!showSel || !p.sel || p.retired) return;
+      if (!showSel || !p.sel || p.retired || p.self) return;
       try {
         var a = nodeFromPath(p.sel.a), f = nodeFromPath(p.sel.f);
         if (!a || !f) return;
@@ -568,7 +680,7 @@
 
     function onPeerEvent(m) {
       var p = peers[m.id];
-      if (!p || ghost) return;
+      if (!p || ghost || p.self) return;
       setActive(p, performance.now());
       if (m.kind === "click") spawnRipple(m, p.color);
       else if (m.kind === "reaction" && m.emoji) spawnReaction(m, m.emoji);
@@ -584,8 +696,8 @@
       reactions.forEach(function (emo, i) {
         var b = el("button", "mc-btn", picker);
         b.type = "button"; b.setAttribute("role", "menuitem");
-        b.innerHTML = emo + "<small>" + (i + 1) + "</small>";
-        b.title = "Reaccionar " + emo + " (" + (i + 1) + ")";
+        b.textContent = emo;
+        b.title = "Reaccionar " + emo;
         b.addEventListener("click", function () { closePicker(); react(emo); });
       });
       var w = picker.offsetWidth, h = picker.offsetHeight;
@@ -605,7 +717,7 @@
     }
     function follow(id) {
       var p = peers[id];
-      if (!p || ghost || !canFollow) return;
+      if (!p || p.self || ghost || !canFollow) return;     // a ti mismo no te puedes seguir
       following = id;
       paintFollow(p);
       followBox.classList.add("mc-on");
@@ -658,27 +770,73 @@
     }
 
     function openEdit() {
-      var pop = el("div", "mc-pop", document.body), color = me.color;
+      var pop = el("div", "mc-pop", document.body), color = me.color, avatar = me.avatar || "";
       pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "Tu cursor");
       el("h4", "", pop).textContent = "Tu cursor";
+
+      // Foto: se elige del ordenador, se recorta y se reduce en el navegador
+      var photo = el("div", "mc-photo", pop);
+      var preview = el("div", "mc-avatar", photo);
+      var info = el("div", "", photo);
+      var file = el("input", "", info);
+      file.type = "file"; file.accept = "image/*"; file.hidden = true;
+      var upBtn = el("button", "mc-btn mc-outline", info); upBtn.type = "button";
+      var rmBtn = el("button", "mc-link", info); rmBtn.type = "button"; rmBtn.textContent = "Quitar";
+      var note = el("small", "", info);
+      var NOTE = "La verán quienes estén en esta página.";
+      note.textContent = NOTE;
+
       var nameIn = el("input", "", pop);
       nameIn.value = me.name; nameIn.maxLength = 32; nameIn.setAttribute("aria-label", "Tu nombre");
-      var sw = el("div", "mc-swatches", pop);
-      COLORS.forEach(function (c) {
-        var b = el("button", "mc-swatch", sw);
-        b.type = "button"; b.style.background = c; b.style.color = c;
-        b.setAttribute("aria-label", "Color " + c);
-        b.setAttribute("aria-pressed", String(c === color));
-        b.addEventListener("click", function () {
-          color = c;
-          sw.querySelectorAll(".mc-swatch").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+
+      function paintPreview() {
+        preview.style.background = color; preview.style.color = textOn(color);
+        avatarFace(preview, nameIn.value.trim() || me.name, avatar);
+        upBtn.textContent = avatar ? "Cambiar foto" : "Subir foto";
+        rmBtn.hidden = !avatar;
+      }
+      upBtn.addEventListener("click", function () { file.click(); });
+      rmBtn.addEventListener("click", function () { avatar = ""; paintPreview(); });
+      file.addEventListener("change", function () {
+        var f = file.files && file.files[0];
+        file.value = "";
+        if (!f) return;
+        if (!/^image\//.test(f.type)) { note.textContent = "Ese archivo no es una imagen."; return; }
+        upBtn.textContent = "Procesando…";
+        imageToAvatar(f, function (url) {
+          if (url) { avatar = url; note.textContent = NOTE; }
+          else note.textContent = "No se ha podido usar esa imagen. Prueba con otra.";
+          paintPreview();
         });
       });
+      nameIn.addEventListener("input", paintPreview);
+
+      var sw = el("div", "mc-swatches", pop);
+      function setColor(c) {
+        color = c;
+        sw.querySelectorAll(".mc-swatch").forEach(function (o) { o.setAttribute("aria-pressed", String(o.dataset.c === c)); });
+        paintPreview();
+      }
+      COLORS.forEach(function (c) {
+        var b = el("button", "mc-swatch", sw);
+        b.type = "button"; b.style.background = c; b.style.color = c; b.dataset.c = c;
+        b.setAttribute("aria-label", "Color " + c);
+        b.addEventListener("click", function () { setColor(c); });
+      });
+      setColor(color);
+
       var row = el("div", "mc-row", pop);
       var dice = el("button", "mc-btn", row); dice.type = "button"; dice.textContent = "🎲 Aleatorio";
-      dice.addEventListener("click", function () { nameIn.value = randomName(); nameIn.focus(); });
+      dice.title = "Nombre y color al azar";
+      dice.addEventListener("click", function () {         // cambia nombre Y color (nunca repite)
+        var n, c, tries = 0;
+        do { n = randomName(); } while (n === nameIn.value && ++tries < 20);
+        do { c = pick(COLORS); } while (c === color && ++tries < 40);
+        nameIn.value = n;
+        setColor(c);
+      });
       var save = el("button", "mc-btn mc-primary", row); save.type = "button"; save.textContent = "Guardar";
-      function commit() { setIdentity(nameIn.value, color); closePop(); }
+      function commit() { setIdentity(nameIn.value, color, avatar); closePop(); }
       save.addEventListener("click", commit);
       nameIn.addEventListener("keydown", function (e) {
         e.stopPropagation();
@@ -701,7 +859,7 @@
         var p = peers[id];
         var idle = now - p.lastActive > idleMs;
         if (idle !== !!p.idle) { p.idle = idle; p.el.classList.toggle("mc-idle", idle); }
-        if (p.visible && !p.retired) list.push(p);
+        if (p.visible && !p.retired && !p.self) list.push(p);
       }
       // prioridad: personas reales > bots; activos > inactivos; recientes > antiguos
       list.sort(function (a, b) {
@@ -918,12 +1076,14 @@
       }
       if (ghost) { countBtn.textContent = "Cursores ocultos"; countBtn.disabled = true; emitStats(); return; }
       countBtn.disabled = false;
-      var list = [{ id: null, name: me.name, color: me.color, me: true }];
-      for (var id in peers) if (peers[id].name && !peers[id].retired) list.push(peers[id]);
+      var list = [{ id: null, name: me.name, color: me.color, avatar: me.avatar, me: true }];
+      for (var id in peers) if (peers[id].name && !peers[id].retired && !peers[id].self) list.push(peers[id]);
       countBtn.textContent = list.length === 1 ? "Solo tú" : list.length + " en esta página";
       emitStats();
       // solo se reconstruye si cambia algo visible (si no, un clic en un avatar podría perderse)
-      var key = following + "|" + list.map(function (u) { return u.id + u.name + u.color; }).join("|");
+      var key = following + "|" + list.map(function (u) {
+        return u.id + u.name + u.color + (u.avatar ? u.avatar.length + u.avatar.slice(-12) : "");
+      }).join("|");
       if (key === avatars._key) return;
       avatars._key = key;
       avatars.innerHTML = "";
@@ -932,8 +1092,8 @@
         var a = el(clickable ? "button" : "div", "mc-avatar" + (u.me ? " mc-me" : "") +
           (u.id !== null && u.id === following ? " mc-following" : ""), avatars);
         a.style.background = u.color; a.style.color = textOn(u.color);
-        a.textContent = initials(u.name);
-        var label = u.me ? u.name + " (tú)" + (editable ? " · cambiar nombre y color" : "")
+        avatarFace(a, u.name, u.avatar);
+        var label = u.me ? u.name + " (tú)" + (editable ? " · cambiar nombre, color y foto" : "")
           : u.name + (canFollow ? (u.id === following ? " · dejar de seguir" : " · seguir") : "");
         a.title = label;
         if (clickable) {

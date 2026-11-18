@@ -51,6 +51,7 @@ peaks = {}                 # room -> (fecha, pico de usuarios simultáneos ese d
 _ids = itertools.count(1)
 
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+UID_RE = re.compile(r"^[a-z0-9]{8,32}$")
 NOT_EMOJI_RE = re.compile(r"[A-Za-z0-9<>&\"'\s]")
 
 
@@ -72,6 +73,15 @@ def _is_selection(v):
             and isinstance(v["fo"], int) and 0 <= v["fo"] < 1e6)
 
 
+AVATAR_RE = re.compile(r"^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$")
+AVATAR_MAX = 14000  # caracteres (~10 KB de imagen); el cliente la reduce antes de enviarla
+
+
+def _is_avatar(v):
+    """Foto de perfil: data URL de imagen pequeña, o "" para quitarla."""
+    return isinstance(v, str) and (v == "" or (len(v) <= AVATAR_MAX and bool(AVATAR_RE.match(v))))
+
+
 def _is_emoji(v):
     return isinstance(v, str) and 0 < len(v) <= 8 and not NOT_EMOJI_RE.search(v)
 
@@ -85,6 +95,8 @@ FIELDS = {
     "visible": lambda v: isinstance(v, bool),
     "chat": lambda v: isinstance(v, str) and len(v) <= 140,
     "sel": _is_selection,
+    "avatar": _is_avatar,
+    "uid": lambda v: isinstance(v, str) and bool(UID_RE.match(v)),  # id anónimo del navegador
 }
 
 

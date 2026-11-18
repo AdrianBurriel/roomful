@@ -46,7 +46,6 @@
   .bar nav{display:flex;gap:2px}
   .bar nav a{font-size:14px;text-decoration:none;color:var(--muted);padding:8px 12px;border-radius:9px}
   .bar nav a:hover{background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink)}
-  .bar .file{font:500 12px var(--mono);color:var(--muted);padding:0 12px;border-left:1px solid var(--line);margin-left:6px;height:24px;display:flex;align-items:center}
 
   /* ---------- Frames (secciones como marcos de Figma) ---------- */
   .frame{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:44px}
@@ -116,11 +115,6 @@
   .legend strong{display:block;font-size:16px;margin-bottom:4px}
   .legend span:not(.num){font-size:14px;color:var(--muted);line-height:1.4;display:block}
 
-  .pointer{position:fixed;right:28px;bottom:76px;z-index:30;font:italic 22px var(--serif);color:var(--ink);
-    display:flex;align-items:flex-end;gap:6px;pointer-events:none;transition:opacity .4s, transform .4s}
-  .pointer svg{margin-bottom:-6px}
-  .pointer.gone{opacity:0;transform:translateY(8px)}
-  @media (max-width:640px){.pointer{right:16px;font-size:18px}}
 
   /* ---------- 01 · Contador ---------- */
   .stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -154,6 +148,7 @@
   .card h3{font-size:22px;margin:18px 0 8px}
   .card p{font-size:15px}
   .avatar{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font:600 18px var(--sans);color:#fff}
+  .avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
   .avatar.me{background:var(--me);color:var(--me-ink);box-shadow:inset 0 0 0 3px rgba(255,255,255,.65);transition:background .3s}
   .follow-demo{position:relative;height:120px;border-radius:10px;border:3px solid var(--c6);margin-top:4px;background:var(--surface)}
   .follow-demo span{position:absolute;top:-3px;left:50%;transform:translateX(-50%);background:var(--c6);color:#fff;font:600 11px var(--sans);
@@ -167,7 +162,6 @@
     font-size:clamp(34px,4vw,48px);cursor:pointer;transition:transform .15s, border-color .15s}
   .emoji-grid button:hover{transform:translateY(-3px) rotate(-3deg);border-color:var(--sel)}
   .emoji-grid button:active{transform:scale(.94)}
-  .emoji-grid button small{position:absolute;right:10px;bottom:8px;font:500 11px var(--mono);color:var(--muted)}
 
   /* ---------- 05 · Ojo ---------- */
   .ghost-art{position:relative;display:grid;place-items:center;height:300px;border-radius:14px;border:1px solid var(--line);overflow:hidden;
@@ -193,7 +187,13 @@
   .selectme{margin-top:22px;padding:18px;border-radius:12px;background:var(--canvas);font:400 22px/1.35 var(--serif);color:var(--ink);cursor:text}
   .selectme mark{background:color-mix(in srgb,var(--c4) 30%,transparent);color:inherit;border-radius:2px}
   .idle-demo{position:relative;height:170px;margin-top:22px;border-radius:12px;background:var(--canvas)}
-  .idle-demo .fake{left:30%;top:50px;opacity:.4}
+  .idle-demo .fake{left:30%;top:64px}
+  .idle-demo .fake svg,.idle-demo .tagx{opacity:.4}
+  .zzz{position:absolute;left:22px;top:-16px;font:700 14px/1 var(--sans);pointer-events:none}
+  .zzz span{position:absolute;left:0;top:0;opacity:0;animation:zzz 2.4s ease-in-out infinite}
+  .zzz span:nth-child(2){animation-delay:.8s;font-size:12px}
+  .zzz span:nth-child(3){animation-delay:1.6s;font-size:10px}
+  @keyframes zzz{0%{transform:translate(0,6px) scale(.6);opacity:0}20%{opacity:1}100%{transform:translate(16px,-20px) scale(1.2);opacity:0}}
 
   .bots{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;margin-top:22px}
   .bots .stack i{width:52px;height:52px;font-size:16px;border-color:var(--surface)}
@@ -205,7 +205,10 @@
   .copy{position:absolute;right:14px;top:14px;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333;background:#222;color:#ddd;font:500 12px var(--mono);cursor:pointer}
 
   footer{padding:60px 0 140px;color:var(--muted);font-size:14px}
-  footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:28px}
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:28px}
+  .gh{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:600;text-decoration:none;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);transition:border-color .15s}
+  .gh:hover{border-color:var(--sel)}
+  .gh:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
 
   @media (max-width:900px){
     .split,.duo,.trio{grid-template-columns:1fr}
@@ -217,7 +220,6 @@
   }
   @media (max-width:640px){
     .wrap,.top{padding:0 16px}
-    .bar .file{display:none}
     .pill-xl{zoom:.5}
     .pill-xl .hint{display:none}
     .anatomy{padding:56px 8px 16px}
@@ -246,7 +248,6 @@
       <a href="#privacidad">Privacidad</a>
       <a href="#integrar">Integrar</a>
     </nav>
-    <span class="file">multicursor.js</span>
   </div>
 </div>
 
@@ -342,7 +343,7 @@
         <div class="card">
           <div class="avatar me" data-me-initials>TÚ</div>
           <h3>Tu avatar: <span data-me-name>Tú</span></h3>
-          <p>Púlsalo para cambiar tu nombre y tu color. Lo recordamos para la próxima vez. Si no te convence, el dado te da un nombre aleatorio.</p>
+          <p>Púlsalo para cambiar tu nombre, tu color o poner una foto desde tu ordenador. Lo recordamos para la próxima vez. ¿Sin ideas? El dado te da un nombre y un color al azar.</p>
           <button class="btn" type="button" data-open="edit">Editar mi cursor</button>
         </div>
         <div class="card">
@@ -368,18 +369,18 @@
       <div>
         <div class="kicker"><span class="num">4</span> La carita</div>
         <h2 class="h2">Aplaude sin <em>decir</em> nada.</h2>
-        <p class="lede">La carita abre los emojis. Con teclado es más rápido: pulsa <b>E</b> y luego un número del 1 al 8. Salen flotando desde tu cursor y los ve todo el mundo.</p>
-        <div class="keys"><span class="key">E</span><small>+</small><span class="key">1</span><small>…</small><span class="key">8</span></div>
+        <p class="lede">La carita abre los emojis. Con teclado es más rápido: pulsa <b>E</b> donde tengas el cursor y elige. Salen flotando desde ahí y los ve todo el mundo.</p>
+        <div class="keys"><span class="key">E</span><small>pruébalo, o pulsa cualquiera de estos emojis</small></div>
       </div>
       <div class="emoji-grid" data-mc-target>
-        <button type="button" data-react="❤️">❤️<small>1</small></button>
-        <button type="button" data-react="👍">👍<small>2</small></button>
-        <button type="button" data-react="🔥">🔥<small>3</small></button>
-        <button type="button" data-react="😂">😂<small>4</small></button>
-        <button type="button" data-react="🎉">🎉<small>5</small></button>
-        <button type="button" data-react="👏">👏<small>6</small></button>
-        <button type="button" data-react="😮">😮<small>7</small></button>
-        <button type="button" data-react="👀">👀<small>8</small></button>
+        <button type="button" data-react="❤️">❤️</button>
+        <button type="button" data-react="👍">👍</button>
+        <button type="button" data-react="🔥">🔥</button>
+        <button type="button" data-react="😂">😂</button>
+        <button type="button" data-react="🎉">🎉</button>
+        <button type="button" data-react="👏">👏</button>
+        <button type="button" data-react="😮">😮</button>
+        <button type="button" data-react="👀">👀</button>
       </div>
     </div>
   </div>
@@ -427,9 +428,9 @@
       <div class="frame" data-size="Reposo">
         <span class="frame-label">Reposo</span>
         <h3>Si te vas, <em>se nota</em></h3>
-        <p>Tras 30 segundos sin moverte, tu cursor se atenúa y se echa una siesta.</p>
+        <p>Tras 30 segundos sin moverte, tu cursor se atenúa y se echa una siesta: zzz.</p>
         <div class="idle-demo" aria-hidden="true">
-          <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c2)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c2);color:#1e1e1e">Perezoso Zen 💤</div></div>
+          <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c2)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c2);color:#1e1e1e">Perezoso Zen</div><div class="zzz" style="color:var(--c2)"><span>z</span><span>z</span><span>z</span></div></div>
         </div>
       </div>
     </div>
@@ -475,14 +476,13 @@
 <footer>
   <div class="wrap">
     <span>Píldora · hecho con <span class="mono">multicursor.js</span></span>
-    <span>Lorem ipsum dolor sit amet · 2026</span>
+    <a class="gh" href="https://github.com/AdrianBurriel/cursores-colaborativos" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Ver el proyecto en GitHub
+    </a>
   </div>
 </footer>
 
-<div class="pointer" data-pointer aria-hidden="true">
-  la de verdad está aquí
-  <svg width="34" height="40" viewBox="0 0 34 40" fill="none"><path d="M4 4c14 2 24 12 24 30" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20 28l8 7 5-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</div>
 
 <!-- La integración -->
 <script src="/multicursor.js"></script>
@@ -515,14 +515,18 @@
   // Pinta la página con tu color y tu nombre (y se actualiza si los cambias)
   var lastKey = "";
   function syncMe() {
-    var key = mc.me.name + mc.me.color + mc.ghost;
+    var key = mc.me.name + mc.me.color + mc.ghost + (mc.me.avatar || "").length;
     if (key === lastKey) return;
     lastKey = key;
     var root = document.documentElement.style;
     root.setProperty("--me", mc.me.color);
     root.setProperty("--me-ink", textOn(mc.me.color));
     $$("[data-me-name]").forEach(function (el) { el.textContent = mc.me.name; });
-    $$("[data-me-initials]").forEach(function (el) { el.textContent = initials(mc.me.name); });
+    $$("[data-me-initials]").forEach(function (el) {
+      el.textContent = "";
+      if (mc.me.avatar) { var img = document.createElement("img"); img.src = mc.me.avatar; img.alt = ""; el.appendChild(img); }
+      else el.textContent = initials(mc.me.name);
+    });
     document.body.classList.toggle("is-ghost", mc.ghost);
     $("[data-ghost-state]").textContent = mc.ghost ? "○ Modo fantasma: nadie te ve" : "● Visible para los demás";
     $('[data-open="ghost"]').textContent = mc.ghost ? "Volver a ser visible" : "Activar modo fantasma";
@@ -571,10 +575,6 @@
     a.addEventListener("mouseleave", function () { part.classList.remove("on"); });
   });
 
-  // Flecha "la de verdad está aquí": solo arriba del todo
-  var ptr = $("[data-pointer]");
-  function onScroll() { ptr.classList.toggle("gone", window.scrollY > 240); }
-  window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
 })();
 </script>
 </body>
