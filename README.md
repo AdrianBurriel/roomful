@@ -18,8 +18,8 @@
 Requirement: Python 3.8 or newer.
 
 ```bash
-git clone https://github.com/AdrianBurriel/cursores-colaborativos.git
-cd cursores-colaborativos
+git clone https://github.com/AdrianBurriel/roomful.git
+cd roomful
 python3 server.py            # → http://localhost:8080
 ```
 

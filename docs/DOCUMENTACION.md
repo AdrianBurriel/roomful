@@ -59,8 +59,8 @@ No hay base de datos. Todo vive en la memoria del servidor y en el navegador de 
 ## 3. Puesta en marcha en local
 
 ```bash
-git clone https://github.com/AdrianBurriel/cursores-colaborativos.git
-cd cursores-colaborativos
+git clone https://github.com/AdrianBurriel/roomful.git
+cd roomful
 python3 server.py                 # → http://localhost:8080
 ```
 
@@ -515,7 +515,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 ## 17. Estructura del repositorio
 
 ```
-cursores-colaborativos/
+roomful/
 ├── public/
 │   ├── multicursor.js     # La integración (cliente)
 │   └── index.html         # Landing de demo que explica la píldora (EN/ES)

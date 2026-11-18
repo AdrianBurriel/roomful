@@ -59,8 +59,8 @@ There is no database. Everything lives in the server's memory and in each visito
 ## 3. Running it locally
 
 ```bash
-git clone https://github.com/AdrianBurriel/cursores-colaborativos.git
-cd cursores-colaborativos
+git clone https://github.com/AdrianBurriel/roomful.git
+cd roomful
 python3 server.py                 # → http://localhost:8080
 ```
 
@@ -516,7 +516,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 ## 17. Repository structure
 
 ```
-cursores-colaborativos/
+roomful/
 ├── public/
 │   ├── multicursor.js     # The integration (client)
 │   └── index.html         # Demo landing page explaining the pill (EN/ES)
