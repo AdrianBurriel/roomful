@@ -128,6 +128,7 @@ Todas son opcionales.
 | Opción | Tipo | Por defecto | Descripción |
 |---|---|---|---|
 | `url` | string | `ws(s)://<host>/ws` | URL del WebSocket. Puede llevar query (`?token=…`); el script añade `&room=`. |
+| `ably` | object | — | Usa [Ably](https://ably.com) en lugar de `server.py`, para hostings *serverless* como Vercel: `{ authUrl, prefix, sdk }`. Mira el [§10.6](#106-vercel--ably-sin-servidor). |
 | `room` | string | ruta de la página | Sala (máx. 128 caracteres). Sin indicar, una sala por URL (sin barra final) que sigue los cambios de ruta. |
 | `lang` | `"en"` \| `"es"` \| `"auto"` | `"en"` | Idioma de la interfaz. `"auto"` usa el del navegador. Ver [§8.12](#812-idiomas). |
 | `strings` | objeto | — | Textos propios o idiomas nuevos: `{ en: { clave: "…" }, fr: { … } }`. |
@@ -418,6 +419,23 @@ location /ws {
 - [ ] Una sola instancia del servidor.
 - [ ] `/health` responde.
 - [ ] Probado con dos navegadores distintos (no dos pestañas del mismo).
+
+### 10.6 Vercel + Ably (sin servidor)
+
+Los hostings *serverless* como Vercel no mantienen WebSockets abiertos, así que `server.py` no puede ejecutarse ahí. En su lugar, pasa la opción `ably` y el script habla el mismo protocolo sobre canales de [Ably](https://ably.com):
+
+```js
+MultiCursor.init({ ably: { authUrl: "/api/ably-token" } });
+```
+
+- **Canales:** uno por sala (`roomful:room:<sala>`) más `roomful:site` para contar a la gente de toda la web. `prefix` cambia `roomful`.
+- **La presencia** dice quién hay en cada sala; cuando alguien entra, todos reenvían su estado para que el recién llegado pueda dibujarlos.
+- **Validación:** no hay servidor en medio, así que el script aplica a cada mensaje que recibe las mismas reglas que `server.py` (§9.4) y descarta lo que no las cumpla.
+- **Tokens:** `api/ably-token.js` (una función de Vercel) firma las peticiones de token con `ABLY_API_KEY`. Los tokens van ligados al id de la conexión, duran una hora y solo permiten los canales `roomful:*`. Con `ALLOWED_ORIGINS`, solo esas webs reciben tokens.
+- **Ritmo:** las posiciones se envían como mucho cada 100 ms (en vez de 40 ms) para que el plan dure más.
+- **Diferencias con `server.py`:** el pico del día es el máximo que ha visto este visitante, no un récord de todo el servidor; `MAX_PER_ROOM`/`MAX_CLIENTS` dejan paso a los límites de tu plan de Ably.
+
+Los pasos de configuración están en el [README](../README.es.md#desplegar-en-vercel).
 
 ## 11. Protocolo WebSocket
 

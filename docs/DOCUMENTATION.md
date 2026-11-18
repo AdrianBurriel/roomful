@@ -128,6 +128,7 @@ All of them are optional.
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `url` | string | `ws(s)://<host>/ws` | WebSocket URL. It may carry a query (`?token=…`); the script appends `&room=`. |
+| `ably` | object | — | Use [Ably](https://ably.com) instead of `server.py`, for serverless hosts like Vercel: `{ authUrl, prefix, sdk }`. See [§10.6](#106-vercel--ably-no-server). |
 | `room` | string | page path | Room (max. 128 characters). When omitted, one room per URL (without trailing slash) that follows route changes. |
 | `lang` | `"en"` \| `"es"` \| `"auto"` | `"en"` | Interface language. `"auto"` uses the browser's. See [§8.12](#812-languages). |
 | `strings` | object | — | Custom texts or new languages: `{ en: { key: "…" }, fr: { … } }`. |
@@ -418,6 +419,23 @@ location /ws {
 - [ ] A single server instance.
 - [ ] `/health` responds.
 - [ ] Tested with two different browsers (not two tabs of the same one).
+
+### 10.6 Vercel + Ably (no server)
+
+Serverless hosts such as Vercel can't keep WebSockets open, so `server.py` can't run there. Instead, pass the `ably` option and the script speaks the same protocol over [Ably](https://ably.com) channels:
+
+```js
+MultiCursor.init({ ably: { authUrl: "/api/ably-token" } });
+```
+
+- **Channels:** one per room (`roomful:room:<room>`) plus `roomful:site` to count people across the whole site. `prefix` changes `roomful`.
+- **Presence** tells who is in each room; when someone comes in, everyone re-sends their state so the newcomer can draw them.
+- **Validation:** there's no server in between, so the script applies to every incoming message the same rules as `server.py` (§9.4) and drops anything that fails them.
+- **Tokens:** `api/ably-token.js` (a Vercel function) signs token requests with `ABLY_API_KEY`. Tokens are bound to the connection id, last one hour and only allow the `roomful:*` channels. With `ALLOWED_ORIGINS` set, only those sites get tokens.
+- **Rate:** positions are sent at most every 100 ms (instead of 40 ms) so the plan lasts longer.
+- **Differences from `server.py`:** the day's peak is the highest number this visitor has seen, not a server-wide record; `MAX_PER_ROOM`/`MAX_CLIENTS` give way to the limits of your Ably plan.
+
+Setup steps are in the [README](../README.md#deploy-on-vercel).
 
 ## 11. WebSocket protocol
 

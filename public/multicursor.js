@@ -7,6 +7,9 @@
  *
  * Options (all optional):
  *   url         WebSocket URL                      (ws(s)://<current host>/ws)
+ *   ably        { authUrl, prefix, sdk } — use Ably instead of server.py, for
+ *               serverless hosts such as Vercel. authUrl returns an Ably token
+ *               request ("/api/ably-token"); prefix names the channels ("roomful")
  *   room        Room. Defaults to the page path: you only see people on the same
  *               URL (and it follows route changes in SPAs). A fixed value
  *               (e.g. "global") shares one room across the whole site.
@@ -452,6 +455,162 @@
     return typeof l === "string" && /^[a-z]{2}$/.test(l) ? l : "en";
   }
 
+  // ---- Ably transport (serverless hosts such as Vercel) -----------------------
+  // Speaks the same protocol as server.py, but on top of Ably channels: presence
+  // says who is in each room and messages carry state and events. Since there is
+  // no server in between, everything a peer sends is validated here, with the
+  // same rules server.py applies.
+  var ABLY_SDK = "https://cdn.ably.com/lib/ably.min-2.js";
+  var ablyLoading = null;
+
+  function loadAbly(src) {
+    if (global.Ably) return Promise.resolve(global.Ably);
+    if (!ablyLoading) ablyLoading = new Promise(function (ok, ko) {
+      var s = document.createElement("script");
+      s.src = src; s.async = true;
+      s.onload = function () { global.Ably ? ok(global.Ably) : ko(new Error("Ably SDK missing")); };
+      s.onerror = function () { ablyLoading = null; s.remove(); ko(new Error("Ably SDK failed to load")); };
+      document.head.appendChild(s);
+    });
+    return ablyLoading;
+  }
+
+  function abNum(v, lim) { return typeof v === "number" && isFinite(v) && Math.abs(v) < lim; }
+  function abInt(v, max) { return typeof v === "number" && v === Math.floor(v) && v >= 0 && v < max; }
+  function abPath(v) { return Array.isArray(v) && v.length <= 64 && v.every(function (i) { return abInt(i, 100000); }); }
+  var AB_FIELDS = {
+    name: function (v) { return typeof v === "string" && v.length > 0 && v.length <= 32; },
+    color: function (v) { return typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v); },
+    x: function (v) { return abNum(v, 1e6); },
+    y: function (v) { return abNum(v, 1e7); },
+    visible: function (v) { return typeof v === "boolean"; },
+    chat: function (v) { return typeof v === "string" && v.length <= 140; },
+    sel: function (v) {
+      return v === null || (!!v && typeof v === "object" && Object.keys(v).sort().join() === "a,ao,f,fo" &&
+        abPath(v.a) && abPath(v.f) && abInt(v.ao, 1e6) && abInt(v.fo, 1e6));
+    },
+    avatar: function (v) { return typeof v === "string" && (v === "" || (v.length <= AVATAR_MAX && AVATAR_RE.test(v))); },
+    uid: function (v) { return typeof v === "string" && /^[a-z0-9]{8,32}$/.test(v); }
+  };
+  function abPatch(m) {
+    if (!m || typeof m !== "object") return null;
+    var out = {}, n = 0;
+    for (var k in AB_FIELDS) if (Object.prototype.hasOwnProperty.call(m, k) && AB_FIELDS[k](m[k])) { out[k] = m[k]; n++; }
+    return n ? out : null;
+  }
+  function abEvent(m) {
+    if (!m || (m.kind !== "click" && m.kind !== "reaction") || !abNum(m.x, 1e6) || !abNum(m.y, 1e7)) return null;
+    var out = { kind: m.kind, x: m.x, y: m.y };
+    if (m.kind === "reaction") {
+      var e = m.emoji;
+      if (!(typeof e === "string" && e.length > 0 && e.length <= 8 && !/[A-Za-z0-9<>&"'\s]/.test(e))) return null;
+      out.emoji = e;
+    }
+    return out;
+  }
+  function abCopy(o) { var c = {}; for (var k in o) c[k] = o[k]; return c; }
+
+  // Returns an object that behaves like the WebSocket to server.py:
+  // readyState, send(json), close(), onopen, onmessage({ data }), onclose.
+  function ablySocket(cfg, room) {
+    var sock = { readyState: 0, onopen: null, onmessage: null, onclose: null };
+    var id = "";
+    while (id.length < 16) id += Math.random().toString(36).slice(2);
+    id = "a" + id.slice(0, 16);
+    var prefix = cfg.prefix || "roomful";
+    var client = null, chan = null, site = null, closed = false;
+    var state = {}, peak = 0, statsTimer = null, helloTimer = null;
+    function noop() {}
+
+    function emit(obj) { if (!closed && sock.onmessage) sock.onmessage({ data: JSON.stringify(obj) }); }
+    function die() {
+      if (closed) return;
+      closed = true; sock.readyState = 3;
+      clearInterval(statsTimer); clearTimeout(helloTimer);
+      try { if (client) client.close(); } catch (e) {}
+      if (sock.onclose) sock.onclose();
+    }
+    function stats() {
+      if (closed || sock.readyState !== 1) return;
+      Promise.all([chan.presence.get(), site.presence.get()]).then(function (r) {
+        var n = r[0].length;
+        if (n > peak) peak = n;
+        emit({ t: "stats", room: n, site: Math.max(n, r[1].length), peak: peak });
+      }).catch(noop);
+    }
+    // Someone came in: send them our full state so they can draw us right away.
+    function hello() {
+      clearTimeout(helloTimer);
+      helloTimer = setTimeout(function () {
+        if (!closed && state.name) chan.publish("u", abCopy(state)).catch(noop);
+      }, 100 + Math.random() * 600);
+    }
+    function onUpdate(msg) {
+      if (msg.clientId === id) return;
+      var p = abPatch(msg.data);
+      if (!p) return;
+      p.t = "update"; p.id = msg.clientId;
+      emit(p);
+    }
+    function onEvent(msg) {
+      if (msg.clientId === id) return;
+      var ev = abEvent(msg.data);
+      if (!ev) return;
+      ev.t = "event"; ev.id = msg.clientId;
+      emit(ev);
+    }
+    function onPresence(pm) {
+      if (pm.clientId !== id) {
+        if (pm.action === "enter") hello();
+        else if (pm.action === "leave") emit({ t: "leave", id: pm.clientId });
+      }
+      stats();
+    }
+
+    sock.send = function (raw) {
+      if (sock.readyState !== 1) return;
+      var m;
+      try { m = JSON.parse(raw); } catch (e) { return; }
+      if (m.t === "event") {
+        var ev = state.name && abEvent(m);
+        if (ev) chan.publish("e", ev).catch(noop);
+        return;
+      }
+      var patch = abPatch(m);
+      if (!patch) return;
+      var isNew = !state.name && !!patch.name;
+      for (var k in patch) state[k] = patch[k];
+      if (!state.name) return;                     // hasn't introduced itself yet
+      chan.publish("u", isNew ? abCopy(state) : patch).catch(noop);
+    };
+    sock.close = function () { sock.onclose = null; die(); };
+
+    loadAbly(cfg.sdk || ABLY_SDK).then(function (Ably) {
+      if (closed) return;
+      client = new Ably.Realtime({
+        authUrl: cfg.authUrl || "/api/ably-token", authParams: { clientId: id },
+        clientId: id, echoMessages: false, closeOnUnload: true
+      });
+      client.connection.on(function (ch) {
+        if (ch.current === "failed" || ch.current === "suspended" || ch.current === "closed") die();
+      });
+      chan = client.channels.get(prefix + ":room:" + encodeURIComponent(room));
+      site = client.channels.get(prefix + ":site");
+      return Promise.all([chan.subscribe("u", onUpdate), chan.subscribe("e", onEvent), chan.presence.subscribe(onPresence)])
+        .then(function () { return Promise.all([chan.presence.enter(), site.presence.enter()]); })
+        .then(function () {
+          if (closed) return;
+          sock.readyState = 1;
+          if (sock.onopen) sock.onopen();
+          emit({ t: "welcome", id: id, room: room, peers: [] });
+          stats();
+          statsTimer = setInterval(stats, 5000);
+        });
+    }).catch(die);
+
+    return sock;
+  }
+
   function init(opts) {
     opts = opts || {};
     var lang = resolveLang(opts.lang || "en");
@@ -502,6 +661,8 @@
     }
 
     var baseUrl = opts.url || ((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+    // With Ably every message counts towards the plan: send positions a bit less often.
+    var sendEvery = opts.ably ? Math.max(SEND_EVERY_MS, 100) : SEND_EVERY_MS;
     var autoRoom = opts.room == null;
     var room = autoRoom ? roomFromPath(location.pathname) : String(opts.room).slice(0, 128);
     var ghost = store("localStorage", "mc:ghost") === true;
@@ -650,7 +811,7 @@
     function sendPosition() {
       if (!last.has || ghost) return;
       var now = performance.now();
-      var wait = SEND_EVERY_MS - (now - last.sent);
+      var wait = sendEvery - (now - last.sent);
       if (wait > 0) {
         if (!last.pending) last.pending = setTimeout(function () { last.pending = null; sendPosition(); }, wait);
         return;
@@ -664,7 +825,9 @@
       if (destroyed || ghost) return;
       var sock;
       try {
-        sock = ws = new WebSocket(baseUrl + (baseUrl.indexOf("?") < 0 ? "?" : "&") + "room=" + encodeURIComponent(room));
+        sock = ws = opts.ably
+          ? ablySocket(opts.ably, room)
+          : new WebSocket(baseUrl + (baseUrl.indexOf("?") < 0 ? "?" : "&") + "room=" + encodeURIComponent(room));
       } catch (e) { return scheduleRetry(); }
       sock.onopen = function () {
         retry = 0;

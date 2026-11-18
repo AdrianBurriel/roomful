@@ -1,0 +1,12 @@
+{
+  "name": "roomful",
+  "private": true,
+  "type": "module",
+  "description": "Turn any website into a room full of people.",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ably": "^2.0.0"
+  }
+}

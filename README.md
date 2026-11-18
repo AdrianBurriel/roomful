@@ -132,16 +132,16 @@ docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://mydomain.com roomful
 
 The server validates every field (photos included: never SVG), limits messages to 40 per second per client, closes dead connections and exposes `GET /health`. In production, use HTTPS and `wss://`. The full deployment guide, with an nginx config and a checklist, is in the [documentation](docs/DOCUMENTATION.md#10-production-deployment).
 
-### Deploy on Render
+### Deploy on Vercel
 
-The repo includes a [`render.yaml`](render.yaml) Blueprint that publishes everything (landing + WebSocket server) as one free web service:
+Vercel serves the site, and [Ably](https://ably.com) carries the real-time traffic instead of `server.py` (Vercel can't keep WebSockets open). A small function, [`api/ably-token.js`](api/ably-token.js), hands out Ably tokens so your secret key never reaches the browser.
 
-1. Sign in to [Render](https://render.com) with your GitHub account.
-2. **New → Blueprint**, pick this repository and press **Apply**.
-3. Wait for the first build (a couple of minutes). Your site will be live at `https://roomful-XXXX.onrender.com`.
-4. Optional but recommended: in the service's **Environment**, set `ALLOWED_ORIGINS` to that URL.
+1. Create a free account at [Ably](https://ably.com), create an app and copy its **API key** (the one with *publish*, *subscribe* and *presence*).
+2. In [Vercel](https://vercel.com), **Add New → Project** and import this GitHub repository. Leave the defaults: [`vercel.json`](vercel.json) already says what to publish.
+3. Before deploying, add the environment variable `ABLY_API_KEY` with that key, then press **Deploy**.
+4. Optional but recommended: once you know your URL (`https://roomful-XXXX.vercel.app`), add it to `ALLOWED_ORIGINS` and redeploy.
 
-Every push to `main` redeploys automatically. On the free plan the service sleeps after 15 minutes without visits, and the first visitor waits about 50 seconds while it wakes up.
+Every push to `main` redeploys automatically. The landing uses Ably when published and `server.py` on `localhost`. Ably's free plan (6 million messages a month, 200 simultaneous connections) is plenty for a demo; a moving cursor sends up to 10 messages per second.
 
 ## Known limitations
 
@@ -159,7 +159,9 @@ public/multicursor.js   The integration (client)
 public/index.html       Demo landing page explaining the pill (EN/ES)
 server.py               WebSocket relay + static files + /health
 Dockerfile              Deployment image
-render.yaml             Render Blueprint (one-click deploy)
+api/ably-token.js       Vercel function that issues Ably tokens
+vercel.json             Vercel settings (publishes public/)
+package.json            Dependencies of the Vercel function
 docs/DOCUMENTATION.md   Full documentation (English)
 docs/DOCUMENTACION.md   Full documentation (Spanish)
 ```

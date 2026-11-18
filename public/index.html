@@ -631,8 +631,11 @@
   }
 
   applyLang();
+  // Published (Vercel): real-time through Ably. Locally: through server.py at /ws.
+  var isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   var mc = window.mc = MultiCursor.init({
     lang: lang,
+    ably: isLocal ? null : { authUrl: "/api/ably-token" },
     bots: 2,
     botTargets: "h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, pre",
     botPhrases: {
