@@ -4,8 +4,10 @@
 
 **Convierte cualquier web en una sala llena de gente.** Cada página es una sala: los visitantes ven los cursores de los demás en tiempo real, al estilo multijugador de Figma, cada uno con un nombre divertido ("Capibara Zen", "Ajolote Ninja"…). Desde una píldora en la esquina, su puerta a la sala, pueden ver quién hay, chatear junto al cursor, reaccionar con emojis, seguir a otra persona y elegir cómo aparecen.
 
+🔴 **Demo en directo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app/?lang=es). Ábrela en dos ventanas (o en el móvil y el ordenador) y mira cómo se encuentran vuestros cursores.
+
 - **Un solo script** (`multicursor.js`), sin dependencias.
-- **Servidor mínimo** (`server.py`) escrito solo con la librería estándar de Python, o con Docker.
+- **Servidor mínimo** (`server.py`) escrito solo con la librería estándar de Python, o con Docker. O sin servidor: **Vercel + Ably**.
 - **Pensado para reutilizar** en futuros proyectos: una línea para integrarlo, opciones para todo y una API para conectarlo con tu interfaz.
 - **Inglés y español** incluidos, con selector de idioma y la opción de añadir más.
 
