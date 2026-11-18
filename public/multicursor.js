@@ -1289,7 +1289,11 @@
           b.setAttribute("aria-label", t(on ? "stopFollowingName" : "followName", { name: u.name }));
           b.addEventListener("mouseenter", function () { if (following === u.id) b.textContent = t("stop"); });
           b.addEventListener("mouseleave", function () { if (following === u.id) b.textContent = t("followingBtn"); });
-          b.addEventListener("click", function () { if (following === u.id) unfollow(); else follow(u.id); });
+          b.addEventListener("click", function () {
+            if (following === u.id) { unfollow(); return; }
+            follow(u.id);
+            if (following === u.id) closePop();       // now following: get the panel out of the way
+          });
         }
         if (b) b.type = "button";
       });
