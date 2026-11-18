@@ -1,6 +1,8 @@
-# Documentación completa · Cursores colaborativos
+# Documentación completa · Multicursor
 
-Referencia técnica de la integración `multicursor.js` y de su servidor `server.py`. Para una introducción rápida, mira el [README](../README.md).
+🇬🇧 [English](DOCUMENTATION.md) · 🇪🇸 **Español**
+
+Referencia técnica de la integración `multicursor.js` y de su servidor `server.py`. Para una introducción rápida, mira el [README](../README.es.md).
 
 ## Índice
 
@@ -67,7 +69,7 @@ python3 server.py                 # → http://localhost:8080
 - Para pararlo, pulsa `Ctrl+C`.
 - Comprobar que está vivo: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
 
-La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, y arranca con 2 bots.
+La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, y arranca con 2 bots. Está en **inglés por defecto** y tiene un selector **EN | ES** en la barra superior (también vale `?lang=es` en la URL); la elección se recuerda.
 
 ## 4. Integrarlo en un proyecto
 
@@ -127,6 +129,8 @@ Todas son opcionales.
 |---|---|---|---|
 | `url` | string | `ws(s)://<host>/ws` | URL del WebSocket. Puede llevar query (`?token=…`); el script añade `&room=`. |
 | `room` | string | ruta de la página | Sala (máx. 128 caracteres). Sin indicar, una sala por URL (sin barra final) que sigue los cambios de ruta. |
+| `lang` | `"en"` \| `"es"` \| `"auto"` | `"en"` | Idioma de la interfaz. `"auto"` usa el del navegador. Ver [§8.12](#812-idiomas). |
+| `strings` | objeto | — | Textos propios o idiomas nuevos: `{ en: { clave: "…" }, fr: { … } }`. |
 | `name` | string | aleatorio | Nombre fijo. **Desactiva la edición del perfil** (`editable` pasa a `false`). |
 | `color` | `#RRGGBB` | aleatorio | Color inicial (el visitante puede cambiarlo si `editable`). |
 | `avatar` | data URL | — | Foto inicial: PNG, JPEG o WebP en base64, de 14 000 caracteres como máximo. |
@@ -147,7 +151,7 @@ Todas son opcionales.
 | `botsRetireAt` | número | `= bots` (mín. 1) | Los bots se retiran cuando hay al menos este número de personas reales. |
 | `botChat` | boolean | `true` | Los bots escriben mensajes de vez en cuando. |
 | `botTargets` | selector CSS | enlaces, botones, títulos, imágenes… | Elementos hacia los que se mueven los bots. Admite `[data-mc-target]`. |
-| `botPhrases` | array | frases genéricas | Frases del chat de los bots. |
+| `botPhrases` | array \| objeto | frases según idioma | Frases del chat de los bots: un array, o `{ en: [...], es: [...] }` para que sigan el idioma. |
 
 ## 6. API del objeto devuelto
 
@@ -161,15 +165,19 @@ const mc = MultiCursor.init({ ... });
 | `mc.peers` | objeto | Mapa `id → peer` de los demás (incluye bots). Solo lectura. |
 | `mc.room` | getter | Sala actual. |
 | `mc.ghost` | getter | `true` si está en modo fantasma. |
+| `mc.lang` | getter | Idioma actual de la interfaz. |
 | `mc.stats` | getter | `{ page, site, peak }` en este momento. |
 | `mc.setRoom(room)` | función | Cambia de sala manualmente (reconecta). Desde ese momento deja de seguir la ruta de la página de forma automática. |
 | `mc.setGhost(bool)` | función | Activa o desactiva el modo fantasma (se recuerda). |
+| `mc.setLang(lang)` | función | Cambia el idioma de la píldora, los paneles y los nombres aleatorios al momento. |
 | `mc.setIdentity(name, color, avatar?)` | función | Cambia la identidad y la guarda. `avatar`: data URL, `""` para quitarla, `undefined` para no tocarla. |
 | `mc.open(part)` | función | Abre `"people"`, `"profile"`, `"chat"` o `"reactions"`. Si está en modo fantasma, lo desactiva (salvo para `"profile"`). |
 | `mc.close()` | función | Cierra paneles y el selector de emojis. |
 | `mc.react(emoji)` | función | Lanza una reacción desde tu cursor (máximo una cada 250 ms). |
 | `mc.follow(id)` / `mc.unfollow()` | función | Empieza o deja de seguir a otra persona. No se puede seguir a uno mismo. |
 | `mc.destroy()` | función | Desconecta, quita todos los elementos y listeners. Úsalo al desmontar. |
+
+Además, `MultiCursor.languages` lista los idiomas incluidos (`["en", "es"]`).
 
 ## 7. La píldora y los atajos de teclado
 
@@ -224,6 +232,7 @@ Los atajos no se activan mientras escribes en un campo de texto de la página.
 ### 8.3 Identidad y tus otras pestañas
 
 - **Nombre y color aleatorios** se generan por pestaña (`sessionStorage`): cada pestaña nueva recibe uno distinto **hasta que el visitante guarda su perfil**. Desde ese momento, se usa el guardado en todas las pestañas y visitas (`localStorage`).
+- El nombre aleatorio se guarda como "animal + adjetivo" (dos índices), así que se muestra en el idioma activo y se traduce al cambiarlo: "Zen Capybara" ↔ "Capibara Zen". Un nombre guardado por el visitante no se traduce nunca.
 - **Id de navegador** (`mc:uid`): 20 caracteres aleatorios, compartidos por todas las pestañas del mismo navegador y dominio. Sirve para que tus otras pestañas no aparezcan como otra persona: no salen en la píldora, no se pueden seguir y no se dibuja su cursor ni sus clics, reacciones o selecciones.
 - Si una pestaña no envía id (por ejemplo, tiene cargada una versión antigua del script), se considera "tú" si tiene tu mismo nombre y color.
 
@@ -231,7 +240,7 @@ Los atajos no se activan mientras escribes en un campo de texto de la página.
 
 | Clave | Dónde | Contenido |
 |---|---|---|
-| `mc:me` | `sessionStorage` | Identidad aleatoria de la pestaña (si no hay perfil guardado). |
+| `mc:me` | `sessionStorage` | Identidad aleatoria de la pestaña, con sus índices de nombre (`gen`), si no hay perfil guardado. |
 | `mc:me` | `localStorage` | Perfil guardado: `{ name, color, avatar }`. |
 | `mc:uid` | `localStorage` | Id anónimo del navegador. |
 | `mc:ghost` | `localStorage` | `true` si el modo fantasma está activo. |
@@ -291,6 +300,22 @@ Así, en diseños centrados con ancho máximo (lo habitual), un cursor sobre un 
 ### 8.11 Modo fantasma
 
 Al activarlo se **cierra la conexión**: no ves cursores y nadie te ve, ni siquiera en la lista de personas. La preferencia se recuerda. Al desactivarlo se reconecta.
+
+### 8.12 Idiomas
+
+- Incluye **inglés** (por defecto) y **español**. Con `lang: "auto"` se usa el idioma del navegador, o inglés si no está disponible.
+- `mc.setLang("es")` traduce al momento la píldora, los paneles abiertos, los avisos, los tooltips y los **nombres aleatorios**: el tuyo (si no lo has guardado) y los de los bots. Si tu nombre cambia, los demás lo ven actualizado.
+- Cada visitante ve la interfaz en su idioma. Los nombres que se ven son los que envía cada persona.
+- **Textos propios o idiomas nuevos** con `strings`. Las claves están en el diccionario `I18N` al principio de `multicursor.js`; si falta una clave, se usa la versión en inglés.
+
+```js
+MultiCursor.init({
+  lang: "fr",
+  strings: { fr: { seeWho: "Voir qui est là", chatTip: "Écrire à côté de ton curseur", save: "Enregistrer" /* … */ } }
+});
+```
+
+Los nombres aleatorios y las frases de los bots de un idioma nuevo usan los del inglés, salvo que pases `botPhrases` con ese idioma.
 
 ## 9. El servidor
 
@@ -460,16 +485,16 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 
 | Constante | Valor | Qué controla |
 |---|---|---|
-| `ANIMALS`, `ADJECTIVES` | listas | Nombres aleatorios ("Animal Adjetivo") |
+| `I18N` | diccionario | Textos, animales, adjetivos, orden del nombre y frases de bots de cada idioma |
 | `COLORS` | 12 colores | Paleta de cursores y del editor |
 | `REACTIONS` | 8 emojis | Emojis por defecto |
-| `BOT_PHRASES`, `BOT_TARGETS` | — | Valores por defecto de los bots |
+| `BOT_TARGETS` | selector | Elementos hacia los que van los bots por defecto |
 | `BOT_HERE_MS` / `BOT_AWAY_MS` | 7–16 s / 12–30 s | Ritmo de visitas de los bots |
 | `SEND_EVERY_MS` | 40 | Frecuencia de envío de posición |
 | `LERP` | 0.28 | Suavizado de cursores (1 = sin suavizado) |
 | `CHAT_LINGER_MS` | 4000 | Tiempo que se queda un mensaje tras Enter |
 
-- **Textos:** la interfaz está en español y los textos están en el propio script. Para traducirla, busca los literales en `multicursor.js`.
+- **Textos e idiomas:** todo texto visible pasa por el diccionario `I18N`; usa la opción `strings` para cambiarlos sin tocar el script (ver [§8.12](#812-idiomas)).
 
 ## 16. Solución de problemas
 
@@ -493,12 +518,14 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 cursores-colaborativos/
 ├── public/
 │   ├── multicursor.js     # La integración (cliente)
-│   └── index.html         # Landing de demo que explica la píldora
+│   └── index.html         # Landing de demo que explica la píldora (EN/ES)
 ├── server.py              # Relay WebSocket + estáticos + /health
 ├── Dockerfile             # Imagen de despliegue
 ├── docs/
-│   └── DOCUMENTACION.md   # Este documento
-└── README.md
+│   ├── DOCUMENTATION.md   # Documentación completa (inglés)
+│   └── DOCUMENTACION.md   # Este documento (español)
+├── README.md              # Inglés
+└── README.es.md           # Español
 ```
 
 ---

@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Anatomía de la Píldora</title>
+<title>Pill Anatomy · Multicursor</title>
+<meta name="description" content="Figma-style multiplayer cursors for any website: see who is on the page, chat next to your cursor, react, follow people and customize your profile.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -36,7 +37,7 @@
   .mono{font-family:var(--mono);font-size:12px;letter-spacing:.02em}
   button{font:inherit;color:inherit}
 
-  /* ---------- Barra superior: como la toolbar de un editor ---------- */
+  /* ---------- Top bar: like an editor toolbar ---------- */
   .top{position:sticky;top:14px;z-index:20;margin:14px auto 0;max-width:1180px;padding:0 28px}
   .bar{display:flex;align-items:center;gap:6px;height:52px;padding:0 8px 0 16px;border-radius:14px;
     background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);
@@ -45,13 +46,18 @@
   .logo svg{display:block}
   .bar nav{display:flex;gap:2px}
   .bar nav a{font-size:14px;text-decoration:none;color:var(--muted);padding:8px 12px;border-radius:9px}
+  .lang{display:inline-flex;padding:3px;border-radius:10px;background:color-mix(in srgb,var(--ink) 7%,transparent);margin-left:8px}
+  .lang button{all:unset;cursor:pointer;font:600 12px var(--mono);letter-spacing:.04em;padding:6px 9px;border-radius:7px;color:var(--muted)}
+  .lang button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .lang button:hover{color:var(--ink)}
+  .lang button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
   .bar-gh{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;margin-left:8px;border-radius:10px;
     background:var(--ink);color:var(--canvas);font-size:14px;font-weight:600;text-decoration:none;transition:transform .12s}
   .bar-gh:hover{transform:translateY(-1px)}
   .bar-gh:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
   .bar nav a:hover{background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink)}
 
-  /* ---------- Frames (secciones como marcos de Figma) ---------- */
+  /* ---------- Frames (sections as Figma frames) ---------- */
   .frame{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:44px}
   .frame-label{position:absolute;left:2px;top:-26px;display:flex;gap:8px;align-items:center;
     font:500 12px var(--mono);color:var(--muted);transition:color .15s}
@@ -89,7 +95,7 @@
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
   .note{font-size:14px;margin-top:14px}
 
-  /* ---------- Hero / anatomía ---------- */
+  /* ---------- Hero / anatomy ---------- */
   .hero{padding:72px 0 40px}
   .hero h1{font-size:clamp(48px,8.4vw,118px);line-height:.94;max-width:1000px}
   .hero h1 em{color:var(--me);transition:color .3s}
@@ -142,7 +148,7 @@
   .legend span:not(.num){font-size:14px;color:var(--muted);line-height:1.4;display:block}
 
 
-  /* ---------- 01 · Contador ---------- */
+  /* ---------- 01 · People ---------- */
   .stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .stats div{padding:26px 22px;border-left:1px solid var(--line)}
   .stats div:first-child{border-left:0}
@@ -166,7 +172,7 @@
   .caret{display:inline-block;width:2px;height:1em;background:currentColor;vertical-align:-2px;margin-left:2px;animation:blink 1s steps(1) infinite}
   @keyframes blink{50%{opacity:0}}
 
-  /* ---------- 03 · Avatares ---------- */
+  /* ---------- Cards ---------- */
   .duo{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:36px}
   .card{border:1px solid var(--line);border-radius:14px;padding:26px;background:var(--canvas)}
   .card h3{font-size:22px;margin:18px 0 8px}
@@ -180,14 +186,14 @@
   .follow-demo .fake{left:58%;top:52px}
   .card .btn{margin-top:20px;height:40px;font-size:14px}
 
-  /* ---------- 04 · Reacciones ---------- */
+  /* ---------- 03 · Reactions ---------- */
   .emoji-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
   .emoji-grid button{position:relative;aspect-ratio:1;border-radius:18px;border:1px solid var(--line);background:var(--canvas);
     font-size:clamp(34px,4vw,48px);cursor:pointer;transition:transform .15s, border-color .15s}
   .emoji-grid button:hover{transform:translateY(-3px) rotate(-3deg);border-color:var(--sel)}
   .emoji-grid button:active{transform:scale(.94)}
 
-  /* ---------- 05 · Ojo ---------- */
+  /* ---------- 04 · Ghost mode ---------- */
   .ghost-art{position:relative;display:grid;place-items:center;height:300px;border-radius:14px;border:1px solid var(--line);overflow:hidden;
     background:repeating-linear-gradient(-45deg,var(--canvas) 0 12px,color-mix(in srgb,var(--line) 55%,var(--canvas)) 12px 13px)}
   .ghost-art .big-eye{width:120px;height:120px;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;
@@ -198,7 +204,7 @@
     background:color-mix(in srgb,var(--c3) 16%,transparent);color:color-mix(in srgb,var(--c3) 70%,var(--ink));margin-top:22px}
   body.is-ghost .state{background:color-mix(in srgb,var(--muted) 18%,transparent);color:var(--muted)}
 
-  /* ---------- Sin tocar la píldora ---------- */
+  /* ---------- Without touching the pill ---------- */
   .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:56px}
   .trio .frame{padding:30px}
   .trio h3{font-size:24px;margin:6px 0 10px}
@@ -222,7 +228,7 @@
   .bots{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;margin-top:22px}
   .bots .stack i{width:52px;height:52px;font-size:16px;border-color:var(--surface)}
 
-  /* ---------- Integrar ---------- */
+  /* ---------- Integrate ---------- */
   pre{margin:0;padding:24px 26px;border-radius:14px;background:#151515;border:1px solid #2B2B2B;color:#E9E7E1;font:14px/1.7 var(--mono);overflow:auto}
   pre .c{color:#7C7A72} pre .s{color:#FFC700} pre .k{color:#1ABCFE} pre .f{color:#0ACF83}
   .code{position:relative}
@@ -244,6 +250,7 @@
     .pill-xl{zoom:.72}
   }
   @media (max-width:640px){
+    .bar-gh{padding:0 10px}.bar-gh span{display:none}
     .wrap,.top{padding:0 16px}
     .pill-xl{zoom:.5}
     .anatomy{padding:56px 8px 16px}
@@ -262,16 +269,20 @@
   <div class="bar">
     <a class="logo" href="#">
       <svg width="22" height="24" viewBox="0 0 20 22" aria-hidden="true"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--me)" stroke="var(--ink)" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      Píldora
+      Multicursor
     </a>
-    <nav aria-label="Secciones">
-      <a href="#personas">Personas</a>
-      <a href="#chat">Chat</a>
-      <a href="#reacciones">Reacciones</a>
-      <a href="#perfil">Tu perfil</a>
-      <a href="#integrar">Integrar</a>
+    <nav data-i18n-attr="aria-label:navLabel" aria-label="Sections">
+      <a href="#people" data-i18n="navPeople">People</a>
+      <a href="#chat" data-i18n="navChat">Chat</a>
+      <a href="#reactions" data-i18n="navReactions">Reactions</a>
+      <a href="#profile" data-i18n="navProfile">Your profile</a>
+      <a href="#integrate" data-i18n="navIntegrate">Integrate</a>
     </nav>
-    <a class="bar-gh" href="https://github.com/AdrianBurriel/cursores-colaborativos" target="_blank" rel="noopener" aria-label="Ver el proyecto en GitHub (se abre en otra pestaña)">
+    <div class="lang" role="group" data-i18n-attr="aria-label:langLabel" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true" lang="en" title="English">EN</button>
+      <button type="button" data-lang="es" aria-pressed="false" lang="es" title="Español">ES</button>
+    </div>
+    <a class="bar-gh" href="https://github.com/AdrianBurriel/cursores-colaborativos" target="_blank" rel="noopener" data-i18n-attr="aria-label:ghLabel" aria-label="View the project on GitHub (opens in a new tab)">
       <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span>
     </a>
   </div>
@@ -280,55 +291,55 @@
 <!-- ============ HERO ============ -->
 <header class="hero">
   <div class="wrap">
-    <div class="kicker"><span class="num">↘</span> Guía de la píldora</div>
-    <h1>Esta página tiene <em>gente</em> dentro.</h1>
-    <p class="lede">Todo lo que pasa entre los visitantes se controla desde una sola pieza: la píldora de abajo a la derecha. Tiene cuatro partes; aquí te enseñamos cada una, y todas las demos funcionan de verdad.</p>
+    <div class="kicker"><span class="num">↘</span> <span data-i18n="heroKicker">A guide to the pill</span></div>
+    <h1 data-i18n="heroTitle">This page has <em>people</em> in it.</h1>
+    <p class="lede" data-i18n="heroLede">Everything that happens between visitors is controlled from a single piece: the pill in the bottom-right corner. It has four parts; here we show you each one, and every demo really works.</p>
 
-    <div class="frame anatomy" data-size="Píldora · escala 2×">
-      <span class="frame-label">Anatomía</span>
-      <div class="pill-xl" aria-label="Réplica ampliada de la píldora">
-        <span class="part" data-n="1" data-for="personas">
+    <div class="frame anatomy" data-size="Pill · 2× scale" data-i18n-attr="data-size:anatomySize">
+      <span class="frame-label" data-i18n="anatomyLabel">Anatomy</span>
+      <div class="pill-xl" data-i18n-attr="aria-label:pillReplica" aria-label="Enlarged replica of the pill">
+        <span class="part" data-n="1" data-for="people">
           <span class="stack"><i style="background:var(--c4)">AZ</i><i style="background:var(--c1)">TT</i><i style="background:var(--c3)">KL</i></span>
-          <span data-stat="label">4 aquí</span>
+          <span data-stat="label">4 here</span>
         </span>
         <span class="sep"></span>
         <span class="part ico" data-n="2" data-for="chat"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.5-5.2A8.5 8.5 0 1 1 21 12z"/></svg></span>
-        <span class="part ico" data-n="3" data-for="reacciones"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg></span>
+        <span class="part ico" data-n="3" data-for="reactions"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg></span>
         <span class="sep"></span>
-        <span class="part" data-n="4" data-for="perfil"><i class="avatar me mini" data-me-initials>TÚ</i><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:.45"><path d="M18 15l-6-6-6 6"/></svg></span>
+        <span class="part" data-n="4" data-for="profile"><i class="avatar me mini" data-me-initials>ME</i><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:.45"><path d="M18 15l-6-6-6 6"/></svg></span>
       </div>
     </div>
 
     <div class="legend">
-      <a href="#personas" data-for="personas"><span class="num">1</span><strong>Personas</strong><span>Quién está aquí, qué hace y a quién seguir.</span></a>
-      <a href="#chat" data-for="chat"><span class="num">2</span><strong>Chat</strong><span>Escribe junto a tu cursor. Atajo: <kbd>/</kbd></span></a>
-      <a href="#reacciones" data-for="reacciones"><span class="num">3</span><strong>Reacciones</strong><span>Emojis que flotan desde tu cursor. Atajo: <kbd>E</kbd></span></a>
-      <a href="#perfil" data-for="perfil"><span class="num">4</span><strong>Tu perfil</strong><span>Nombre, color, foto y modo fantasma.</span></a>
+      <a href="#people" data-for="people"><span class="num">1</span><strong data-i18n="legPeople">People</strong><span data-i18n="legPeopleText">Who's here, what they're doing and who to follow.</span></a>
+      <a href="#chat" data-for="chat"><span class="num">2</span><strong data-i18n="legChat">Chat</strong><span data-i18n="legChatText">Write next to your cursor. Shortcut: <kbd>/</kbd></span></a>
+      <a href="#reactions" data-for="reactions"><span class="num">3</span><strong data-i18n="legReactions">Reactions</strong><span data-i18n="legReactionsText">Emojis that float up from your cursor. Shortcut: <kbd>E</kbd></span></a>
+      <a href="#profile" data-for="profile"><span class="num">4</span><strong data-i18n="legProfile">Your profile</strong><span data-i18n="legProfileText">Name, color, photo and ghost mode.</span></a>
     </div>
   </div>
 </header>
 
-<!-- ============ 01 PERSONAS ============ -->
-<section id="personas">
+<!-- ============ 01 PEOPLE ============ -->
+<section id="people">
   <div class="wrap">
     <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label">01 — Personas</span>
+      <span class="frame-label" data-i18n="s1Label">01 — People</span>
       <div>
-        <div class="kicker"><span class="num">1</span> Las caras de la izquierda</div>
-        <h2 class="h2">¿Quién más <em>anda</em> por aquí?</h2>
-        <p class="lede">Las caras y el número te dicen cuánta gente hay en esta página. Púlsalas y verás quién es cada uno, si está activo, escribiendo o ausente, y un botón para <b>seguirle</b>: tu página irá a donde vaya esa persona.</p>
+        <div class="kicker"><span class="num">1</span> <span data-i18n="s1Kicker">The faces on the left</span></div>
+        <h2 class="h2" data-i18n="s1Title">Who else is <em>hanging</em> around?</h2>
+        <p class="lede" data-i18n="s1Lede">The faces and the number tell you how many people are on this page. Click them to see who each one is, whether they're active, typing or away, and a button to <b>follow</b> them: your page will go wherever that person goes.</p>
         <div class="actions">
-          <button class="btn solid" type="button" data-open="people">Ver quién está aquí</button>
+          <button class="btn solid" type="button" data-open="people" data-i18n="s1Btn">See who's here</button>
         </div>
-        <p class="note">Las cifras salen de la misma fuente que la píldora (<span class="mono">onStats</span>), así que puedes ponerlas donde quieras de tu web.</p>
+        <p class="note" data-i18n="s1Note">The numbers come from the same source as the pill (<span class="mono">onStats</span>), so you can show them anywhere on your site.</p>
       </div>
       <div class="mock" aria-hidden="true">
-        <div class="mock-head"><b data-stat="page">–</b><div><strong>personas en esta página</strong><small><span data-stat="site">–</span> en toda la web · pico de hoy: <span data-stat="peak">–</span></small></div><span class="live">En directo</span></div>
+        <div class="mock-head"><b data-stat="page">–</b><div><strong data-i18n="mockPeopleHere">people on this page</strong><small><span data-stat="site">–</span> <span data-i18n="mockSite">on the whole site · today's peak:</span> <span data-stat="peak">–</span></small></div><span class="live" data-i18n="live">Live</span></div>
         <ul class="mock-list">
-          <li><i class="avatar me" data-me-initials>TÚ</i><div><strong data-me-name>Tú</strong><small>Tú</small></div><span class="mbtn">Editar</span></li>
-          <li><i style="background:var(--c4)">AZ</i><div><strong>Ajolote Zen</strong><small><em class="dot"></em>Activo</small></div><span class="mbtn">Seguir</span></li>
-          <li><i style="background:var(--c1)">TT</i><div><strong>Tapir Turbo</strong><small><em class="dot blue"></em>Escribiendo…</small></div><span class="mbtn on">Siguiendo</span></li>
-          <li><i style="background:var(--c3)">KL</i><div><strong>Koala Lunar</strong><small><em class="dot grey"></em>Ausente</small></div><span class="mbtn">Seguir</span></li>
+          <li><i class="avatar me" data-me-initials>ME</i><div><strong data-me-name>You</strong><small data-i18n="mockYou">You</small></div><span class="mbtn" data-i18n="mockEdit">Edit</span></li>
+          <li><i style="background:var(--c4)">ZA</i><div><strong data-i18n="botAxolotl">Zen Axolotl</strong><small><em class="dot"></em><span data-i18n="mockActive">Active</span></small></div><span class="mbtn" data-i18n="mockFollow">Follow</span></li>
+          <li><i style="background:var(--c1)">TT</i><div><strong data-i18n="botTapir">Turbo Tapir</strong><small><em class="dot blue"></em><span data-i18n="mockTyping">Typing…</span></small></div><span class="mbtn on" data-i18n="mockFollowing">Following</span></li>
+          <li><i style="background:var(--c3)">LK</i><div><strong data-i18n="botKoala">Lunar Koala</strong><small><em class="dot grey"></em><span data-i18n="mockAway">Away</span></small></div><span class="mbtn" data-i18n="mockFollow2">Follow</span></li>
         </ul>
       </div>
     </div>
@@ -339,37 +350,37 @@
 <section id="chat">
   <div class="wrap">
     <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label">02 — Chat</span>
+      <span class="frame-label" data-i18n="s2Label">02 — Chat</span>
       <div class="scene" aria-hidden="true">
         <div class="fake" style="left:16%;top:22%">
           <svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--me)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
-          <div class="bubble" style="background:var(--me);color:var(--me-ink)"><small data-me-name>Tú</small>¿Os gusta este titular?<span class="caret"></span></div>
+          <div class="bubble" style="background:var(--me);color:var(--me-ink)"><small data-me-name>You</small><span data-i18n="bubbleMe">Do you like this headline?</span><span class="caret"></span></div>
         </div>
         <div class="fake" style="left:58%;top:58%">
           <svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c3)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
-          <div class="bubble" style="background:var(--c3);color:#fff"><small>Ajolote Zen</small>¡Mucho! 🙌</div>
+          <div class="bubble" style="background:var(--c3);color:#fff"><small data-i18n="botAxolotl2">Zen Axolotl</small><span data-i18n="bubbleOther">Love it! 🙌</span></div>
         </div>
       </div>
       <div>
-        <div class="kicker"><span class="num">2</span> El bocadillo</div>
-        <h2 class="h2">Habla <em>donde</em> estás mirando.</h2>
-        <p class="lede">Pulsa el bocadillo o la tecla <kbd>/</kbd> y escribe: tu mensaje aparece pegado a tu cursor, en directo. <kbd>Enter</kbd> lo deja unos segundos y <kbd>Esc</kbd> lo borra.</p>
-        <div class="actions"><button class="btn solid" type="button" data-open="chat">Escribir algo</button></div>
+        <div class="kicker"><span class="num">2</span> <span data-i18n="s2Kicker">The speech bubble</span></div>
+        <h2 class="h2" data-i18n="s2Title">Talk <em>where</em> you're looking.</h2>
+        <p class="lede" data-i18n="s2Lede">Click the speech bubble or press <kbd>/</kbd> and type: your message appears next to your cursor, live. <kbd>Enter</kbd> keeps it for a few seconds and <kbd>Esc</kbd> clears it.</p>
+        <div class="actions"><button class="btn solid" type="button" data-open="chat" data-i18n="s2Btn">Write something</button></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ 03 REACCIONES ============ -->
-<section id="reacciones">
+<!-- ============ 03 REACTIONS ============ -->
+<section id="reactions">
   <div class="wrap">
     <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label">03 — Reacciones</span>
+      <span class="frame-label" data-i18n="s3Label">03 — Reactions</span>
       <div>
-        <div class="kicker"><span class="num">3</span> La carita</div>
-        <h2 class="h2">Aplaude sin <em>decir</em> nada.</h2>
-        <p class="lede">La carita abre los emojis. Con teclado es más rápido: pulsa <kbd>E</kbd> donde tengas el cursor y elige. Salen flotando desde ahí y los ve todo el mundo.</p>
-        <p class="note">Pruébalo aquí mismo: pulsa cualquiera de estos emojis.</p>
+        <div class="kicker"><span class="num">3</span> <span data-i18n="s3Kicker">The smiley</span></div>
+        <h2 class="h2" data-i18n="s3Title">Applaud without <em>saying</em> a word.</h2>
+        <p class="lede" data-i18n="s3Lede">The smiley opens the emojis. With the keyboard it's faster: press <kbd>E</kbd> wherever your cursor is and pick one. They float up from there and everyone sees them.</p>
+        <p class="note" data-i18n="s3Note">Try it right here: click any of these emojis.</p>
       </div>
       <div class="emoji-grid" data-mc-target>
         <button type="button" data-react="❤️">❤️</button>
@@ -385,31 +396,31 @@
   </div>
 </section>
 
-<!-- ============ 04 TU PERFIL ============ -->
-<section id="perfil">
+<!-- ============ 04 YOUR PROFILE ============ -->
+<section id="profile">
   <div class="wrap">
     <div class="frame" data-size="W Fill · H Hug">
-      <span class="frame-label">04 — Tu perfil</span>
-      <div class="kicker"><span class="num">4</span> Tu cara, a la derecha</div>
-      <h2 class="h2">Tú decides <em>cómo</em> te ven. O si te ven.</h2>
+      <span class="frame-label" data-i18n="s4Label">04 — Your profile</span>
+      <div class="kicker"><span class="num">4</span> <span data-i18n="s4Kicker">Your face, on the right</span></div>
+      <h2 class="h2" data-i18n="s4Title">You decide <em>how</em> they see you. Or whether they do.</h2>
       <div class="duo">
         <div class="card">
-          <div class="avatar me" data-me-initials>TÚ</div>
-          <h3><span data-me-name>Tú</span></h3>
-          <p>Cambia tu nombre, tu color o pon una foto desde tu ordenador. ¿Sin ideas? El dado elige nombre y color al azar. Lo recordamos para la próxima vez.</p>
-          <button class="btn" type="button" data-open="profile">Editar mi perfil</button>
+          <div class="avatar me" data-me-initials>ME</div>
+          <h3><span data-me-name>You</span></h3>
+          <p data-i18n="s4Text">Change your name, your color or add a photo from your computer. Out of ideas? The dice picks a random name and color. We'll remember it for next time.</p>
+          <button class="btn" type="button" data-open="profile" data-i18n="s4Btn">Edit my profile</button>
         </div>
         <div class="card">
           <div class="ghost-art" aria-hidden="true">
-            <div class="fake" style="left:14%;top:22%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c1)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c1);color:#fff">Tapir Turbo</div></div>
-            <div class="fake" style="left:58%;top:62%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c4)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c4);color:#fff">Koala Lunar</div></div>
+            <div class="fake" style="left:14%;top:22%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c1)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c1);color:#fff" data-i18n="botTapir2">Turbo Tapir</div></div>
+            <div class="fake" style="left:58%;top:62%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c4)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c4);color:#fff" data-i18n="botKoala2">Lunar Koala</div></div>
             <div class="big-eye" data-eye></div>
           </div>
-          <h3>Modo <em>fantasma</em></h3>
-          <p>Oculta los cursores de los demás y deja de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.</p>
+          <h3 data-i18n="ghostTitle"><em>Ghost</em> mode</h3>
+          <p data-i18n="ghostText">Hides other people's cursors and stops sharing yours. You disconnect completely: nobody sees you, not even in the list.</p>
           <div class="actions" style="margin-top:20px;align-items:center">
-            <button class="btn" type="button" data-open="ghost">Activar modo fantasma</button>
-            <span class="state" data-ghost-state style="margin:0">● Visible para los demás</span>
+            <button class="btn" type="button" data-open="ghost">Turn on ghost mode</button>
+            <span class="state" data-ghost-state style="margin:0">● Visible to others</span>
           </div>
         </div>
       </div>
@@ -417,65 +428,66 @@
   </div>
 </section>
 
-<!-- ============ SIN TOCAR LA PÍLDORA ============ -->
+<!-- ============ WITHOUT TOUCHING THE PILL ============ -->
 <section>
   <div class="wrap">
-    <div class="kicker"><span class="num">+</span> Lo que pasa sin tocar la píldora</div>
-    <h2 class="h2">Y además, <em>sin hacer nada</em>…</h2>
+    <div class="kicker"><span class="num">+</span> <span data-i18n="extrasKicker">What happens without touching the pill</span></div>
+    <h2 class="h2" data-i18n="extrasTitle">And on top of that, <em>without doing a thing</em>…</h2>
     <div class="trio">
-      <div class="frame" data-size="Clics">
-        <span class="frame-label">Clics</span>
-        <h3>Tus clics se <em>notan</em></h3>
-        <p>Cada clic deja una onda de tu color en la pantalla de los demás.</p>
-        <div class="zone" data-zone>haz clic aquí</div>
+      <div class="frame" data-size="Clicks" data-i18n-attr="data-size:clicksLabel">
+        <span class="frame-label" data-i18n="clicksLabel">Clicks</span>
+        <h3 data-i18n="clicksTitle">Your clicks <em>show</em></h3>
+        <p data-i18n="clicksText">Every click leaves a ripple in your color on other people's screens.</p>
+        <div class="zone" data-zone data-i18n="clicksZone">click here</div>
       </div>
-      <div class="frame" data-size="Selección">
-        <span class="frame-label">Selección</span>
-        <h3>Lo que <em>subrayas</em> se ve</h3>
-        <p>Selecciona texto y los demás lo verán resaltado con tu color, aunque su pantalla sea distinta.</p>
-        <div class="selectme">Selecciona esta frase y mira la otra pestaña: <mark>aparece resaltada</mark> con tu color.</div>
+      <div class="frame" data-size="Selection" data-i18n-attr="data-size:selLabel">
+        <span class="frame-label" data-i18n="selLabel">Selection</span>
+        <h3 data-i18n="selTitle">What you <em>highlight</em> shows</h3>
+        <p data-i18n="selText">Select some text and others will see it highlighted in your color, even on a different screen.</p>
+        <div class="selectme" data-i18n="selDemo">Select this sentence and look at the other tab: <mark>it shows up highlighted</mark> in your color.</div>
       </div>
-      <div class="frame" data-size="Reposo">
-        <span class="frame-label">Reposo</span>
-        <h3>Si te vas, <em>se nota</em></h3>
-        <p>Tras 30 segundos sin moverte, tu cursor se atenúa y se echa una siesta: zzz.</p>
+      <div class="frame" data-size="Idle" data-i18n-attr="data-size:idleLabel">
+        <span class="frame-label" data-i18n="idleLabel">Idle</span>
+        <h3 data-i18n="idleTitle">If you leave, <em>it shows</em></h3>
+        <p data-i18n="idleText">After 30 seconds without moving, your cursor fades and takes a nap: zzz.</p>
         <div class="idle-demo" aria-hidden="true">
-          <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c2)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c2);color:#1e1e1e">Perezoso Zen</div><div class="zzz" style="color:var(--c2)"><span>z</span><span>z</span><span>z</span></div></div>
+          <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c2)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c2);color:#1e1e1e" data-i18n="botSloth">Zen Sloth</div><div class="zzz" style="color:var(--c2)"><span>z</span><span>z</span><span>z</span></div></div>
         </div>
       </div>
     </div>
 
-    <div class="frame" style="margin-top:56px" data-size="Compañía">
-      <span class="frame-label">Nunca vacía</span>
+    <div class="frame" style="margin-top:56px" data-size="Company" data-i18n-attr="data-size:botsSize">
+      <span class="frame-label" data-i18n="botsLabel">Never empty</span>
       <div class="bots">
-        <div class="stack" aria-hidden="true"><i style="background:var(--c5)">CZ</i><i style="background:var(--c2);color:#1e1e1e">QF</i></div>
+        <div class="stack" aria-hidden="true"><i style="background:var(--c5)">ZC</i><i style="background:var(--c2);color:#1e1e1e">FQ</i></div>
         <div>
-          <h3 style="font-size:26px;margin-bottom:8px">Si llegas el primero, <em>no</em> estarás solo.</h3>
-          <p>Cuando la página está vacía, un par de visitantes de compañía se pasean, curiosean y saludan de vez en cuando. En cuanto llega gente de verdad, se retiran discretamente.</p>
+          <h3 style="font-size:26px;margin-bottom:8px" data-i18n="botsTitle">If you're the first one here, you <em>won't</em> be alone.</h3>
+          <p data-i18n="botsText">When the page is empty, a couple of companion visitors wander around, look at things and say hi now and then. As soon as real people arrive, they quietly step out.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ INTEGRAR ============ -->
-<section id="integrar">
+<!-- ============ INTEGRATE ============ -->
+<section id="integrate">
   <div class="wrap">
-    <div class="frame" data-size="Código">
-      <span class="frame-label">Integrar</span>
-      <div class="kicker"><span class="num">&lt;/&gt;</span> Para desarrolladores</div>
-      <h2 class="h2" style="margin-bottom:28px">Dos líneas y tu web tiene <em>gente</em>.</h2>
+    <div class="frame" data-size="Code" data-i18n-attr="data-size:codeSize">
+      <span class="frame-label" data-i18n="intLabel">Integrate</span>
+      <div class="kicker"><span class="num">&lt;/&gt;</span> <span data-i18n="intKicker">For developers</span></div>
+      <h2 class="h2" style="margin-bottom:28px" data-i18n="intTitle">Two lines and your site has <em>people</em>.</h2>
       <div class="code">
-      <button class="copy" type="button" data-copy>Copiar</button>
-<pre><code><span class="c">&lt;!-- 1. El script --&gt;</span>
+      <button class="copy" type="button" data-copy data-i18n="copy">Copy</button>
+<pre><code data-i18n="code"><span class="c">&lt;!-- 1. The script --&gt;</span>
 &lt;<span class="k">script</span> src=<span class="s">"/multicursor.js"</span>&gt;&lt;/<span class="k">script</span>&gt;
 
-<span class="c">&lt;!-- 2. Conéctalo a tu servidor --&gt;</span>
+<span class="c">&lt;!-- 2. Connect it to your server --&gt;</span>
 &lt;<span class="k">script</span>&gt;
   MultiCursor.<span class="f">init</span>({
-    url: <span class="s">"wss://cursores.tuweb.com/ws"</span>,
+    url: <span class="s">"wss://cursors.yoursite.com/ws"</span>,
+    lang: <span class="s">"en"</span>,
     bots: <span class="s">2</span>,
-    onStats: s =&gt; console.<span class="f">log</span>(s.page, <span class="s">"personas aquí"</span>)
+    onStats: s =&gt; console.<span class="f">log</span>(s.page, <span class="s">"people here"</span>)
   });
 &lt;/<span class="k">script</span>&gt;</code></pre>
       </div>
@@ -486,23 +498,123 @@
 <footer>
   <div class="wrap">
     <div class="legal">
-      <span>Píldora · hecho con <span class="mono">multicursor.js</span></span>
-      <span>© <span data-year>2026</span> Adrián Burriel. Todos los derechos reservados.</span>
+      <span data-i18n="madeWith">Multicursor · made with <span class="mono">multicursor.js</span></span>
+      <span>© <span data-year>2026</span> Adrián Burriel. <span data-i18n="rights">All rights reserved.</span></span>
     </div>
     <a class="gh" href="https://github.com/AdrianBurriel/cursores-colaborativos" target="_blank" rel="noopener">
       <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      Ver el proyecto en GitHub
+      <span data-i18n="ghFooter">View the project on GitHub</span>
     </a>
   </div>
 </footer>
 
 
-<!-- La integración -->
+<!-- The integration -->
 <script src="/multicursor.js"></script>
 <script>
 (function () {
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  // ---- Landing translations --------------------------------------------------
+  // English lives in the HTML itself (so the page works without JS); Spanish lives here.
+  var ES = {
+    navLabel: "Secciones", navPeople: "Personas", navChat: "Chat", navReactions: "Reacciones",
+    navProfile: "Tu perfil", navIntegrate: "Integrar", langLabel: "Idioma",
+    ghLabel: "Ver el proyecto en GitHub (se abre en otra pestaña)",
+    heroKicker: "Guía de la píldora",
+    heroTitle: "Esta página tiene <em>gente</em> dentro.",
+    heroLede: "Todo lo que pasa entre los visitantes se controla desde una sola pieza: la píldora de abajo a la derecha. Tiene cuatro partes; aquí te enseñamos cada una, y todas las demos funcionan de verdad.",
+    anatomySize: "Píldora · escala 2×", anatomyLabel: "Anatomía", pillReplica: "Réplica ampliada de la píldora",
+    legPeople: "Personas", legPeopleText: "Quién está aquí, qué hace y a quién seguir.",
+    legChat: "Chat", legChatText: "Escribe junto a tu cursor. Atajo: <kbd>/</kbd>",
+    legReactions: "Reacciones", legReactionsText: "Emojis que flotan desde tu cursor. Atajo: <kbd>E</kbd>",
+    legProfile: "Tu perfil", legProfileText: "Nombre, color, foto y modo fantasma.",
+    s1Label: "01 — Personas", s1Kicker: "Las caras de la izquierda",
+    s1Title: "¿Quién más <em>anda</em> por aquí?",
+    s1Lede: "Las caras y el número te dicen cuánta gente hay en esta página. Púlsalas y verás quién es cada uno, si está activo, escribiendo o ausente, y un botón para <b>seguirle</b>: tu página irá a donde vaya esa persona.",
+    s1Btn: "Ver quién está aquí",
+    s1Note: "Las cifras salen de la misma fuente que la píldora (<span class=\"mono\">onStats</span>), así que puedes ponerlas donde quieras de tu web.",
+    mockPeopleHere: "personas en esta página", mockSite: "en toda la web · pico de hoy:", live: "En directo",
+    mockYou: "Tú", mockEdit: "Editar", mockActive: "Activo", mockTyping: "Escribiendo…", mockAway: "Ausente",
+    mockFollow: "Seguir", mockFollow2: "Seguir", mockFollowing: "Siguiendo",
+    botAxolotl: "Ajolote Zen", botAxolotl2: "Ajolote Zen", botTapir: "Tapir Turbo", botTapir2: "Tapir Turbo",
+    botKoala: "Koala Lunar", botKoala2: "Koala Lunar", botSloth: "Perezoso Zen",
+    s2Label: "02 — Chat", s2Kicker: "El bocadillo", s2Title: "Habla <em>donde</em> estás mirando.",
+    s2Lede: "Pulsa el bocadillo o la tecla <kbd>/</kbd> y escribe: tu mensaje aparece pegado a tu cursor, en directo. <kbd>Enter</kbd> lo deja unos segundos y <kbd>Esc</kbd> lo borra.",
+    s2Btn: "Escribir algo", bubbleMe: "¿Os gusta este titular?", bubbleOther: "¡Mucho! 🙌",
+    s3Label: "03 — Reacciones", s3Kicker: "La carita", s3Title: "Aplaude sin <em>decir</em> nada.",
+    s3Lede: "La carita abre los emojis. Con teclado es más rápido: pulsa <kbd>E</kbd> donde tengas el cursor y elige. Salen flotando desde ahí y los ve todo el mundo.",
+    s3Note: "Pruébalo aquí mismo: pulsa cualquiera de estos emojis.",
+    s4Label: "04 — Tu perfil", s4Kicker: "Tu cara, a la derecha", s4Title: "Tú decides <em>cómo</em> te ven. O si te ven.",
+    s4Text: "Cambia tu nombre, tu color o pon una foto desde tu ordenador. ¿Sin ideas? El dado elige nombre y color al azar. Lo recordamos para la próxima vez.",
+    s4Btn: "Editar mi perfil", ghostTitle: "Modo <em>fantasma</em>",
+    ghostText: "Oculta los cursores de los demás y deja de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.",
+    extrasKicker: "Lo que pasa sin tocar la píldora", extrasTitle: "Y además, <em>sin hacer nada</em>…",
+    clicksLabel: "Clics", clicksTitle: "Tus clics se <em>notan</em>",
+    clicksText: "Cada clic deja una onda de tu color en la pantalla de los demás.", clicksZone: "haz clic aquí",
+    selLabel: "Selección", selTitle: "Lo que <em>subrayas</em> se ve",
+    selText: "Selecciona texto y los demás lo verán resaltado con tu color, aunque su pantalla sea distinta.",
+    selDemo: "Selecciona esta frase y mira la otra pestaña: <mark>aparece resaltada</mark> con tu color.",
+    idleLabel: "Reposo", idleTitle: "Si te vas, <em>se nota</em>",
+    idleText: "Tras 30 segundos sin moverte, tu cursor se atenúa y se echa una siesta: zzz.",
+    botsSize: "Compañía", botsLabel: "Nunca vacía", botsTitle: "Si llegas el primero, <em>no</em> estarás solo.",
+    botsText: "Cuando la página está vacía, un par de visitantes de compañía se pasean, curiosean y saludan de vez en cuando. En cuanto llega gente de verdad, se retiran discretamente.",
+    codeSize: "Código", intLabel: "Integrar", intKicker: "Para desarrolladores",
+    intTitle: "Dos líneas y tu web tiene <em>gente</em>.", copy: "Copiar",
+    code: '<span class="c">&lt;!-- 1. El script --&gt;</span>\n&lt;<span class="k">script</span> src=<span class="s">"/multicursor.js"</span>&gt;&lt;/<span class="k">script</span>&gt;\n\n<span class="c">&lt;!-- 2. Conéctalo a tu servidor --&gt;</span>\n&lt;<span class="k">script</span>&gt;\n  MultiCursor.<span class="f">init</span>({\n    url: <span class="s">"wss://cursores.tuweb.com/ws"</span>,\n    lang: <span class="s">"es"</span>,\n    bots: <span class="s">2</span>,\n    onStats: s =&gt; console.<span class="f">log</span>(s.page, <span class="s">"personas aquí"</span>)\n  });\n&lt;/<span class="k">script</span>&gt;',
+    madeWith: "Multicursor · hecho con <span class=\"mono\">multicursor.js</span>",
+    rights: "Todos los derechos reservados.", ghFooter: "Ver el proyecto en GitHub"
+  };
+  // Texts the landing script writes itself
+  var DYN = {
+    en: { here: "{n} here", alone: "Just you", ghostOn: "○ Ghost mode: nobody sees you", ghostOff: "● Visible to others",
+          ghostBtnOn: "Become visible again", ghostBtnOff: "Turn on ghost mode", copied: "Copied!",
+          title: "Pill Anatomy · Multicursor", me: "ME" },
+    es: { here: "{n} aquí", alone: "Solo tú", ghostOn: "○ Modo fantasma: nadie te ve", ghostOff: "● Visible para los demás",
+          ghostBtnOn: "Volver a ser visible", ghostBtnOff: "Activar modo fantasma", copied: "¡Copiado!",
+          title: "Anatomía de la Píldora · Multicursor", me: "TÚ" }
+  };
+  var LANG_KEY = "multicursor:lang";
+
+  // Remember the original English of every translatable node and attribute
+  $$("[data-i18n]").forEach(function (el) { el._en = el.innerHTML; });
+  $$("[data-i18n-attr]").forEach(function (el) {
+    el._enAttr = {};
+    el.getAttribute("data-i18n-attr").split(";").forEach(function (pair) {
+      var attr = pair.split(":")[0];
+      el._enAttr[attr] = el.getAttribute(attr);
+    });
+  });
+
+  function pickLang() {
+    var q = new URLSearchParams(location.search).get("lang");
+    if (q === "en" || q === "es") return q;
+    try { var s = localStorage.getItem(LANG_KEY); if (s === "en" || s === "es") return s; } catch (e) {}
+    return "en";                                     // English by default
+  }
+  var lang = pickLang();
+  function d(key, vars) {
+    var s = DYN[lang][key];
+    if (vars) for (var k in vars) s = s.split("{" + k + "}").join(vars[k]);
+    return s;
+  }
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.title = d("title");
+    $$("[data-i18n]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n");
+      el.innerHTML = lang === "es" && ES[key] != null ? ES[key] : el._en;
+    });
+    $$("[data-i18n-attr]").forEach(function (el) {
+      el.getAttribute("data-i18n-attr").split(";").forEach(function (pair) {
+        var p = pair.split(":"), attr = p[0], key = p[1];
+        el.setAttribute(attr, lang === "es" && ES[key] != null ? ES[key] : el._enAttr[attr]);
+      });
+    });
+    $$("[data-lang]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === lang)); });
+  }
 
   function textOn(hex) {
     var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
@@ -510,27 +622,35 @@
   }
   function initials(name) { return name.split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(); }
 
+  function paintStats(s) {
+    ["page", "site", "peak"].forEach(function (k) {
+      $$('[data-stat="' + k + '"]').forEach(function (el) { el.textContent = s[k]; });
+    });
+    $$('[data-stat="label"]').forEach(function (el) {
+      el.textContent = s.page > 1 ? d("here", { n: s.page }) : d("alone");
+    });
+  }
+
+  applyLang();
   var mc = window.mc = MultiCursor.init({
+    lang: lang,
     bots: 2,
     botTargets: "h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, pre",
-    botPhrases: ["Hola 👋", "¿Qué hace el ojo?", "Pulsa la E, ya verás", "Me encanta esta tipografía",
-      "¿Me sigues? 🏃", "Esto es muy Figma", "Probando el chat…", "Capibaras al poder 🦫", "¿Cuántos somos?"],
-    onStats: function (s) {
-      ["page", "site", "peak"].forEach(function (k) {
-        $$('[data-stat="' + k + '"]').forEach(function (el) { el.textContent = s[k]; });
-      });
-      $$('[data-stat="label"]').forEach(function (el) {
-        el.textContent = s.page > 1 ? s.page + " aquí" : "Solo tú";
-      });
-    }
+    botPhrases: {
+      en: ["Hi 👋", "What does the eye do?", "Press E, you'll see", "Love this typography",
+        "Follow me 🏃", "This feels so Figma", "Testing the chat…", "Capybaras rule 🦫", "How many of us are there?"],
+      es: ["Hola 👋", "¿Qué hace el ojo?", "Pulsa la E, ya verás", "Me encanta esta tipografía",
+        "¿Me sigues? 🏃", "Esto es muy Figma", "Probando el chat…", "Capibaras al poder 🦫", "¿Cuántos somos?"]
+    },
+    onStats: paintStats
   });
 
   $$("[data-year]").forEach(function (el) { el.textContent = new Date().getFullYear(); });
 
-  // Pinta la página con tu color y tu nombre (y se actualiza si los cambias)
+  // Paints the page with your color and name (and keeps it in sync when you change them)
   var lastKey = "";
   function syncMe() {
-    var key = mc.me.name + mc.me.color + mc.ghost + (mc.me.avatar || "").length;
+    var key = lang + mc.me.name + mc.me.color + mc.ghost + (mc.me.avatar || "").length;
     if (key === lastKey) return;
     lastKey = key;
     var root = document.documentElement.style;
@@ -543,8 +663,8 @@
       else el.textContent = initials(mc.me.name);
     });
     document.body.classList.toggle("is-ghost", mc.ghost);
-    $("[data-ghost-state]").textContent = mc.ghost ? "○ Modo fantasma: nadie te ve" : "● Visible para los demás";
-    $('[data-open="ghost"]').textContent = mc.ghost ? "Volver a ser visible" : "Activar modo fantasma";
+    $("[data-ghost-state]").textContent = mc.ghost ? d("ghostOn") : d("ghostOff");
+    $('[data-open="ghost"]').textContent = mc.ghost ? d("ghostBtnOn") : d("ghostBtnOff");
     $("[data-eye]").innerHTML = mc.ghost
       ? '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.6 3.5M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2l20 20"/></svg>'
       : '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -552,35 +672,50 @@
   syncMe();
   setInterval(syncMe, 500);
 
-  // Botones de la landing → la píldora real
+  // Language switch: the page and the pill change together, and the choice is remembered
+  function setLang(l) {
+    if (l === lang) return;
+    lang = l;
+    try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+    applyLang();
+    mc.setLang(lang);
+    lastKey = "";                                    // repaint name / ghost texts
+    syncMe();
+    paintStats(mc.stats);
+  }
+
+  // Landing buttons → the real pill
   document.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-open],[data-react],[data-copy]");
+    var b = e.target.closest("[data-open],[data-react],[data-copy],[data-lang]");
     if (!b) return;
+    if (b.hasAttribute("data-lang")) return setLang(b.getAttribute("data-lang"));
     if (b.hasAttribute("data-react")) return mc.react(b.getAttribute("data-react"));
     if (b.hasAttribute("data-copy")) {
-      var code = $("#integrar pre").innerText;
-      try { navigator.clipboard.writeText(code).then(function () { b.textContent = "¡Copiado!"; setTimeout(function () { b.textContent = "Copiar"; }, 1500); }); } catch (err) {}
+      var code = $("#integrate pre").innerText;
+      try { navigator.clipboard.writeText(code).then(function () {
+        b.textContent = d("copied");
+        setTimeout(function () { b.innerHTML = lang === "es" ? ES.copy : b._en; }, 1500);
+      }); } catch (err) {}
       return;
     }
     var what = b.getAttribute("data-open");
     if (what === "ghost") { mc.setGhost(!mc.ghost); syncMe(); return; }
-    setTimeout(function () { mc.open(what); }, 0);   // tras el mousedown que cierra paneles
+    setTimeout(function () { mc.open(what); }, 0);   // after the mousedown that closes panels
   });
 
-  // Demo de clics: tú también ves tu onda (los demás la ven siempre)
+  // Click demo: you also see your own ripple here (others always see it)
   $("[data-zone]").addEventListener("mousedown", function (e) {
-    var r = this.getBoundingClientRect(), d = document.createElement("span");
-    d.className = "rip"; d.style.left = (e.clientX - r.left) + "px"; d.style.top = (e.clientY - r.top) + "px";
-    this.appendChild(d); setTimeout(function () { d.remove(); }, 700);
+    var r = this.getBoundingClientRect(), dot = document.createElement("span");
+    dot.className = "rip"; dot.style.left = (e.clientX - r.left) + "px"; dot.style.top = (e.clientY - r.top) + "px";
+    this.appendChild(dot); setTimeout(function () { dot.remove(); }, 700);
   });
 
-  // Anatomía: resalta la parte de la píldora al pasar por su leyenda
+  // Anatomy: highlights the pill part when hovering its legend card
   $$(".legend a").forEach(function (a) {
     var part = $('.pill-xl .part[data-for="' + a.getAttribute("data-for") + '"]');
     a.addEventListener("mouseenter", function () { part.classList.add("on"); });
     a.addEventListener("mouseleave", function () { part.classList.remove("on"); });
   });
-
 })();
 </script>
 </body>

@@ -1,18 +1,21 @@
-# Cursores colaborativos
+# Multicursor
 
-**Cursores multijugador al estilo Figma para cualquier web.** Cada visitante ve en tiempo real los cursores de las demás personas que están en la misma página, cada uno con un nombre divertido ("Capibara Zen", "Ajolote Ninja"…). Desde una píldora en la esquina pueden ver quién está, chatear junto al cursor, reaccionar con emojis, seguir a otra persona y personalizar su perfil.
+🇬🇧 **English** · 🇪🇸 [Español](README.es.md)
 
-- **Un solo script** (`multicursor.js`), sin dependencias.
-- **Servidor mínimo** (`server.py`) escrito solo con la librería estándar de Python, o con Docker.
-- **Pensado para reutilizar** en futuros proyectos: una línea para integrarlo, opciones para todo y una API para conectarlo con tu interfaz.
+**Figma-style multiplayer cursors for any website.** Every visitor sees, in real time, the cursors of the other people on the same page, each one with a fun name ("Zen Capybara", "Ninja Axolotl"…). From a pill in the corner they can see who's here, chat next to their cursor, react with emojis, follow someone and customize their profile.
 
-📖 **Documentación completa:** [`docs/DOCUMENTACION.md`](docs/DOCUMENTACION.md)
+- **One script** (`multicursor.js`), no dependencies.
+- **Minimal server** (`server.py`) using only the Python standard library, or Docker.
+- **Built to be reused** in future projects: one line to add it, options for everything and an API to wire it into your own UI.
+- **English and Spanish** built in, with a language switch and the option to add more.
+
+📖 **Full documentation:** [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md)
 
 ---
 
-## Inicio rápido
+## Quick start
 
-Requisito: Python 3.8 o superior.
+Requirement: Python 3.8 or newer.
 
 ```bash
 git clone https://github.com/AdrianBurriel/cursores-colaborativos.git
@@ -20,129 +23,135 @@ cd cursores-colaborativos
 python3 server.py            # → http://localhost:8080
 ```
 
-Abre `http://localhost:8080` y, para verte desde fuera, ábrelo también **en otro navegador o en otro dispositivo de tu red** (`http://<tu-ip-local>:8080`). Las pestañas del mismo navegador se reconocen como la misma persona.
+Open `http://localhost:8080` and, to see yourself from the outside, also open it **in another browser or on another device on your network** (`http://<your-local-ip>:8080`). Tabs of the same browser count as the same person.
 
-La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía.
+The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty. It's in English by default, with an **EN | ES** switch in the top bar.
 
-## Qué incluye
+## What's included
 
 | | |
 |---|---|
-| 🖱️ **Cursores en vivo** | Movimiento suavizado, nombre y foto en la etiqueta, una sala por página |
-| 👥 **Personas** | Quién está, su estado (activo, escribiendo, ausente) y estadísticas en directo |
-| 🧭 **Seguir** | Tu página se mueve con la de otra persona para ver lo mismo que ella |
-| 💬 **Chat** | Mensajes que aparecen junto a tu cursor, letra a letra (`/`) |
-| 🎉 **Reacciones** | Emojis que flotan desde tu cursor (`E`) |
-| ✨ **Clics y selección** | Los demás ven tus clics como ondas y el texto que seleccionas |
-| 🙂 **Perfil** | Nombre, color y foto propios, recordados entre visitas |
-| 👻 **Modo fantasma** | Deja de ver cursores y de compartir el tuyo |
-| 😴 **Reposo** | Los cursores quietos se atenúan con unas "zzz" animadas |
-| 🤖 **Bots opcionales** | Visitantes de compañía que se retiran cuando llega gente real |
-| ♿ **Accesible** | Manejable con teclado, etiquetas ARIA, modo oscuro y reducir movimiento |
+| 🖱️ **Live cursors** | Smoothed movement, name and photo on the label, one room per page |
+| 👥 **People** | Who's here, their status (active, typing, away) and live stats |
+| 🧭 **Follow** | Your page moves along with someone else's so you see what they see |
+| 💬 **Chat** | Messages that appear next to your cursor, letter by letter (`/`) |
+| 🎉 **Reactions** | Emojis that float up from your cursor (`E`) |
+| ✨ **Clicks and selection** | Others see your clicks as ripples and the text you select |
+| 🙂 **Profile** | Your own name, color and photo, remembered between visits |
+| 👻 **Ghost mode** | Stop seeing cursors and stop sharing yours |
+| 😴 **Idle** | Cursors that stop moving fade out with animated "zzz" |
+| 🤖 **Optional bots** | Companion visitors that step out when real people arrive |
+| 🌍 **Languages** | English (default) and Spanish; add your own with `strings` |
+| ♿ **Accessible** | Keyboard friendly, ARIA labels, dark mode and reduced motion |
 
-## La píldora
+## The pill
 
 ```
  ┌──────────────────────────────────────────┐
- │ (◐◐◐) 4 aquí │  💬   😊  │  (Tú) ▾        │
+ │ (◐◐◐) 4 here │  💬   😊  │  (You) ▾       │
  └──────────────────────────────────────────┘
-    Personas      Chat Reacc.  Tu perfil
+    People        Chat React  Your profile
 ```
 
-| Parte | Qué hace | Atajo |
+| Part | What it does | Shortcut |
 |---|---|---|
-| **Personas** | Lista de quién está, con su estado, las cifras (en esta página, en la web, pico de hoy) y un botón **Seguir** | — |
-| **Chat** | Escribir junto a tu cursor; `Enter` lo deja unos segundos, `Esc` lo borra | `/` |
-| **Reacciones** | Emojis que flotan desde tu cursor | `E` |
-| **Tu perfil** | Nombre, color, foto, 🎲 al azar y el interruptor de **modo fantasma** | — |
+| **People** | List of who's here, with their status, the numbers (on this page, on the whole site, today's peak) and a **Follow** button | — |
+| **Chat** | Write next to your cursor; `Enter` keeps it for a few seconds, `Esc` clears it | `/` |
+| **Reactions** | Emojis that float up from your cursor | `E` |
+| **Your profile** | Name, color, photo, 🎲 random and the **ghost mode** switch | — |
 
-Cada botón muestra un tooltip con su atajo, y la primera visita trae un aviso de bienvenida.
+Every button shows a tooltip with its shortcut, and the first visit brings a welcome hint.
 
-## Integrarlo en otro proyecto
+## Adding it to another project
 
-1. Copia `public/multicursor.js` a tu web.
-2. Despliega `server.py` (abajo).
-3. Añade antes de `</body>`:
+1. Copy `public/multicursor.js` into your site.
+2. Deploy `server.py` (below).
+3. Add before `</body>`:
 
 ```html
 <script src="/multicursor.js"></script>
 <script>
   const mc = MultiCursor.init({
-    url: "wss://cursores.midominio.com/ws",   // tu servidor
-    bots: 2,                                   // opcional: compañía cuando la página está vacía
-    onStats: s => console.log(s.page + " personas aquí")
+    url: "wss://cursors.mydomain.com/ws",   // your server
+    lang: "en",                              // "en" | "es" | "auto"
+    bots: 2,                                 // optional: company when the page is empty
+    onStats: s => console.log(s.page + " people here")
   });
 </script>
 ```
 
-En **React / Next.js**, llámalo dentro de un `useEffect` en el layout raíz y devuelve `() => mc.destroy()`.
+In **React / Next.js**, call it inside a `useEffect` in the root layout and return `() => mc.destroy()`.
 
-### Opciones principales
+### Main options
 
-| Opción | Por defecto | Para qué |
+| Option | Default | Purpose |
 |---|---|---|
-| `url` | `ws(s)://<host>/ws` | Dirección del servidor |
-| `room` | ruta de la página | Sala; `"global"` para compartirla en toda la web |
-| `bots` | `0` | Visitantes ficticios (máx. 12) |
-| `chat`, `reactions`, `clicks`, `selection`, `follow` | activadas | Activar o desactivar cada función |
-| `editable` | `true` | Dejar que el visitante edite nombre, color y foto |
-| `name`, `color`, `avatar` | aleatorios | Identidad fija o inicial |
-| `onStats` | — | Recibir `{ page, site, peak }` para usarlas en tu interfaz |
-| `onboarding` | `true` | Aviso de bienvenida en la primera visita |
+| `url` | `ws(s)://<host>/ws` | Server address |
+| `room` | page path | Room; `"global"` to share one across the whole site |
+| `lang` | `"en"` | Interface language: `"en"`, `"es"` or `"auto"` |
+| `strings` | — | Custom texts or new languages |
+| `bots` | `0` | Fake visitors (max. 12) |
+| `chat`, `reactions`, `clicks`, `selection`, `follow` | enabled | Turn each feature on or off |
+| `editable` | `true` | Let the visitor edit name, color and photo |
+| `name`, `color`, `avatar` | random | Fixed or initial identity |
+| `onStats` | — | Get `{ page, site, peak }` to use in your own UI |
+| `onboarding` | `true` | Welcome hint on the first visit |
 
-Todas las opciones (más de 20) están en la [documentación](docs/DOCUMENTACION.md#5-opciones-de-multicursorinit).
+Every option (25 of them) is in the [documentation](docs/DOCUMENTATION.md#5-multicursorinit-options).
 
 ### API
 
 ```js
-mc.open("people" | "profile" | "chat" | "reactions");  // abrir una parte de la píldora
+mc.open("people" | "profile" | "chat" | "reactions");  // open a part of the pill
 mc.close();
+mc.setLang("es");                                        // switch language on the fly
 mc.react("🎉");
-mc.setIdentity("Capibara Jefa", "#A259FF");
+mc.setIdentity("Boss Capybara", "#A259FF");
 mc.setGhost(true);
-mc.setRoom("/otra-sala");
+mc.setRoom("/another-room");
 mc.follow(id); mc.unfollow();
-mc.me; mc.peers; mc.room; mc.ghost; mc.stats;
+mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang;
 mc.destroy();
 ```
 
-## Desplegar el servidor
+## Deploying the server
 
-Funciona en cualquier sitio con Python o Docker (Render, Fly.io, Railway, un VPS…), **en una sola instancia**:
+It runs anywhere with Python or Docker (Render, Fly.io, Railway, a VPS…), **as a single instance**:
 
 ```bash
-docker build -t cursores .
-docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://midominio.com cursores
+docker build -t cursors .
+docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://mydomain.com cursors
 ```
 
-| Variable | Para qué | Por defecto |
+| Variable | Purpose | Default |
 |---|---|---|
-| `ALLOWED_ORIGINS` | Dominios que pueden conectarse (**ponlo en producción**) | cualquiera |
-| `MAX_PER_ROOM` / `MAX_CLIENTS` | Límites de usuarios por sala / en total | 100 / 5000 |
-| `STATIC_DIR` | Carpeta de estáticos (`""` = solo WebSocket) | `./public` |
-| `PORT` / `HOST` | Puerto e interfaz | 8080 / 0.0.0.0 |
+| `ALLOWED_ORIGINS` | Origins allowed to connect (**set it in production**) | any |
+| `MAX_PER_ROOM` / `MAX_CLIENTS` | User limits per room / in total | 100 / 5000 |
+| `STATIC_DIR` | Static files folder (`""` = WebSocket only) | `./public` |
+| `PORT` / `HOST` | Port and interface | 8080 / 0.0.0.0 |
 
-El servidor valida cada campo (incluidas las fotos: nunca SVG), limita los mensajes a 40 por segundo por cliente, cierra conexiones muertas y ofrece `GET /health`. En producción, usa HTTPS y `wss://`. La guía completa de despliegue, con la configuración de nginx y una lista de comprobación, está en la [documentación](docs/DOCUMENTACION.md#10-despliegue-en-producción).
+The server validates every field (photos included: never SVG), limits messages to 40 per second per client, closes dead connections and exposes `GET /health`. In production, use HTTPS and `wss://`. The full deployment guide, with an nginx config and a checklist, is in the [documentation](docs/DOCUMENTATION.md#10-production-deployment).
 
-## Limitaciones conocidas
+## Known limitations
 
-- **Sin autenticación:** cualquiera con la URL del WebSocket puede entrar en una sala. No sirve para salas privadas tal cual.
-- **Un solo proceso y todo en memoria:** no se puede repartir entre varias instancias sin añadir un canal compartido (p. ej. Redis), y las estadísticas se pierden al reiniciar.
-- **El perfil es por navegador:** en otro navegador o dispositivo se empieza de cero.
-- **Los bots son locales:** cada visitante ve los suyos.
-- **La selección compartida** requiere que todos tengan el mismo contenido en la página.
-- **Sin tests automáticos:** las comprobaciones se han hecho a mano y con clientes WebSocket de prueba.
+- **No authentication:** anyone with the WebSocket URL can join a room. Not suitable for private rooms as is.
+- **Single process, everything in memory:** it can't be spread across instances without adding a shared channel (e.g. Redis), and stats are lost on restart.
+- **The profile is per browser:** another browser or device starts from scratch.
+- **Bots are local:** each visitor sees their own.
+- **Shared selection** requires everyone to have the same content on the page.
+- **No automated tests:** checks have been done by hand and with test WebSocket clients.
 
-## Estructura
+## Structure
 
 ```
-public/multicursor.js   La integración (cliente)
-public/index.html       Landing de demo que explica la píldora
-server.py               Relay WebSocket + estáticos + /health
-Dockerfile              Imagen de despliegue
-docs/DOCUMENTACION.md   Documentación completa
+public/multicursor.js   The integration (client)
+public/index.html       Demo landing page explaining the pill (EN/ES)
+server.py               WebSocket relay + static files + /health
+Dockerfile              Deployment image
+docs/DOCUMENTATION.md   Full documentation (English)
+docs/DOCUMENTACION.md   Full documentation (Spanish)
 ```
 
-## Derechos
+## Rights
 
-© Adrián Burriel. Todos los derechos reservados. Este repositorio no incluye una licencia de uso: no se permite copiarlo, modificarlo ni redistribuirlo sin permiso expreso del autor.
+© Adrián Burriel. All rights reserved. This repository doesn't include a license: copying, modifying or redistributing it is not allowed without the author's express permission.

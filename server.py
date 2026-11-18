@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-Servidor de cursores colaborativos — cero dependencias (solo stdlib, Python 3.8+).
+Collaborative cursors server — zero dependencies (stdlib only, Python 3.8+).
 
-- Relay WebSocket en /ws?room=<sala>: cada cliente publica su estado (nombre,
-  color, posición, chat...) y el servidor lo reenvía al resto de su sala.
-- Sirve los ficheros estáticos de ./public (opcional).
-- /health devuelve el estado en JSON (para el hosting).
+- WebSocket relay at /ws?room=<room>: each client publishes its state (name,
+  color, position, chat…) and the server forwards it to the rest of its room.
+- Serves the static files in ./public (optional).
+- /health returns the server status as JSON (for hosting health checks).
 
-Variables de entorno:
-  PORT             Puerto                                   (8080)
-  HOST             Interfaz                                 (0.0.0.0)
-  ALLOWED_ORIGINS  Dominios permitidos, separados por comas. Vacío = cualquiera.
-                   Ej: https://miweb.com,https://www.miweb.com
-  MAX_PER_ROOM     Máximo de usuarios por sala              (100)
-  MAX_CLIENTS      Máximo de conexiones en total            (5000)
-  STATIC_DIR       Carpeta de estáticos; "" para desactivar (./public)
+Environment variables:
+  PORT             Port                                       (8080)
+  HOST             Interface                                  (0.0.0.0)
+  ALLOWED_ORIGINS  Allowed origins, comma-separated. Empty = any.
+                   e.g. https://mysite.com,https://www.mysite.com
+  MAX_PER_ROOM     Max users per room                         (100)
+  MAX_CLIENTS      Max connections in total                   (5000)
+  STATIC_DIR       Static files folder; "" to disable         (./public)
 """
 import asyncio
 import base64
@@ -39,15 +39,15 @@ ROOT = Path(_static).resolve() if _static else None
 
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 MAX_FRAME = 16 * 1024
-RATE_PER_SEC = 40          # mensajes/seg sostenidos por cliente
-RATE_BURST = 80            # ráfaga máxima
-PING_EVERY = 20            # seg
-DEAD_AFTER = 60            # seg sin recibir nada → conexión muerta
+RATE_PER_SEC = 40          # sustained messages/second per client
+RATE_BURST = 80            # max burst
+PING_EVERY = 20            # seconds
+DEAD_AFTER = 60            # seconds without receiving anything → dead connection
 
-STATS_EVERY = 3           # seg entre envíos de estadísticas
+STATS_EVERY = 3           # seconds between stats broadcasts
 
 rooms = {}                 # room -> {id: Client}
-peaks = {}                 # room -> (fecha, pico de usuarios simultáneos ese día)
+peaks = {}                 # room -> (date, peak of simultaneous users that day)
 _ids = itertools.count(1)
 
 COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -64,7 +64,7 @@ def _is_path(v):
 
 
 def _is_selection(v):
-    """Selección de texto: rutas de nodos DOM + offsets (o null si no hay)."""
+    """Text selection: DOM node paths + offsets (or null when there is none)."""
     if v is None:
         return True
     return (isinstance(v, dict) and set(v) == {"a", "ao", "f", "fo"}
@@ -74,11 +74,11 @@ def _is_selection(v):
 
 
 AVATAR_RE = re.compile(r"^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$")
-AVATAR_MAX = 14000  # caracteres (~10 KB de imagen); el cliente la reduce antes de enviarla
+AVATAR_MAX = 14000  # characters (~10 KB image); the client shrinks it before sending
 
 
 def _is_avatar(v):
-    """Foto de perfil: data URL de imagen pequeña, o "" para quitarla."""
+    """Profile photo: small image data URL, or "" to remove it."""
     return isinstance(v, str) and (v == "" or (len(v) <= AVATAR_MAX and bool(AVATAR_RE.match(v))))
 
 
@@ -96,7 +96,7 @@ FIELDS = {
     "chat": lambda v: isinstance(v, str) and len(v) <= 140,
     "sel": _is_selection,
     "avatar": _is_avatar,
-    "uid": lambda v: isinstance(v, str) and bool(UID_RE.match(v)),  # id anónimo del navegador
+    "uid": lambda v: isinstance(v, str) and bool(UID_RE.match(v)),  # anonymous browser id
 }
 
 
@@ -134,7 +134,7 @@ def ws_frame(payload, opcode=0x1):
 
 
 async def ws_read_message(reader):
-    """Devuelve (opcode, payload) de un mensaje completo (une fragmentos)."""
+    """Returns (opcode, payload) of a complete message (joins fragments)."""
     buf, first_opcode = b"", None
     while True:
         b1, b2 = await reader.readexactly(2)
@@ -248,7 +248,7 @@ async def ws_session(reader, writer, headers, query):
                 continue
             if not isinstance(msg, dict):
                 continue
-            if msg.get("t") == "event":  # efímero: se reenvía pero no se guarda
+            if msg.get("t") == "event":  # ephemeral: forwarded but not stored
                 kind, x, y = msg.get("kind"), msg.get("x"), msg.get("y")
                 if kind not in EVENT_KINDS or not _is_num(x, 1e6) or not _is_num(y, 1e7) or not me.state.get("name"):
                     continue
@@ -268,7 +268,7 @@ async def ws_session(reader, writer, headers, query):
             is_new = "name" not in me.state and "name" in patch
             me.state.update(patch)
             if not me.state.get("name"):
-                continue  # aún no se ha presentado
+                continue  # hasn't introduced itself yet
             out = me.state if is_new else patch
             broadcast(room, {"t": "update", "id": me.id, **out}, exclude=me)
             await writer.drain()
@@ -284,7 +284,7 @@ async def ws_session(reader, writer, headers, query):
 
 
 async def heartbeat():
-    """Envía pings y cierra conexiones que ya no responden (wifi caída, móvil dormido...)."""
+    """Sends pings and closes connections that stopped responding (Wi-Fi down, phone asleep…)."""
     ping = ws_frame(b"", 0x9)
     while True:
         await asyncio.sleep(PING_EVERY)
@@ -292,19 +292,19 @@ async def heartbeat():
         for members in list(rooms.values()):
             for c in list(members.values()):
                 if now - c.last_seen > DEAD_AFTER:
-                    c.writer.close()  # el bucle de lectura falla y limpia la sala
+                    c.writer.close()  # the read loop fails and cleans up the room
                 else:
                     c.send_raw(ping)
 
 
 async def stats_loop():
-    """Envía a cada sala sus estadísticas (solo cuando cambian)."""
+    """Sends each room its stats (only when they change)."""
     last = {}
     while True:
         await asyncio.sleep(STATS_EVERY)
         d = today()
         for r in [r for r, (day, _) in peaks.items() if day != d and r not in rooms]:
-            peaks.pop(r, None)  # limpia picos de días anteriores de salas vacías
+            peaks.pop(r, None)  # drop previous days' peaks of empty rooms
         for room in list(rooms):
             s = room_stats(room)
             key = (s["room"], s["site"], s["peak"])
@@ -368,9 +368,9 @@ async def main():
     server = await asyncio.start_server(handle, HOST, PORT)
     asyncio.ensure_future(heartbeat())
     asyncio.ensure_future(stats_loop())
-    print(f"→ http://localhost:{PORT}  (WebSocket en /ws)  · Ctrl+C para parar")
+    print(f"→ http://localhost:{PORT}  (WebSocket at /ws)  · Ctrl+C to stop")
     if ALLOWED_ORIGINS:
-        print("  Orígenes permitidos:", ", ".join(sorted(ALLOWED_ORIGINS)))
+        print("  Allowed origins:", ", ".join(sorted(ALLOWED_ORIGINS)))
     async with server:
         await server.serve_forever()
 

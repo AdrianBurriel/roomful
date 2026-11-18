@@ -1,0 +1,534 @@
+# Full documentation · Multicursor
+
+🇬🇧 **English** · 🇪🇸 [Español](DOCUMENTACION.md)
+
+Technical reference for the `multicursor.js` integration and its `server.py` server. For a quick introduction, see the [README](../README.md).
+
+## Contents
+
+1. [What it is and how it works](#1-what-it-is-and-how-it-works)
+2. [Requirements](#2-requirements)
+3. [Running it locally](#3-running-it-locally)
+4. [Adding it to a project](#4-adding-it-to-a-project)
+5. [`MultiCursor.init()` options](#5-multicursorinit-options)
+6. [API of the returned object](#6-api-of-the-returned-object)
+7. [The pill and keyboard shortcuts](#7-the-pill-and-keyboard-shortcuts)
+8. [Behavior in detail](#8-behavior-in-detail)
+9. [The server](#9-the-server)
+10. [Production deployment](#10-production-deployment)
+11. [WebSocket protocol](#11-websocket-protocol)
+12. [Security and privacy](#12-security-and-privacy)
+13. [Performance, limits and scaling](#13-performance-limits-and-scaling)
+14. [Accessibility](#14-accessibility)
+15. [Advanced customization](#15-advanced-customization)
+16. [Troubleshooting](#16-troubleshooting)
+17. [Repository structure](#17-repository-structure)
+
+---
+
+## 1. What it is and how it works
+
+Every visitor to a website sees, in real time, the cursors of the other people on the same page, Figma multiplayer style. Each cursor carries a random name ("Zen Capybara", "Ninja Axolotl"…). In the bottom-right corner, a **pill** shows who's here and lets people chat, react, follow someone and edit their profile.
+
+There are two pieces:
+
+```
+ Browser A                            Server (server.py)                      Browser B
+┌──────────────────┐   WebSocket    ┌──────────────────────────┐  WebSocket ┌──────────────────┐
+│ multicursor.js   │ ─────────────▶ │ Relay by room            │ ─────────▶ │ multicursor.js   │
+│ · sends its state│ ◀───────────── │ · validates every field  │ ◀───────── │ · draws cursors  │
+│ · draws cursors  │                │ · keeps the latest state │            │ · the pill       │
+│ · the pill       │                │ · forwards to the rest   │            │                  │
+└──────────────────┘                │ · stats, limits          │            └──────────────────┘
+                                    └──────────────────────────┘
+```
+
+- **`public/multicursor.js`** (client): a single script with no dependencies. It injects its own styles (every class starts with `mc-`), sends your position and state, and draws other people's cursors and the pill.
+- **`server.py`** (server): a WebSocket relay written with the Python standard library only. It has no business logic: it groups clients by room, validates what it receives, keeps everyone's latest state for late joiners and forwards it to the rest. It can also serve static files.
+
+There is no database. Everything lives in the server's memory and in each visitor's browser.
+
+## 2. Requirements
+
+| Piece | Requirement |
+|---|---|
+| Server | Python **3.8 or newer**, no external packages. Also runs with Docker (`python:3.12-slim`). |
+| Browser | Modern desktop and mobile browsers. Uses WebSocket, `localStorage`, Canvas (for photos) and modern CSS (`overflow-x: clip`, `:focus-visible`, `aspect-ratio`). Tested in Chrome. |
+| Production | HTTPS for the site and `wss://` for the WebSocket. Most hosts handle this for you. |
+
+## 3. Running it locally
+
+```bash
+git clone https://github.com/AdrianBurriel/cursores-colaborativos.git
+cd cursores-colaborativos
+python3 server.py                 # → http://localhost:8080
+```
+
+- Open `http://localhost:8080` in **several tabs** or on **another device on your network** (`http://<your-local-ip>:8080`) to see the cursors. Your own tabs don't show each other (see [§8.3](#83-identity-and-your-other-tabs)), so to see your cursor "from outside" use another browser, a private window or another device.
+- Another port: `PORT=3000 python3 server.py`.
+- Stop it with `Ctrl+C`.
+- Health check: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
+
+The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, and starts with 2 bots. It is **in English by default** and has an **EN | ES** switch in the top bar (`?lang=es` in the URL also works); the choice is remembered.
+
+## 4. Adding it to a project
+
+### 4.1 Static site or your own server
+
+1. Copy `public/multicursor.js` into your project (or serve it from the cursors server, see [§10.3](#103-serving-the-script)).
+2. Deploy `server.py` (see [§10](#10-production-deployment)).
+3. Add before `</body>`:
+
+```html
+<script src="/multicursor.js"></script>
+<script>
+  const mc = MultiCursor.init({
+    url: "wss://cursors.mydomain.com/ws"
+  });
+</script>
+```
+
+If the cursors server also serves your site (as in the demo), you can omit `url`: by default it connects to `ws(s)://<same host>/ws`.
+
+### 4.2 React / Next.js
+
+```jsx
+import { useEffect } from "react";
+
+export function Cursors() {
+  useEffect(() => {
+    // multicursor.js loaded with <Script src="/multicursor.js" strategy="afterInteractive" />
+    const mc = window.MultiCursor.init({ url: process.env.NEXT_PUBLIC_CURSORS_WS });
+    return () => mc.destroy();   // essential: avoids duplicates on unmount and in StrictMode
+  }, []);
+  return null;
+}
+```
+
+- Mount the component **only once**, in the root layout.
+- With no `room`, rooms follow the route automatically as you navigate (the script checks `location.pathname` every second), so there's no need to call `setRoom()` on every page change.
+- In Next.js the script touches `window` and `document`: load it on the client only.
+
+### 4.3 Vue / other frameworks
+
+Same idea: `init()` when the root component mounts and `destroy()` when it unmounts.
+
+### 4.4 One room for the whole site
+
+```js
+MultiCursor.init({ url: "...", room: "global" });
+```
+
+Everyone sees each other even on different pages. Only use it when the pages share a layout: positions are drawn on each person's own page.
+
+## 5. `MultiCursor.init()` options
+
+All of them are optional.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `url` | string | `ws(s)://<host>/ws` | WebSocket URL. It may carry a query (`?token=…`); the script appends `&room=`. |
+| `room` | string | page path | Room (max. 128 characters). When omitted, one room per URL (without trailing slash) that follows route changes. |
+| `lang` | `"en"` \| `"es"` \| `"auto"` | `"en"` | Interface language. `"auto"` uses the browser's. See [§8.12](#812-languages). |
+| `strings` | object | — | Custom texts or new languages: `{ en: { key: "…" }, fr: { … } }`. |
+| `name` | string | random | Fixed name. **Disables profile editing** (`editable` becomes `false`). |
+| `color` | `#RRGGBB` | random | Initial color (the visitor can change it if `editable`). |
+| `avatar` | data URL | — | Initial photo: base64 PNG, JPEG or WebP, 14,000 characters max. |
+| `presence` | boolean | `true` | Shows the pill. With `false` there are only cursors (and `onStats`). |
+| `onboarding` | boolean | `true` | Welcome hint on the first visit (shows after 1.5 s and never again). |
+| `toggle` | boolean | `true` | "Ghost mode" switch in the profile panel. |
+| `chat` | boolean | `true` | Chat next to the cursor (💬 button and `/` key). |
+| `reactions` | array \| `false` | `["❤️","👍","🔥","😂","🎉","👏","😮","👀"]` | Available emojis (the first 9 are used). `false` disables them. |
+| `clicks` | boolean | `true` | Shows other people's clicks as ripples in their color. |
+| `selection` | boolean | `true` | Shows the text other people select. |
+| `follow` | boolean | `true` | "Follow" button in the people panel. |
+| `editable` | boolean | `true` | Lets the visitor edit name, color and photo. `false` when `name` is given. |
+| `onStats` | function | — | `({ page, site, peak }) => …` whenever the numbers change (see [§8.9](#89-stats)). |
+| `anchor` | `"center"` \| `"left"` | `"center"` | Horizontal reference for coordinates (see [§8.10](#810-coordinates)). |
+| `maxCursors` | number | `12` | Max cursors visible at the same time. |
+| `idleMs` | number (ms) | `30000` | Inactivity before someone counts as away (faded cursor + "zzz"). |
+| `bots` | number | `0` | Fake visitors (max. 12). See [§8.8](#88-bots). |
+| `botsRetireAt` | number | `= bots` (min. 1) | Bots retire once at least this many real people are here. |
+| `botChat` | boolean | `true` | Bots type a message now and then. |
+| `botTargets` | CSS selector | links, buttons, headings, images… | Elements the bots move towards. Supports `[data-mc-target]`. |
+| `botPhrases` | array \| object | phrases per language | Bot chat phrases: an array, or `{ en: [...], es: [...] }` so they follow the language. |
+
+## 6. API of the returned object
+
+```js
+const mc = MultiCursor.init({ ... });
+```
+
+| Member | Type | Description |
+|---|---|---|
+| `mc.me` | object | The visitor's `{ name, color, avatar }` (updated when edited). |
+| `mc.peers` | object | `id → peer` map of everyone else (bots included). Read-only. |
+| `mc.room` | getter | Current room. |
+| `mc.ghost` | getter | `true` while in ghost mode. |
+| `mc.lang` | getter | Current interface language. |
+| `mc.stats` | getter | `{ page, site, peak }` right now. |
+| `mc.setRoom(room)` | function | Changes room manually (reconnects). From then on it stops following the page path automatically. |
+| `mc.setGhost(bool)` | function | Turns ghost mode on or off (remembered). |
+| `mc.setLang(lang)` | function | Switches the language of the pill, panels and random names instantly. |
+| `mc.setIdentity(name, color, avatar?)` | function | Changes and saves the identity. `avatar`: data URL, `""` to remove it, `undefined` to leave it as is. |
+| `mc.open(part)` | function | Opens `"people"`, `"profile"`, `"chat"` or `"reactions"`. Turns ghost mode off if needed (except for `"profile"`). |
+| `mc.close()` | function | Closes panels and the emoji picker. |
+| `mc.react(emoji)` | function | Sends a reaction from your cursor (at most one every 250 ms). |
+| `mc.follow(id)` / `mc.unfollow()` | function | Starts or stops following someone. You can't follow yourself. |
+| `mc.destroy()` | function | Disconnects and removes every element and listener. Use it on unmount. |
+
+`MultiCursor.languages` also lists the built-in languages (`["en", "es"]`).
+
+## 7. The pill and keyboard shortcuts
+
+```
+ ┌──────────────────────────────────────────┐
+ │ (◐◐◐) 4 here │  💬   😊  │  (You) ▾       │
+ └──────────────────────────────────────────┘
+    People        Chat React  Your profile
+```
+
+| Part | What it does |
+|---|---|
+| **People** | Up to 3 faces + "N here" ("Just you" when nobody else is around). Opens a panel with the numbers (on this page, on the whole site, today's peak) and the list of people with their status (**Active**, **Typing…**, **Away**) and a **Follow** button. Your row has **Edit**. |
+| **Chat 💬** | Opens a text field next to your cursor. Hidden on touch screens (there's no cursor). |
+| **Reactions 😊** | Opens the emoji picker above the pill. |
+| **Your profile ▾** | Photo (upload, change or remove), name, color, 🎲 Random (name and color), **Save** and the **Ghost mode** switch. |
+
+Special states:
+
+- **Following someone:** a frame in their color surrounds the screen, with a "Following X · Stop following ✕" button at the top.
+- **Ghost mode:** the pill shrinks to "Cursors hidden · **Show**".
+- **First visit:** a "👋 You're not alone on this page" hint with **Got it**. It's marked as seen when clicked or when any panel is opened.
+
+### Shortcuts
+
+| Key | Action |
+|---|---|
+| `/` | Open the chat next to your cursor |
+| `Enter` (in the chat) | Send; the message stays for 4 s and disappears |
+| `Esc` (in the chat) | Clear the message and close |
+| `E` | Open/close the emoji picker next to your cursor |
+| `1`–`9` (with the picker open) | Send that emoji (hidden shortcut) |
+| `Esc` | Close panels and picker; stop following |
+| Wheel, `↑` `↓` `PgUp` `PgDn` `Home` `End` `Space`, touching the screen | Stop following (you get scrolling back) |
+
+Shortcuts are ignored while you type in a text field on the page.
+
+## 8. Behavior in detail
+
+### 8.1 Rooms
+
+- By default, the room is `location.pathname` without trailing slash (`/pricing/` → `/pricing`). Query and hash don't count.
+- In SPAs route changes are detected (checked every second) and the client reconnects to the new room.
+- The server limits the name to 128 characters and uses `/` when empty.
+
+### 8.2 Connection and reconnection
+
+- On connect it sends name, color, photo, browser id, position and selection.
+- If the connection drops, it retries with exponential backoff: 0.5 s, 1 s, 2 s… up to 15 s, with ±20 % jitter so a restarted server isn't flooded.
+- In ghost mode there is no connection.
+
+### 8.3 Identity and your other tabs
+
+- **Random name and color** are generated per tab (`sessionStorage`): every new tab gets a different one **until the visitor saves their profile**. From then on, the saved one is used in every tab and visit (`localStorage`).
+- The random name is stored as "animal + adjective" (two indexes), so it's shown in the active language and translated when it changes: "Zen Capybara" ↔ "Capibara Zen". A name saved by the visitor is never translated.
+- **Browser id** (`mc:uid`): 20 random characters shared by every tab of the same browser and domain. It stops your other tabs from showing up as somebody else: they aren't listed in the pill, can't be followed, and their cursor, clicks, reactions and selections aren't drawn.
+- If a tab doesn't send an id (e.g. it still runs an older version of the script), it counts as "you" when it has your same name and color.
+
+### 8.4 What's stored in the browser
+
+| Key | Where | Content |
+|---|---|---|
+| `mc:me` | `sessionStorage` | The tab's random identity, with its name indexes (`gen`), when no profile is saved. |
+| `mc:me` | `localStorage` | Saved profile: `{ name, color, avatar }`. |
+| `mc:uid` | `localStorage` | Anonymous browser id. |
+| `mc:ghost` | `localStorage` | `true` when ghost mode is on. |
+| `mc:onboarded` | `localStorage` | `true` once the welcome hint has been seen. |
+
+Everything is **per browser and domain**: another browser, another device, a private window, or `www.` vs. no `www.` all start from scratch. If the browser blocks storage, the script keeps working without remembering anything.
+
+### 8.5 Profile photo
+
+- The visitor picks an image from their computer. It's **cropped to a centered square** and **shrunk in the browser**: it tries 96, 72 and 56 px, in WebP and then JPEG, with decreasing quality, until it's ≤ 14,000 characters (~2–10 KB).
+- Transparent images get a white background.
+- It shows in the pill, the people panel and the cursor label, and late joiners receive it too.
+
+### 8.6 Chat, clicks, reactions and selection
+
+| Feature | Detail |
+|---|---|
+| Chat | Max. 140 characters. Sent while typing (others see it letter by letter). |
+| Clicks | Every left click outside the pill is sent (max. one every 120 ms). Others see a ripple in your color. You don't see your own. |
+| Reactions | Three emojis float up and fade out from your cursor (max. one every 250 ms). |
+| Selection | **Which text** is selected is shared (DOM node path + offset), not pixels. Each browser highlights it on its own layout, so it lines up even when the text wraps differently. Selections inside text fields and `contenteditable` are ignored. If the page DOM differs between visitors, it simply isn't drawn. |
+
+### 8.7 Idle state and cursor cap
+
+- After `idleMs` (30 s) without moving, the cursor fades, animated "zzz" float up and the panel shows **Away**. Anyone whose tab is in the background or whose mouse is outside the window also shows as "Away".
+- When more than `maxCursors` cursors are visible, the extra ones are hidden with this priority: real people before bots, active before away, most recent first. The person you follow is never hidden.
+
+### 8.8 Bots
+
+Fake visitors so the page never looks empty.
+
+- They are **local**: each visitor sees their own and they never travel through the server.
+- They move along smooth curves towards real elements on the page (`botTargets`) and take short pauses.
+- **They take turns so they're not annoying:** each bot alternates between "visiting" your screen (7–16 s) and "away" off screen (12–30 s). Usually only one is visiting.
+- They talk at most once per visit, in roughly half of their visits, and never two at once. Sometimes they click (22 % on arrival) or react (5 %).
+- **They retire** once there are `botsRetireAt` real people, and come back if the page empties.
+- They don't appear if the visitor has *reduce motion* enabled (`prefers-reduced-motion`).
+- They count in the pill's numbers (see [§8.9](#89-stats)).
+
+### 8.9 Stats
+
+| Number | How it's computed |
+|---|---|
+| `page` | You + real people in the room (without your other tabs) + active bots. |
+| `site` | Connections on the whole server + active bots (never less than `page`). |
+| `peak` | Today's peak of simultaneous connections in this room (server clock) + bots (never less than `page`). |
+
+The server sends its numbers on join and then every 3 s **only if they changed**. The peak lives in memory: it's lost when the server restarts. In ghost mode, all three are 0.
+
+### 8.10 Coordinates
+
+- `x` = pixels from the **center** of the document (with `anchor: "left"`, from the left edge).
+- `y` = pixels from the **very top** of the page (not the screen).
+
+So on centered layouts with a max width (the usual case), a cursor over a button shows up over that same button on screens of different widths, and cursors scroll with the page. On layouts that change a lot between mobile and desktop, positions are approximate. Cursors never cause horizontal scroll: they're clipped to the window width.
+
+### 8.11 Ghost mode
+
+Turning it on **closes the connection**: you don't see cursors and nobody sees you, not even in the people list. The preference is remembered. Turning it off reconnects.
+
+### 8.12 Languages
+
+- **English** (default) and **Spanish** are built in. With `lang: "auto"` the browser language is used, falling back to English.
+- `mc.setLang("es")` instantly translates the pill, open panels, hints, tooltips and **random names**: yours (if you haven't saved one) and the bots'. If your name changes, others see it updated.
+- Each visitor sees the interface in their own language. The names shown are the ones each person sends.
+- **Custom texts or new languages** via `strings`. The keys live in the `I18N` dictionary at the top of `multicursor.js`; any missing key falls back to English.
+
+```js
+MultiCursor.init({
+  lang: "fr",
+  strings: { fr: { seeWho: "Voir qui est là", chatTip: "Écrire à côté de ton curseur", save: "Enregistrer" /* … */ } }
+});
+```
+
+A new language uses the English random names and bot phrases, unless you pass `botPhrases` for that language.
+
+## 9. The server
+
+### 9.1 Environment variables
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `PORT` | Port | `8080` |
+| `HOST` | Interface | `0.0.0.0` |
+| `ALLOWED_ORIGINS` | Origins allowed to connect, comma-separated, with protocol (`https://mydomain.com,https://www.mydomain.com`). Empty = any. **Set it in production.** | empty |
+| `MAX_PER_ROOM` | Max users per room (above it, responds 503) | `100` |
+| `MAX_CLIENTS` | Max connections in total (above it, responds 503) | `5000` |
+| `STATIC_DIR` | Static files folder. `""` to serve only the WebSocket and `/health` | `./public` |
+
+### 9.2 Routes
+
+| Route | Response |
+|---|---|
+| `GET /ws?room=<room>` with `Upgrade: websocket` | WebSocket connection. 403 if the `Origin` isn't allowed, 503 if a limit is exceeded. |
+| `GET /health` | `200 {"ok": true, "clients": N, "rooms": M}` |
+| Any other `GET` / `HEAD` | File from `STATIC_DIR` (`/` → `index.html`). 404 if missing or if it tries to escape the folder. |
+| Other methods | 405 |
+
+### 9.3 Internal limits (constants in `server.py`)
+
+| Constant | Value | Effect |
+|---|---|---|
+| `MAX_FRAME` | 16 KB | A bigger message closes the connection. |
+| `RATE_PER_SEC` / `RATE_BURST` | 40 / 80 | Messages per second per client; the excess is silently dropped. |
+| `PING_EVERY` | 20 s | Ping to every client. |
+| `DEAD_AFTER` | 60 s | Nothing received in that time closes the connection. |
+| `STATS_EVERY` | 3 s | How often stats are checked. |
+
+### 9.4 Field validation
+
+The server only forwards known, valid fields; everything else is dropped.
+
+| Field | Rule |
+|---|---|
+| `name` | Text, 1 to 32 characters |
+| `color` | `#RRGGBB` |
+| `avatar` | `""` or `data:image/(png\|jpeg\|webp);base64,…` of ≤ 14,000 characters (never SVG) |
+| `uid` | 8–32 characters `[a-z0-9]` |
+| `x`, `y` | Numbers (not booleans), `|x| < 10⁶`, `|y| < 10⁷` |
+| `visible` | Boolean |
+| `chat` | Text up to 140 characters |
+| `sel` | `null` or `{a, ao, f, fo}`: paths of ≤ 64 integer indexes and integer offsets |
+| event `kind` | `"click"` or `"reaction"` |
+| event `emoji` | 1–8 characters with no letters, digits, spaces or `< > & " '` |
+
+A client isn't announced to the others until it sends a valid `name`.
+
+## 10. Production deployment
+
+### 10.1 Docker
+
+```bash
+docker build -t cursors .
+docker run -d -p 8080:8080 \
+  -e ALLOWED_ORIGINS=https://mydomain.com,https://www.mydomain.com \
+  --restart unless-stopped cursors
+```
+
+The image includes a `HEALTHCHECK` against `/health`.
+
+### 10.2 Hosts (Render, Fly.io, Railway…)
+
+- **Service type:** web service with Docker (uses the `Dockerfile`) or with Python (command `python3 server.py`).
+- **Port:** most of them inject `PORT`, and the server honors it.
+- **Health check:** `/health`.
+- **WebSockets:** must be allowed (they are by default on these three).
+- **Instances:** use **a single instance** (see [§13](#13-performance-limits-and-scaling)).
+
+### 10.3 Serving the script
+
+Two options:
+- **Copy `multicursor.js` into your site** (recommended): it's versioned with your project. Then start the server with `STATIC_DIR=""` so it only does WebSocket.
+- **Serve it from the cursors server:** `<script src="https://cursors.mydomain.com/multicursor.js">`. Note that it's served with `Cache-Control: no-cache`.
+
+### 10.4 Behind nginx
+
+```nginx
+location /ws {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header Origin $http_origin;
+    proxy_read_timeout 120s;   # > PING_EVERY, so nginx doesn't cut healthy connections
+}
+```
+
+### 10.5 Checklist
+
+- [ ] The site runs on HTTPS and `url` uses `wss://` (browsers block `ws://` from an HTTPS page).
+- [ ] `ALLOWED_ORIGINS` contains exactly the site's domains, with `https://` and no trailing slash.
+- [ ] A single server instance.
+- [ ] `/health` responds.
+- [ ] Tested with two different browsers (not two tabs of the same one).
+
+## 11. WebSocket protocol
+
+JSON text messages. Connection: `GET /ws?room=<room>`.
+
+### Client → server
+
+```jsonc
+// State (stored, and also sent to late joiners). Every field is optional.
+{ "t": "update", "name": "Zen Capybara", "color": "#A259FF", "avatar": "data:image/webp;base64,…",
+  "uid": "k3j9x0…", "x": -120, "y": 840, "visible": true, "chat": "hi", "sel": null }
+
+// Ephemeral event (forwarded, not stored)
+{ "t": "event", "kind": "click", "x": 10, "y": 400 }
+{ "t": "event", "kind": "reaction", "emoji": "🔥", "x": 10, "y": 400 }
+```
+
+### Server → client
+
+```jsonc
+{ "t": "welcome", "id": 7, "room": "/pricing", "peers": [ { "id": 3, "name": "…", "color": "…", "x": 0, "y": 0, … } ] }
+{ "t": "update", "id": 3, "x": 15, "y": 420 }             // only the changed fields
+{ "t": "update", "id": 3, "name": "…", "color": "…", … }  // full state the first time someone introduces themselves
+{ "t": "leave", "id": 3 }
+{ "t": "event", "id": 3, "kind": "reaction", "emoji": "🔥", "x": 10, "y": 400 }
+{ "t": "stats", "room": 4, "site": 12, "peak": 6 }
+```
+
+Order on connect: `welcome` → `stats`. The protocol is small: it can be ported to Node (`ws`), Cloudflare Durable Objects, PartyKit, etc. by keeping these messages and the validation rules in [§9.4](#94-field-validation).
+
+## 12. Security and privacy
+
+- **No authentication:** anyone who knows the WebSocket URL can join any room. Don't use it for private rooms without first adding a token to the `url` and validating it on the server.
+- **`ALLOWED_ORIGINS`** stops other websites from using your server from the browser (it doesn't stop a script that forges the `Origin` header).
+- **Strict validation** of every field ([§9.4](#94-field-validation)): photos can only be small raster images, "emojis" can't be text and colors can only be hex.
+- **No HTML from users:** names, messages and emojis are inserted as text (`textContent`), never as HTML.
+- **What others see:** name, color, photo, cursor position, chat messages, clicks, reactions and which text you select, always within the same room. The profile panel warns that people on the page will see the photo.
+- **What's not stored:** the server writes nothing to disk; everything is in memory and disappears on disconnect or restart.
+- **Ghost mode:** disconnects completely.
+- **Browser id:** random and not tied to any personal data.
+
+## 13. Performance, limits and scaling
+
+| Aspect | Value |
+|---|---|
+| Position updates | Max. ~25 per second per visitor (every 40 ms) |
+| Animation | A single smoothed `requestAnimationFrame` loop; it only runs while something moves (or with bots) |
+| Panel and pill | Re-rendered only when something visible changes |
+| Selection | Max. 120 rectangles per person |
+| Name / chat / photo | 32 characters / 140 characters / 14,000 characters |
+| Emojis / bots | 9 / 12 at most |
+
+**Scaling:** the server is **a single process** with everything in memory. With several instances, each one would have its own list of people and they wouldn't see each other. If you ever need to scale beyond one machine, add a shared channel between instances (e.g. Redis pub/sub) or port the relay to a service built for it (Durable Objects, PartyKit). For a regular website, one process with the default limits (100 per room, 5000 in total) is plenty.
+
+## 14. Accessibility
+
+- Every control is a `<button>` with `aria-label`; the pill is a `toolbar`, panels are `dialog`s, ghost mode is a `switch` and "Follow" uses `aria-pressed`.
+- Fully usable with the keyboard. Visible focus is a blue outline and tooltips also show on focus.
+- `aria-keyshortcuts` on buttons that have a shortcut.
+- With `prefers-reduced-motion`: no bots, no click ripples, shorter reactions and static "zzz".
+- Automatic dark mode (`prefers-color-scheme`).
+- The interface language is configurable (`lang`), and the demo updates `<html lang>` when it changes.
+
+## 15. Advanced customization
+
+- **Styles:** every class starts with `mc-` (`.mc-presence`, `.mc-pop`, `.mc-cursor`, `.mc-tag`…). Override them from your CSS with higher specificity. The cursor layer uses `z-index: 2147483000` and the pill sits above it.
+- **Constants** at the top of `multicursor.js`:
+
+| Constant | Value | What it controls |
+|---|---|---|
+| `I18N` | dictionary | Texts, animals, adjectives, name order and bot phrases for each language |
+| `COLORS` | 12 colors | Cursor and editor palette |
+| `REACTIONS` | 8 emojis | Default emojis |
+| `BOT_TARGETS` | selector | Default elements the bots move towards |
+| `BOT_HERE_MS` / `BOT_AWAY_MS` | 7–16 s / 12–30 s | Pace of the bots' visits |
+| `SEND_EVERY_MS` | 40 | Position update interval |
+| `LERP` | 0.28 | Cursor smoothing (1 = none) |
+| `CHAT_LINGER_MS` | 4000 | How long a message stays after Enter |
+
+- **Texts and languages:** every visible text goes through the `I18N` dictionary; use the `strings` option to change them without touching the script (see [§8.12](#812-languages)).
+
+## 16. Troubleshooting
+
+| Symptom | Likely cause and fix |
+|---|---|
+| I can't see anyone | Are you on the same URL? (rooms are per page). Are they tabs of the same browser? Then they count as "you": try another browser or device. |
+| Connection refused (403) | The domain isn't in `ALLOWED_ORIGINS`. Check the protocol (`https://`) and remove the trailing slash. |
+| Connection refused (503) | `MAX_PER_ROOM` or `MAX_CLIENTS` was exceeded. |
+| Works locally but not in production | Use `wss://` if the site runs on HTTPS; check that the proxy forwards `Upgrade`/`Connection` ([§10.4](#104-behind-nginx)). |
+| I see myself in the list | That tab runs an older version of the script: reload it. |
+| I get a different name after reloading | You haven't saved your profile: random names are per tab. Open "Your profile" and click **Save**. |
+| Bots don't show up | There are enough real people (`botsRetireAt`), the visitor has *reduce motion* enabled, or `bots` is 0. |
+| Someone's selection isn't highlighted | Their page DOM differs from yours (personalized or dynamic content). Expected. |
+| "Couldn't use that image" | The browser doesn't support the format (e.g. HEIC in some) or the image is damaged. Try JPG or PNG. |
+| `address already in use` on start | Something already uses that port: `lsof -i :8080` to see it, or use `PORT=3000`. |
+| Duplicate panels in React | Missing `return () => mc.destroy()` in the `useEffect`. |
+
+## 17. Repository structure
+
+```
+cursores-colaborativos/
+├── public/
+│   ├── multicursor.js     # The integration (client)
+│   └── index.html         # Demo landing page explaining the pill (EN/ES)
+├── server.py              # WebSocket relay + static files + /health
+├── Dockerfile             # Deployment image
+├── docs/
+│   ├── DOCUMENTATION.md   # This document (English)
+│   └── DOCUMENTACION.md   # Full documentation (Spanish)
+├── README.md              # English
+└── README.es.md           # Spanish
+```
+
+---
+
+© Adrián Burriel. All rights reserved.

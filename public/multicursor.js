@@ -1,81 +1,169 @@
 /*!
- * MultiCursor — cursores multijugador estilo Figma para cualquier web.
+ * MultiCursor — Figma-style multiplayer cursors for any website.
  *
- * Uso mínimo:
+ * Minimal usage:
  *   <script src="/multicursor.js"></script>
- *   <script>MultiCursor.init({ url: "wss://mi-servidor.com/ws" });</script>
+ *   <script>MultiCursor.init({ url: "wss://my-server.com/ws" });</script>
  *
- * Opciones (todas opcionales):
- *   url         URL del WebSocket                 (ws(s)://<host actual>/ws)
- *   room        Sala. Por defecto, la ruta de la página: solo ves a quien está
- *               en tu misma URL (y se sigue la ruta en SPAs). Un valor fijo
- *               (ej. "global") comparte sala en toda la web.
- *   name        Nombre fijo del usuario           (aleatorio: "Capibara Zen")
- *   color       Color hex #RRGGBB                 (aleatorio de la paleta)
- *   presence    Píldora: personas · chat · reacciones · tu perfil (true)
- *   onboarding  Aviso de bienvenida la primera vez que alguien entra (true)
- *   toggle      Interruptor de "modo fantasma" en tu perfil       (true)
- *   chat        Chat de cursor con la tecla "/"   (true)
- *   reactions   Array de emojis para reaccionar con la tecla "E", o false
- *   clicks      Mostrar los clics de los demás como ondas          (true)
- *   selection   Mostrar el texto que seleccionan los demás         (true)
- *   follow      Botón "Seguir" en el panel de personas             (true)
- *   editable    Editar nombre, color y foto en tu perfil           (true)
- *   onStats     fn({ page, site, peak }) — cada vez que cambian las cifras
- *   anchor      'center' | 'left' — referencia horizontal para mapear
- *               posiciones entre pantallas de distinto ancho     ('center')
- *   maxCursors  Máximo de cursores visibles (prioriza reales y activos) (12)
- *   idleMs      Tras este tiempo sin moverse, el cursor se atenúa con "zzz" (30000)
- *   bots        Usuarios ficticios para que la página no se vea vacía.
- *               Son locales (cada visitante ve los suyos). Se desactivan
- *               con prefers-reduced-motion.                      (0)
- *   botsRetireAt  Los bots se retiran con este nº de personas reales (= bots)
- *   botChat     Los bots escriben mensajes de vez en cuando      (true)
- *   botTargets  Selector CSS de elementos hacia los que van los bots
- *   botPhrases  Array de frases para el chat de los bots
+ * Options (all optional):
+ *   url         WebSocket URL                      (ws(s)://<current host>/ws)
+ *   room        Room. Defaults to the page path: you only see people on the same
+ *               URL (and it follows route changes in SPAs). A fixed value
+ *               (e.g. "global") shares one room across the whole site.
+ *   lang        "en" | "es" | "auto" (browser language)            ("en")
+ *   strings     Text overrides / extra languages: { en: { key: "…" }, fr: {…} }
+ *   name        Fixed user name; disables profile editing  (random: "Zen Capybara")
+ *   color       Hex color #RRGGBB                   (random from the palette)
+ *   avatar      Initial photo (PNG/JPEG/WebP data URL, ≤ 14,000 chars)
+ *   presence    The pill: people · chat · reactions · your profile   (true)
+ *   onboarding  Welcome hint the first time someone visits           (true)
+ *   toggle      "Ghost mode" switch in your profile                  (true)
+ *   chat        Cursor chat (button and "/" key)                     (true)
+ *   reactions   Array of emojis (button and "E" key), or false
+ *   clicks      Show other people's clicks as ripples                (true)
+ *   selection   Show the text other people select                    (true)
+ *   follow      "Follow" button in the people panel                  (true)
+ *   editable    Edit name, color and photo in your profile           (true)
+ *   onStats     fn({ page, site, peak }) — called whenever the numbers change
+ *   anchor      "center" | "left" — horizontal reference used to map positions
+ *               between screens of different widths                 ("center")
+ *   maxCursors  Max visible cursors (real people and active ones first) (12)
+ *   idleMs      Inactivity before a cursor fades and shows "zzz"    (30000)
+ *   bots        Fake visitors so the page never looks empty. They are local
+ *               (each visitor sees their own) and disabled with
+ *               prefers-reduced-motion.                              (0)
+ *   botsRetireAt  Bots leave once this many real people are here   (= bots)
+ *   botChat     Bots type a message now and then                     (true)
+ *   botTargets  CSS selector of elements the bots move towards
+ *   botPhrases  Bot chat phrases: an array, or { en: [...], es: [...] }
  *
- * Devuelve { me, peers, room, ghost, stats, setRoom(), setGhost(), setIdentity(),
- *            open("people"|"profile"|"chat"|"reactions"), close(),
- *            react(emoji), follow(id), unfollow(), destroy() }.
+ * Returns { me, peers, room, ghost, stats, lang, setRoom(), setGhost(), setIdentity(),
+ *           setLang(), open("people"|"profile"|"chat"|"reactions"), close(),
+ *           react(emoji), follow(id), unfollow(), destroy() }.
  *
- * Protocolo (JSON por WebSocket, conexión a <url>?room=<sala>):
- *   cliente → servidor  { t:"update", name?, color?, x?, y?, visible?, chat?, sel? }
- *                       { t:"event", kind:"click"|"reaction", x, y, emoji? }
- *   servidor → cliente  { t:"welcome", id, room, peers:[{id,...estado}] }
- *                       { t:"update", id, ...campos }   { t:"leave", id }
- *                       { t:"event", id, kind, x, y, emoji? }
- *                       { t:"stats", room, site, peak }
+ * Protocol (JSON over WebSocket, connecting to <url>?room=<room>):
+ *   client → server  { t:"update", name?, color?, avatar?, uid?, x?, y?, visible?, chat?, sel? }
+ *                    { t:"event", kind:"click"|"reaction", x, y, emoji? }
+ *   server → client  { t:"welcome", id, room, peers:[{id,...state}] }
+ *                    { t:"update", id, ...fields }   { t:"leave", id }
+ *                    { t:"event", id, kind, x, y, emoji? }
+ *                    { t:"stats", room, site, peak }
  */
 (function (global) {
   "use strict";
 
-  var ANIMALS = ["Capibara", "Ajolote", "Nutria", "Quokka", "Panda Rojo", "Perezoso",
-    "Pingüino", "Mapache", "Alpaca", "Erizo", "Koala", "Tucán", "Narval", "Manatí",
-    "Suricata", "Ornitorrinco", "Lémur", "Flamenco", "Fénec", "Wombat", "Llama", "Tapir"];
-  var ADJECTIVES = ["Zen", "Ninja", "Turbo", "Feliz", "Veloz", "Audaz", "Elegante",
-    "Valiente", "Brillante", "Rebelde", "Salvaje", "Sonriente", "Cool", "Pixel", "Lunar"];
+  // ---- i18n -------------------------------------------------------------------
+  // Random names are stored as [animal index, adjective index], so a random
+  // identity can be shown in any language ("Zen Capybara" ↔ "Capibara Zen").
+  var I18N = {
+    en: {
+      animals: ["Capybara", "Axolotl", "Otter", "Quokka", "Red Panda", "Sloth", "Penguin",
+        "Raccoon", "Alpaca", "Hedgehog", "Koala", "Toucan", "Narwhal", "Manatee", "Meerkat",
+        "Platypus", "Lemur", "Flamingo", "Fennec", "Wombat", "Llama", "Tapir"],
+      adjectives: ["Zen", "Ninja", "Turbo", "Happy", "Swift", "Bold", "Fancy", "Brave",
+        "Shiny", "Rebel", "Wild", "Smiley", "Cool", "Pixel", "Lunar"],
+      adjectiveFirst: true,
+      botPhrases: ["Hi 👋", "Anyone else here?", "Try pressing E 👀", "Love this typography",
+        "Follow me 🏃", "This feels so Figma", "Testing the chat…", "Capybaras rule 🦫",
+        "How many of us are there?", "Grabbing a coffee ☕"],
+      ui: {
+        chatPlaceholder: "Say something…", chatLabel: "Cursor chat message",
+        toolbar: "People on this page", seeWho: "See who's here",
+        chatTip: "Write next to your cursor", react: "React", reactWith: "React with {e}",
+        profile: "Your profile", profileOf: "Your profile · {name}", profileLabel: "Your profile: {name}",
+        hidden: "Cursors hidden", show: "Show",
+        coachLabel: "How it works", coachTitle: "👋 You're not alone on this page",
+        coachBody: "Down here you can see who else is looking. Click the faces to see who they are and follow them.",
+        coachShortcuts: "Shortcuts:", coachChat: "<kbd>/</kbd> to write next to your cursor",
+        coachReact: "<kbd>E</kbd> to react", and: "and", gotIt: "Got it",
+        following: "Following {name}", stopFollowing: "Stop following ✕",
+        stopFollowingName: "Stop following {name}", followName: "Follow {name}",
+        you: "You", typing: "Typing…", away: "Away", active: "Active",
+        peopleHere: "people on this page", onlyYouNow: "Just you, for now",
+        siteAndPeak: "{site} on the whole site · today's peak: {peak}",
+        followHelp: "<b>Follow</b> moves your page along with that person's, so you see what they see. " +
+          "To let go, click the banner at the top, scroll, or press <kbd>Esc</kbd>.",
+        edit: "Edit", editProfile: "Edit your profile",
+        follow: "Follow", followingBtn: "Following", stop: "Stop",
+        uploadPhoto: "Upload photo", changePhoto: "Change photo", remove: "Remove",
+        photoNote: "People on this page will see it.", notImage: "That file isn't an image.",
+        processing: "Processing…", badImage: "Couldn't use that image. Try another one.",
+        name: "Name", color: "Color", colorN: "Color {c}",
+        random: "🎲 Random", randomTip: "Random name and color", save: "Save",
+        ghost: "Ghost mode", ghostHelp: "Hides other people's cursors and stops sharing yours.",
+        nHere: "{n} here", nHereLabel: "{n} people here. See who they are",
+        onlyYou: "Just you", nobodyYet: "Nobody else yet", onlyYouLabel: "Just you on this page"
+      }
+    },
+    es: {
+      animals: ["Capibara", "Ajolote", "Nutria", "Quokka", "Panda Rojo", "Perezoso", "Pingüino",
+        "Mapache", "Alpaca", "Erizo", "Koala", "Tucán", "Narval", "Manatí", "Suricata",
+        "Ornitorrinco", "Lémur", "Flamenco", "Fénec", "Wombat", "Llama", "Tapir"],
+      adjectives: ["Zen", "Ninja", "Turbo", "Feliz", "Veloz", "Audaz", "Elegante", "Valiente",
+        "Brillante", "Rebelde", "Salvaje", "Sonriente", "Cool", "Pixel", "Lunar"],
+      adjectiveFirst: false,
+      botPhrases: ["Hola 👋", "¿Alguien más por aquí?", "Pulsa la E, ya verás 👀", "Me encanta esta tipografía",
+        "¿Me sigues? 🏃", "Esto es muy Figma", "Probando el chat…", "Capibaras al poder 🦫",
+        "¿Cuántos somos?", "Voy a por un café ☕"],
+      ui: {
+        chatPlaceholder: "Di algo…", chatLabel: "Mensaje de chat del cursor",
+        toolbar: "Personas en esta página", seeWho: "Ver quién está aquí",
+        chatTip: "Escribir junto a tu cursor", react: "Reaccionar", reactWith: "Reaccionar {e}",
+        profile: "Tu perfil", profileOf: "Tu perfil · {name}", profileLabel: "Tu perfil: {name}",
+        hidden: "Cursores ocultos", show: "Mostrar",
+        coachLabel: "Cómo funciona", coachTitle: "👋 No estás solo en esta página",
+        coachBody: "Abajo ves quién más está mirando. Pulsa sobre las caras para ver quiénes son y seguirles.",
+        coachShortcuts: "Atajos:", coachChat: "<kbd>/</kbd> para escribir junto a tu cursor",
+        coachReact: "<kbd>E</kbd> para reaccionar", and: "y", gotIt: "Entendido",
+        following: "Siguiendo a {name}", stopFollowing: "Dejar de seguir ✕",
+        stopFollowingName: "Dejar de seguir a {name}", followName: "Seguir a {name}",
+        you: "Tú", typing: "Escribiendo…", away: "Ausente", active: "Activo",
+        peopleHere: "personas en esta página", onlyYouNow: "Solo estás tú, por ahora",
+        siteAndPeak: "{site} en toda la web · pico de hoy: {peak}",
+        followHelp: "<b>Seguir</b> mueve tu página con la de esa persona para ver lo mismo que ella. " +
+          "Para soltarla, pulsa arriba en el aviso, gira la rueda o pulsa <kbd>Esc</kbd>.",
+        edit: "Editar", editProfile: "Editar tu perfil",
+        follow: "Seguir", followingBtn: "Siguiendo", stop: "Dejar",
+        uploadPhoto: "Subir foto", changePhoto: "Cambiar foto", remove: "Quitar",
+        photoNote: "La verán quienes estén en esta página.", notImage: "Ese archivo no es una imagen.",
+        processing: "Procesando…", badImage: "No se ha podido usar esa imagen. Prueba con otra.",
+        name: "Nombre", color: "Color", colorN: "Color {c}",
+        random: "🎲 Al azar", randomTip: "Nombre y color al azar", save: "Guardar",
+        ghost: "Modo fantasma", ghostHelp: "Oculta los cursores de los demás y deja de compartir el tuyo.",
+        nHere: "{n} aquí", nHereLabel: "{n} personas aquí. Ver quiénes son",
+        onlyYou: "Solo tú", nobodyYet: "Aún no hay nadie más", onlyYouLabel: "Solo tú en esta página"
+      }
+    }
+  };
+
   var COLORS = ["#F24E1E", "#FF7262", "#A259FF", "#1ABCFE", "#0ACF83", "#FFC700",
     "#FF4FA3", "#7B61FF", "#14AE5C", "#0D99FF", "#F5A524", "#E5484D"];
   var REACTIONS = ["❤️", "👍", "🔥", "😂", "🎉", "👏", "😮", "👀"];
+  var BOT_TARGETS = "a, button, .btn, h1, h2, h3, p, img, svg, .card, summary, li, [data-mc-target]";
 
-  var BOT_PHRASES = ["Hola 👋", "¿Habéis visto este botón?", "Lorem ipsum, mi idioma favorito",
-    "Me quedo con el plan Pro 👀", "Esto queda genial", "¿Quién ha movido el hero?",
-    "Capibaras al poder 🦫", "Ese hover está muy fino", "¿Alguien más por aquí?", "Mola el wireframe",
-    "Voy a por un café ☕", "Sígueme 🏃"];
-  var BOT_TARGETS = "a, button, .btn, h1, h2, h3, p, img, svg, .card, .ph, summary, li, [data-mc-target]";
+  var BOT_HERE_MS = [7000, 16000];   // time a bot spends on your screen
+  var BOT_AWAY_MS = [12000, 30000];  // time it spends elsewhere on the page
 
-  var BOT_HERE_MS = [7000, 16000];   // tiempo que un bot pasa en tu pantalla
-  var BOT_AWAY_MS = [12000, 30000];  // tiempo que pasa en otras zonas de la página
-
-  var SEND_EVERY_MS = 40;   // ~25 envíos/seg como máximo
-  var LERP = 0.28;          // suavizado de cursores remotos (0..1)
+  var SEND_EVERY_MS = 40;   // ~25 position updates per second at most
+  var LERP = 0.28;          // smoothing of remote cursors (0..1; 1 = none)
   var CHAT_LINGER_MS = 4000;
   var UI = ".mc-presence,.mc-local,.mc-layer,.mc-pop,.mc-picker,.mc-coach,.mc-follow";
 
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function rand(a, b) { return a + Math.random() * (b - a); }
   function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-  function randomName() { return pick(ANIMALS) + " " + pick(ADJECTIVES); }
+
+  function randomGen() {
+    return [Math.floor(Math.random() * I18N.en.animals.length), Math.floor(Math.random() * I18N.en.adjectives.length)];
+  }
+  function nameFor(gen, lang) {
+    var d = I18N[lang] || I18N.en;
+    var animal = d.animals[gen[0]] || I18N.en.animals[gen[0]], adj = d.adjectives[gen[1]] || I18N.en.adjectives[gen[1]];
+    return d.adjectiveFirst ? adj + " " + animal : animal + " " + adj;
+  }
+  function isGen(g) {
+    return g && g.length === 2 && g[0] >= 0 && g[0] < I18N.en.animals.length && g[1] >= 0 && g[1] < I18N.en.adjectives.length;
+  }
 
   function textOn(hex) {
     var n = parseInt(hex.slice(1), 16);
@@ -83,7 +171,7 @@
     return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? "#1E1E1E" : "#FFFFFF";
   }
 
-  // sessionStorage: identidad aleatoria por pestaña · localStorage: lo que el visitante elige
+  // sessionStorage: random identity per tab · localStorage: what the visitor chooses
   function store(area, key, val) {
     try {
       var s = global[area];
@@ -105,7 +193,7 @@
     return path.slice(0, 128);
   }
 
-  // Rutas de nodos DOM (índices desde <body>) para compartir selecciones de texto
+  // DOM node paths (child indexes from <body>) used to share text selections
   function nodePath(node) {
     var path = [];
     while (node && node !== document.body) {
@@ -125,11 +213,11 @@
 
   var FONT = "Inter,system-ui,-apple-system,'Segoe UI',sans-serif";
   var CSS = [
-    /* ancho 100% + overflow-x:clip → los cursores nunca generan scroll horizontal en la web anfitriona */
+    /* 100% width + overflow-x:clip → remote cursors never cause horizontal scroll on the host page */
     ".mc-layer{position:absolute;left:0;top:0;width:100%;height:0;overflow-x:clip;overflow-y:visible;pointer-events:none;z-index:2147483000}",
     ".mc-layer.mc-off{display:none}",
     ".mc-cursor{position:absolute;left:0;top:0;will-change:transform;transition:opacity .3s ease}",
-    /* reposo: el cursor se atenúa y le salen "z" animadas */
+    /* idle: the cursor fades and animated "z"s float up */
     ".mc-cursor svg,.mc-cursor .mc-tag{transition:opacity .3s ease}",
     ".mc-cursor.mc-idle svg,.mc-cursor.mc-idle .mc-tag{opacity:.4}",
     ".mc-zzz{position:absolute;left:22px;top:-16px;display:none;font:800 16px/1 " + FONT + ";pointer-events:none;",
@@ -151,7 +239,7 @@
     ".mc-tag.mc-talking{padding:7px 12px 9px;border-radius:3px 16px 16px 16px}",
     ".mc-tag.mc-talking .mc-msg{display:block}",
     ".mc-tag.mc-talking .mc-name{font-size:10px;opacity:.8}",
-    /* selecciones, clics y reacciones */
+    /* selections, clicks and reactions */
     ".mc-sel{position:absolute;border-radius:2px;opacity:.28;mix-blend-mode:multiply}",
     "@media (prefers-color-scheme:dark){.mc-sel{mix-blend-mode:screen;opacity:.35}}",
     ".mc-ripple{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:2.5px solid;",
@@ -161,13 +249,13 @@
     "@keyframes mc-float{0%{transform:translate(0,0) scale(.4);opacity:0}12%{transform:translate(0,-10px) scale(1.15);opacity:1}",
     "  100%{transform:translate(var(--dx),-110px) scale(.9) rotate(var(--rot));opacity:0}}",
     "@media (prefers-reduced-motion:reduce){.mc-float{animation-duration:1.2s}.mc-ripple{animation:none;opacity:0}}",
-    /* chat local */
+    /* local chat */
     ".mc-local{position:fixed;left:0;top:0;pointer-events:none;z-index:2147483001;display:none}",
     ".mc-local.mc-open{display:block}",
     ".mc-local .mc-tag{pointer-events:auto;padding:7px 12px 9px;border-radius:3px 16px 16px 16px}",
     ".mc-local input{all:unset;font:400 14px/1.2 " + FONT + ";width:200px;color:inherit;caret-color:currentColor}",
     ".mc-local input::placeholder{color:inherit;opacity:.65}",
-    /* ---------- píldora, paneles, tooltip y aviso inicial ---------- */
+    /* ---------- pill, panels, tooltip and first-visit hint ---------- */
     ".mc-presence,.mc-pop,.mc-picker,.mc-coach{background:#fff;color:#1E1E1E;border:1px solid rgba(0,0,0,.08);",
     "  box-shadow:0 8px 28px rgba(0,0,0,.14);font:500 13px/1.3 " + FONT + "}",
     ".mc-presence{position:fixed;right:16px;bottom:16px;display:flex;align-items:center;gap:2px;z-index:2147483002;",
@@ -195,7 +283,7 @@
     ".mc-pill-btn{height:30px;padding:0 14px;font-weight:600;background:#1E1E1E;color:#fff}",
     ".mc-pill-btn:hover{background:#000}",
     "@media (hover:none){.mc-chat-btn{display:none}}",
-    /* tooltip con atajo de teclado */
+    /* tooltip with keyboard shortcut */
     ".mc-tooltip{position:fixed;left:0;top:0;z-index:2147483004;pointer-events:none;background:#1E1E1E;color:#fff;",
     "  font:500 12px/1 " + FONT + ";padding:7px 9px;border-radius:7px;white-space:nowrap;opacity:0;transform:translateY(4px);",
     "  transition:opacity .12s,transform .12s}",
@@ -204,7 +292,7 @@
     "@media (hover:none){.mc-tooltip{display:none}}",
     ".mc-pop kbd,.mc-coach kbd{font:600 11px/1 ui-monospace,Menlo,monospace;border:1px solid rgba(0,0,0,.18);border-bottom-width:2px;",
     "  border-radius:5px;padding:1px 5px;margin:0 1px}",
-    /* paneles */
+    /* panels */
     ".mc-pop{position:fixed;right:16px;bottom:68px;z-index:2147483003;border-radius:16px;width:300px;max-width:calc(100vw - 32px);",
     "  overflow:hidden;animation:mc-in .16s ease-out}",
     "@keyframes mc-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
@@ -243,7 +331,7 @@
     ".mc-label{display:block;font-size:12px;font-weight:600;opacity:.6;margin:0 0 6px}",
     ".mc-swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:16px}",
     ".mc-face{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}",
-    /* nombre del cursor: foto + texto alineados en una fila, sin salirse de la etiqueta */
+    /* cursor name: photo + text aligned in one row, never overflowing the label */
     ".mc-name{display:flex;align-items:center;gap:6px;min-width:0}",
     ".mc-name>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     ".mc-tag-av{width:18px;height:18px;flex:none;border-radius:50%;object-fit:cover;display:block;",
@@ -266,14 +354,14 @@
     ".mc-picker{position:fixed;z-index:2147483003;display:flex;gap:2px;border-radius:999px;padding:4px;animation:mc-in .16s ease-out}",
     ".mc-picker .mc-btn{width:38px;height:38px;font-size:21px}",
     ".mc-picker .mc-btn:hover{transform:scale(1.15)}",
-    /* aviso de primera visita */
+    /* first-visit hint */
     ".mc-coach{position:fixed;right:16px;bottom:72px;z-index:2147483003;border-radius:14px;padding:16px;width:290px;",
     "  max-width:calc(100vw - 32px);box-sizing:border-box;animation:mc-in .25s ease-out}",
     ".mc-coach b{display:block;font-size:14px;margin-bottom:6px}",
     ".mc-coach p{margin:0 0 14px;font-weight:400;opacity:.75;line-height:1.5}",
     ".mc-coach::after{content:'';position:absolute;right:34px;bottom:-7px;width:12px;height:12px;background:inherit;",
     "  border-right:1px solid rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.08);transform:rotate(45deg)}",
-    /* modo seguir */
+    /* follow mode */
     ".mc-follow{position:fixed;inset:0;border:3px solid;pointer-events:none;z-index:2147482999;display:none}",
     ".mc-follow.mc-on{display:block}",
     ".mc-follow button{all:unset;pointer-events:auto;cursor:pointer;position:absolute;top:0;left:50%;transform:translateX(-50%);",
@@ -281,7 +369,7 @@
     ".mc-follow button span{font-weight:500;opacity:.8;margin-left:8px}",
     ".mc-follow button:hover span{opacity:1;text-decoration:underline}",
     ".mc-follow button:focus-visible{outline:2px solid #0D99FF}",
-    /* modo oscuro */
+    /* dark mode */
     "@media (prefers-color-scheme:dark){",
     "  .mc-presence,.mc-pop,.mc-picker,.mc-coach{background:#1f1f1f;border-color:rgba(255,255,255,.1);color:#EEE}",
     "  .mc-avatar{border-color:#1f1f1f}.mc-btn:hover,.mc-btn[aria-expanded=true]{background:rgba(255,255,255,.08)}",
@@ -316,12 +404,12 @@
     return name.split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase();
   }
 
-  // ---- fotos de perfil: data URL pequeña (≤14 KB) validada en cliente y servidor ----
+  // ---- profile photos: small data URL (≤ 14 KB), validated on client and server ----
   var AVATAR_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/;
   var AVATAR_MAX = 14000;
   function validAvatar(v) { return typeof v === "string" && v.length <= AVATAR_MAX && AVATAR_RE.test(v) ? v : ""; }
 
-  // Pinta la foto (o las iniciales si no hay) dentro de un avatar
+  // Draws the photo (or the initials when there is none) inside an avatar
   function avatarFace(node, name, avatar) {
     node.textContent = "";
     if (avatar) {
@@ -333,7 +421,7 @@
     }
   }
 
-  // Recorta al centro en cuadrado y reduce hasta que pese menos de AVATAR_MAX
+  // Crops to a centered square and shrinks it until it weighs less than AVATAR_MAX
   function imageToAvatar(file, cb) {
     var url = URL.createObjectURL(file), img = new Image();
     img.onload = function () {
@@ -344,7 +432,7 @@
       for (var i = 0; i < sizes.length; i++) {
         var c = document.createElement("canvas"), ctx = c.getContext("2d");
         c.width = c.height = sizes[i];
-        ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, sizes[i], sizes[i]);   // fondo para PNG transparentes
+        ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, sizes[i], sizes[i]);   // background for transparent PNGs
         ctx.drawImage(img, (w - s) / 2, (h - s) / 2, s, s, 0, 0, sizes[i], sizes[i]);
         for (var t = 0; t < types.length; t++) {
           for (var q = 0; q < qs.length; q++) {
@@ -359,8 +447,14 @@
     img.src = url;
   }
 
+  function resolveLang(l) {
+    if (l === "auto") l = ((global.navigator && navigator.language) || "en").slice(0, 2).toLowerCase();
+    return typeof l === "string" && /^[a-z]{2}$/.test(l) ? l : "en";
+  }
+
   function init(opts) {
     opts = opts || {};
+    var lang = resolveLang(opts.lang || "en");
     var anchorCenter = (opts.anchor || "center") === "center";
     var maxCursors = opts.maxCursors > 0 ? opts.maxCursors : 12;
     var idleMs = opts.idleMs > 0 ? opts.idleMs : 30000;
@@ -371,17 +465,36 @@
     var showClicks = opts.clicks !== false, showSel = opts.selection !== false;
     var canFollow = opts.follow !== false, editable = opts.editable !== false && !opts.name;
 
+    // Translated text: opts.strings → built-in language → English → the key itself
+    function t(key, vars) {
+      var custom = opts.strings && opts.strings[lang] && opts.strings[lang][key];
+      var s = custom || (I18N[lang] && I18N[lang].ui[key]) || I18N.en.ui[key] || key;
+      if (vars) for (var k in vars) s = s.split("{" + k + "}").join(vars[k]);
+      return s;
+    }
+    function botPhrases() {
+      var p = opts.botPhrases;
+      if (p && p.length) return p;                                    // a plain array
+      if (p && (p[lang] || p.en)) return p[lang] || p.en;            // { en: [...], es: [...] }
+      return (I18N[lang] || I18N.en).botPhrases;
+    }
+
+    // Identity: chosen and saved by the visitor (localStorage) or random per tab (sessionStorage)
     var custom = store("localStorage", "mc:me");
     var saved = custom || store("sessionStorage", "mc:me") || {};
+    var gen = !opts.name && !custom && isGen(saved.gen) ? saved.gen : (!opts.name && !custom ? randomGen() : null);
     var me = {
-      name: opts.name || saved.name || randomName(),
+      name: opts.name || (gen ? nameFor(gen, lang) : saved.name) || nameFor(randomGen(), lang),
       color: opts.color || saved.color || pick(COLORS),
       avatar: validAvatar(opts.avatar) || validAvatar(saved.avatar)
     };
-    if (!custom) store("sessionStorage", "mc:me", me);
+    function saveRandomIdentity() {
+      if (gen) store("sessionStorage", "mc:me", { name: me.name, color: me.color, avatar: me.avatar, gen: gen });
+    }
+    saveRandomIdentity();
 
-    // Id anónimo del navegador, compartido por todas sus pestañas: así tus otras
-    // pestañas se reconocen como "tú" (ni aparecen en la píldora ni se pueden seguir).
+    // Anonymous browser id, shared by all its tabs: your other tabs are recognised
+    // as "you" (they don't show up in the pill and can't be followed).
     var uid = store("localStorage", "mc:uid");
     if (!/^[a-z0-9]{8,32}$/.test(uid || "")) {
       uid = (Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).replace(/[^a-z0-9]/g, "").slice(0, 20);
@@ -398,67 +511,75 @@
     var last = { cx: 0, cy: 0, has: false, sent: 0, pending: null };
     var chatTimer = null, raf = 0, houseTimer = null, selTimer = null, resizeTimer = null;
     var lastSelJSON = "null", lastClick = 0, lastReact = 0;
-    var following = null, openPop = null;
+    var following = null, openPop = null, picker = null;
     var serverStats = { room: 0, site: 0, peak: 0 }, statsKey = "";
     var bots = [];
 
     // ---- DOM ----
     var style = el("style"); style.textContent = CSS; document.head.appendChild(style);
     var layer = el("div", "mc-layer", document.body);
-    var selLayer = el("div", "", layer);           // selecciones debajo de los cursores
-    var fxLayer = el("div", "", layer);            // ondas y emojis
+    var selLayer = el("div", "", layer);           // selections, below the cursors
+    var fxLayer = el("div", "", layer);            // ripples and emojis
 
     var local = el("div", "mc-local", document.body);
     var localTag = el("div", "mc-tag", local);
     var input = el("input", "", localTag);
-    input.maxLength = 140; input.placeholder = "Di algo…";
-    input.setAttribute("aria-label", "Mensaje de chat del cursor");
+    input.maxLength = 140;
 
     var followBox = el("div", "mc-follow", document.body);
     var followLabel = el("button", "", followBox);
     followLabel.type = "button";
     followLabel.addEventListener("click", function () { unfollow(); });
 
-    // Píldora: [Personas] | [Chat] [Reaccionar] | [Tu perfil]
-    // Cada botón dice lo que hace (tooltip + atajo) y abre un panel explicativo.
+    // The pill: [People] | [Chat] [React] | [Your profile]
+    // Every button says what it does (tooltip + shortcut) and opens a self-explanatory panel.
     var presence = null, peopleBtn = null, chatBtn = null, reactBtn = null, meBtn = null;
-    var tooltip = null, coach = null, coachTimer = null;
+    var ghostText = null, showBtn = null, tooltip = null, coach = null, coachTimer = null;
     if (opts.presence !== false) {
       presence = el("div", "mc-presence", document.body);
       presence.setAttribute("role", "toolbar");
-      presence.setAttribute("aria-label", "Personas en esta página");
-      peopleBtn = pillButton("mc-btn mc-people", "Ver quién está aquí", "", function () { togglePop("people"); });
+      peopleBtn = pillButton("mc-btn mc-people", "", function () { togglePop("people"); });
       if (opts.chat !== false || reactions) el("span", "mc-sep", presence);
       if (opts.chat !== false) {
-        chatBtn = pillButton("mc-btn mc-icon mc-chat-btn", "Escribir junto a tu cursor", "/", function () {
+        chatBtn = pillButton("mc-btn mc-icon mc-chat-btn", "/", function () {
           closePop(); closePicker(); openChat();
         }, ICON_CHAT);
       }
       if (reactions) {
-        reactBtn = pillButton("mc-btn mc-icon mc-react-btn", "Reaccionar", "E", function () {
+        reactBtn = pillButton("mc-btn mc-icon mc-react-btn", "E", function () {
           if (picker) return closePicker();
           var r = presence.getBoundingClientRect();
           openPicker(r.right, r.top - 8, true);
         }, ICON_SMILE);
       }
       el("span", "mc-sep", presence);
-      meBtn = pillButton("mc-btn mc-me-btn", "Tu perfil", "", function () { togglePop("profile"); });
+      meBtn = pillButton("mc-btn mc-me-btn", "", function () { togglePop("profile"); });
       var ghostBar = el("div", "mc-ghost-bar", presence);
       ghostBar.innerHTML = ICON_EYE_OFF;
-      el("span", "", ghostBar).textContent = "Cursores ocultos";
-      var showBtn = el("button", "mc-btn mc-pill-btn", ghostBar);
-      showBtn.type = "button"; showBtn.textContent = "Mostrar";
+      ghostText = el("span", "", ghostBar);
+      showBtn = el("button", "mc-btn mc-pill-btn", ghostBar);
+      showBtn.type = "button";
       showBtn.addEventListener("click", function () { setGhost(false); });
       tooltip = el("div", "mc-tooltip", document.body);
       tooltip.setAttribute("aria-hidden", "true");
     }
 
-    function pillButton(cls, label, kbd, onClick, iconHTML) {
+    // Static texts (re-applied when the language changes)
+    function applyStaticTexts() {
+      input.placeholder = t("chatPlaceholder");
+      input.setAttribute("aria-label", t("chatLabel"));
+      if (!presence) return;
+      presence.setAttribute("aria-label", t("toolbar"));
+      if (chatBtn) setTip(chatBtn, t("chatTip"));
+      if (reactBtn) setTip(reactBtn, t("react"));
+      ghostText.textContent = t("hidden");
+      showBtn.textContent = t("show");
+    }
+
+    function pillButton(cls, kbd, onClick, iconHTML) {
       var b = el("button", cls, presence);
       b.type = "button";
-      b.dataset.tip = label;
       if (kbd) { b.dataset.kbd = kbd; b.setAttribute("aria-keyshortcuts", kbd); }
-      b.setAttribute("aria-label", label);
       if (iconHTML) b.innerHTML = iconHTML;
       b.addEventListener("click", function () { hideTip(); onClick(); });
       b.addEventListener("mouseenter", function () { showTip(b); });
@@ -467,8 +588,12 @@
       b.addEventListener("blur", hideTip);
       return b;
     }
+    function setTip(b, label, ariaLabel) {
+      b.dataset.tip = label;
+      b.setAttribute("aria-label", ariaLabel || label);
+    }
     function showTip(b) {
-      if (!tooltip || b.getAttribute("aria-expanded") === "true") return;
+      if (!tooltip || !b.dataset.tip || b.getAttribute("aria-expanded") === "true") return;
       tooltip.textContent = b.dataset.tip;
       if (b.dataset.kbd) el("kbd", "", tooltip).textContent = b.dataset.kbd;
       tooltip.classList.add("mc-on");
@@ -483,20 +608,20 @@
       if (reactBtn) reactBtn.setAttribute("aria-expanded", String(!!picker));
     }
 
-    // Aviso de primera visita: qué es esto y cómo se usa (una sola vez)
+    // First-visit hint: what this is and how to use it (shown once)
     function showCoach() {
       if (!presence || ghost || coach || opts.onboarding === false || store("localStorage", "mc:onboarded")) return;
       coach = el("div", "mc-coach", document.body);
       coach.setAttribute("role", "dialog");
-      coach.setAttribute("aria-label", "Cómo funciona");
-      el("b", "", coach).textContent = "👋 No estás solo en esta página";
+      coach.setAttribute("aria-label", t("coachLabel"));
+      el("b", "", coach).textContent = t("coachTitle");
       var tips = [];
-      if (opts.chat !== false) tips.push("<kbd>/</kbd> para escribir junto a tu cursor");
-      if (reactions) tips.push("<kbd>E</kbd> para reaccionar");
-      el("p", "", coach).innerHTML = "Abajo ves quién más está mirando. Pulsa sobre las caras para ver quiénes son y seguirles." +
-        (tips.length ? " Atajos: " + tips.join(" y ") + "." : "");
+      if (opts.chat !== false) tips.push(t("coachChat"));
+      if (reactions) tips.push(t("coachReact"));
+      el("p", "", coach).innerHTML = t("coachBody") +
+        (tips.length ? " " + t("coachShortcuts") + " " + tips.join(" " + t("and") + " ") + "." : "");
       var ok = el("button", "mc-btn mc-pill-btn", coach);
-      ok.type = "button"; ok.textContent = "Entendido";
+      ok.type = "button"; ok.textContent = t("gotIt");
       ok.addEventListener("click", dismissCoach);
     }
     function dismissCoach() {
@@ -508,7 +633,7 @@
     function paintLocalTag() { localTag.style.background = me.color; localTag.style.color = textOn(me.color); }
     paintLocalTag();
 
-    // ---- coordenadas ----
+    // ---- coordinates ----
     function originX() { return anchorCenter ? document.documentElement.clientWidth / 2 : 0; }
     function toShared(cx, cy) {
       return { x: Math.round(cx + global.scrollX - originX()), y: Math.round(cy + global.scrollY) };
@@ -517,7 +642,7 @@
       return last.has ? toShared(last.cx, last.cy) : toShared(innerWidth / 2, innerHeight / 2);
     }
 
-    // ---- red ----
+    // ---- network ----
     function send(obj) {
       if (ws && ws.readyState === 1) { obj.t = obj.t || "update"; ws.send(JSON.stringify(obj)); }
     }
@@ -543,9 +668,8 @@
       } catch (e) { return scheduleRetry(); }
       sock.onopen = function () {
         retry = 0;
-        var msg = { name: me.name, color: me.color, visible: false };
+        var msg = { name: me.name, color: me.color, visible: false, uid: uid };
         if (me.avatar) msg.avatar = me.avatar;
-        msg.uid = uid;
         if (last.has) { var p = toShared(last.cx, last.cy); msg.x = p.x; msg.y = p.y; msg.visible = !document.hidden; }
         var sel = JSON.parse(lastSelJSON);
         if (sel) msg.sel = sel;
@@ -582,6 +706,7 @@
       clearRealPeers();
     }
 
+    // Exponential backoff with jitter: 0.5 s, 1 s, 2 s… up to 15 s
     function scheduleRetry() {
       if (destroyed || ghost) return;
       clearTimeout(retryTimer);
@@ -600,7 +725,7 @@
       renderPresence();
     }
 
-    // ---- modo fantasma: ni ves ni te ven ----
+    // ---- ghost mode: you don't see anyone and nobody sees you ----
     function setGhost(on) {
       ghost = !!on;
       store("localStorage", "mc:ghost", ghost);
@@ -617,18 +742,44 @@
       renderPresence();
     }
 
-    // ---- identidad editable ----
-    // avatar: data URL de imagen, "" para quitar la foto, undefined para no tocarla
+    // ---- editable identity ----
+    // avatar: image data URL, "" to remove the photo, undefined to leave it as is
     function setIdentity(name, color, avatar) {
       name = String(name || "").replace(/\s+/g, " ").trim().slice(0, 32) || me.name;
       color = /^#[0-9a-fA-F]{6}$/.test(color || "") ? color.toUpperCase() : me.color;
       me.name = name; me.color = color;
       if (avatar !== undefined) me.avatar = validAvatar(avatar);
-      store("localStorage", "mc:me", me);       // elegido por el visitante: se recuerda
+      gen = null;                                 // chosen by the visitor: no longer random
+      store("localStorage", "mc:me", { name: me.name, color: me.color, avatar: me.avatar });
       paintLocalTag();
-      for (var id in peers) markSelf(peers[id]);  // tu nombre/color cambió: revisa quién eres "tú"
+      for (var id in peers) markSelf(peers[id]);  // your name/color changed: re-check which tabs are "you"
       send({ name: name, color: color, avatar: me.avatar });
       renderPresence();
+    }
+
+    // ---- language ----
+    function setLang(l) {
+      l = resolveLang(l);
+      if (l === lang) return;
+      lang = l;
+      if (gen) {                                  // random names follow the language
+        me.name = nameFor(gen, lang);
+        saveRandomIdentity();
+        send({ name: me.name });
+      }
+      bots.forEach(function (b) {
+        var p = peers[b.id];
+        if (p) upsertPeer({ id: b.id, name: nameFor(b.gen, lang) });
+      });
+      applyStaticTexts();
+      if (peopleBtn) peopleBtn._key = null;
+      if (meBtn) meBtn._key = null;
+      if (following !== null && peers[following]) paintFollow(peers[following]);
+      var reopen = openPop && openPop.kind;
+      closePop(); closePicker(); hideTip();
+      if (coach) { coach.remove(); coach = null; showCoach(); }
+      renderPresence();
+      if (reopen) togglePop(reopen);
     }
 
     // ---- peers ----
@@ -676,8 +827,8 @@
       kick();
     }
 
-    // ¿Es otra pestaña tuya? Manda el id del navegador; si la pestaña no lo envía
-    // (p. ej. sigue con una versión antigua del script), se compara nombre + color.
+    // Is this another tab of yours? The browser id decides; if the tab doesn't send one
+    // (e.g. it still runs an older version of the script), name + color are compared.
     function isSelf(p) {
       if (p.bot) return false;
       if (p.uid) return p.uid === uid;
@@ -721,7 +872,7 @@
       return n;
     }
 
-    // ---- selección de texto ----
+    // ---- text selection ----
     function textRects(range) {
       var out = [], root = range.commonAncestorContainer;
       function add(r) {
@@ -758,7 +909,7 @@
             rc.width + "px;height:" + rc.height + "px;background:" + p.color;
           p.selEls.push(d);
         });
-      } catch (e) { /* el DOM no coincide: no se dibuja */ }
+      } catch (e) { /* the DOM doesn't match: nothing is drawn */ }
     }
 
     function readSelection() {
@@ -781,7 +932,7 @@
       }, 150);
     }
 
-    // ---- clics y reacciones ----
+    // ---- clicks and reactions ----
     function fxAt(shared, node) {
       node.style.left = (originX() + shared.x) + "px";
       node.style.top = shared.y + "px";
@@ -827,18 +978,17 @@
       else if (m.kind === "reaction" && m.emoji) spawnReaction(m, m.emoji);
     }
 
-    // selector de emojis
-    var picker = null;
+    // emoji picker
     function openPicker(x, y, fromButton) {
       if (!reactions || ghost) return;
       closePicker(); closePop();
       picker = el("div", "mc-picker", document.body);
       picker.setAttribute("role", "menu");
-      reactions.forEach(function (emo, i) {
+      reactions.forEach(function (emo) {
         var b = el("button", "mc-btn", picker);
         b.type = "button"; b.setAttribute("role", "menuitem");
         b.textContent = emo;
-        b.title = "Reaccionar " + emo;
+        b.title = t("reactWith", { e: emo });
         b.addEventListener("click", function () { closePicker(); react(emo); });
       });
       var w = picker.offsetWidth, h = picker.offsetHeight;
@@ -851,18 +1001,18 @@
     }
     function closePicker() { if (picker) { picker.remove(); picker = null; } setExpanded(); }
 
-    // ---- seguir a alguien ----
+    // ---- following someone ----
     function paintFollow(p) {
       followBox.style.borderColor = p.color;
       followLabel.style.background = p.color;
       followLabel.style.color = textOn(p.color);
-      followLabel.textContent = "Siguiendo a " + p.name;
-      el("span", "", followLabel).textContent = "Dejar de seguir ✕";
-      followLabel.setAttribute("aria-label", "Dejar de seguir a " + p.name);
+      followLabel.textContent = t("following", { name: p.name });
+      el("span", "", followLabel).textContent = t("stopFollowing");
+      followLabel.setAttribute("aria-label", t("stopFollowingName", { name: p.name }));
     }
     function follow(id) {
       var p = peers[id];
-      if (!p || p.self || ghost || !canFollow) return;     // a ti mismo no te puedes seguir
+      if (!p || p.self || ghost || !canFollow) return;     // you can't follow yourself
       following = id;
       paintFollow(p);
       followBox.classList.add("mc-on");
@@ -876,7 +1026,7 @@
       renderPresence();
     }
 
-    // ---- paneles: personas y perfil ----
+    // ---- panels: people and profile ----
     function closePop() { if (openPop) { openPop.el.remove(); openPop = null; } setExpanded(); }
     function togglePop(kind) {
       if (openPop && openPop.kind === kind) return closePop();
@@ -889,7 +1039,7 @@
     function currentStats() {
       if (ghost) return { page: 0, site: 0, peak: 0 };
       var nb = activeBots();
-      var page = 1 + realCount() + nb;             // tú + personas + bots
+      var page = 1 + realCount() + nb;             // you + real people + bots
       return { page: page, site: Math.max(page, serverStats.site + nb), peak: Math.max(page, serverStats.peak + nb) };
     }
     function activeBots() {
@@ -898,7 +1048,7 @@
       return n;
     }
 
-    // Tú primero; luego el resto (sin tus otras pestañas ni bots retirados)
+    // You first, then everyone else (without your other tabs or retired bots)
     function peopleList() {
       var arr = [{ id: null, me: true, name: me.name, color: me.color, avatar: me.avatar }];
       for (var id in peers) {
@@ -908,10 +1058,10 @@
       return arr;
     }
     function statusOf(u) {
-      if (u.me) return ["Tú", "mc-me"];
-      if (u.chat) return ["Escribiendo…", "mc-typing"];
-      if (!u.visible || u.idle) return ["Ausente", "mc-away"];
-      return ["Activo", ""];
+      if (u.me) return [t("you"), "mc-me"];
+      if (u.chat) return [t("typing"), "mc-typing"];
+      if (!u.visible || u.idle) return [t("away"), "mc-away"];
+      return [t("active"), ""];
     }
     function face(cls, u, parent) {
       var a = el("span", "mc-avatar" + (cls ? " " + cls : ""), parent);
@@ -923,22 +1073,19 @@
     function openPeople() {
       var pop = el("div", "mc-pop", document.body);
       pop.setAttribute("role", "dialog");
-      pop.setAttribute("aria-label", "Personas en esta página");
+      pop.setAttribute("aria-label", t("toolbar"));
       var head = el("div", "mc-head", pop);
       var big = el("div", "mc-big", head);
       var txt = el("div", "", head);
       var title = el("div", "", txt); title.style.fontWeight = "600";
       var sub = el("div", "mc-sub", txt);
       var list = el("ul", "mc-list", pop);
-      if (canFollow) {
-        el("p", "mc-foot", pop).innerHTML = "<b>Seguir</b> mueve tu página con la de esa persona para ver lo mismo que ella. " +
-          "Para soltarla, pulsa arriba en el aviso, gira la rueda o pulsa <kbd>Esc</kbd>.";
-      }
+      if (canFollow) el("p", "mc-foot", pop).innerHTML = t("followHelp");
       openPop = { kind: "people", el: pop, update: function () {
         var s = currentStats();
         big.textContent = s.page;
-        title.textContent = s.page === 1 ? "Solo estás tú, por ahora" : "personas en esta página";
-        sub.textContent = s.site + " en toda la web · pico de hoy: " + s.peak;
+        title.textContent = s.page === 1 ? t("onlyYouNow") : t("peopleHere");
+        sub.textContent = t("siteAndPeak", { site: s.site, peak: s.peak });
         renderPeopleList(list);
       } };
       openPop.update();
@@ -946,10 +1093,10 @@
 
     function renderPeopleList(list) {
       var arr = peopleList();
-      var key = following + "|" + arr.map(function (u) {
+      var key = lang + "|" + following + "|" + arr.map(function (u) {
         return u.id + u.name + u.color + (u.avatar ? u.avatar.length : "") + statusOf(u)[0];
       }).join("|");
-      if (list._key === key) return;               // no reconstruir sin cambios (no se pierden clics)
+      if (list._key === key) return;               // don't rebuild without changes (no lost clicks)
       list._key = key;
       list.innerHTML = "";
       arr.forEach(function (u) {
@@ -963,17 +1110,17 @@
         var b;
         if (u.me && editable) {
           b = el("button", "mc-btn mc-act", li);
-          b.textContent = "Editar";
-          b.setAttribute("aria-label", "Editar tu perfil");
+          b.textContent = t("edit");
+          b.setAttribute("aria-label", t("editProfile"));
           b.addEventListener("click", function () { togglePop("profile"); });
         } else if (!u.me && canFollow) {
           var on = following === u.id;
           b = el("button", "mc-btn mc-act" + (on ? " mc-on" : ""), li);
-          b.textContent = on ? "Siguiendo" : "Seguir";
+          b.textContent = on ? t("followingBtn") : t("follow");
           b.setAttribute("aria-pressed", String(on));
-          b.setAttribute("aria-label", (on ? "Dejar de seguir a " : "Seguir a ") + u.name);
-          b.addEventListener("mouseenter", function () { if (following === u.id) b.textContent = "Dejar"; });
-          b.addEventListener("mouseleave", function () { if (following === u.id) b.textContent = "Siguiendo"; });
+          b.setAttribute("aria-label", t(on ? "stopFollowingName" : "followName", { name: u.name }));
+          b.addEventListener("mouseenter", function () { if (following === u.id) b.textContent = t("stop"); });
+          b.addEventListener("mouseleave", function () { if (following === u.id) b.textContent = t("followingBtn"); });
           b.addEventListener("click", function () { if (following === u.id) unfollow(); else follow(u.id); });
         }
         if (b) b.type = "button";
@@ -983,40 +1130,39 @@
     function openProfile() {
       var pop = el("div", "mc-pop", document.body);
       pop.setAttribute("role", "dialog");
-      pop.setAttribute("aria-label", "Tu perfil");
+      pop.setAttribute("aria-label", t("profile"));
       var body = el("div", "mc-pop-body", pop);
-      el("h4", "", body).textContent = "Tu perfil";
+      el("h4", "", body).textContent = t("profile");
       openPop = { kind: "profile", el: pop };
       var nameIn = null;
 
       if (editable) {
         var color = me.color, avatar = me.avatar || "";
 
-        // Foto: se elige del ordenador, se recorta y se reduce en el navegador
+        // Photo: picked from the computer, cropped and shrunk in the browser
         var photo = el("div", "mc-photo", body);
         var preview = el("div", "mc-avatar", photo);
         var info = el("div", "", photo);
         var file = el("input", "", info);
         file.type = "file"; file.accept = "image/*"; file.hidden = true;
         var upBtn = el("button", "mc-btn mc-outline", info); upBtn.type = "button";
-        var rmBtn = el("button", "mc-link", info); rmBtn.type = "button"; rmBtn.textContent = "Quitar";
+        var rmBtn = el("button", "mc-link", info); rmBtn.type = "button"; rmBtn.textContent = t("remove");
         var note = el("small", "", info);
-        var NOTE = "La verán quienes estén en esta página.";
-        note.textContent = NOTE;
+        note.textContent = t("photoNote");
 
-        var nameLabel = el("label", "mc-label", body); nameLabel.textContent = "Nombre";
+        var nameLabel = el("label", "mc-label", body); nameLabel.textContent = t("name");
         nameIn = el("input", "", body);
         nameIn.value = me.name; nameIn.maxLength = 32;
         nameIn.id = "mc-name-" + uid; nameLabel.htmlFor = nameIn.id;
 
-        el("span", "mc-label", body).textContent = "Color";
+        el("span", "mc-label", body).textContent = t("color");
         var sw = el("div", "mc-swatches", body);
-        sw.setAttribute("role", "group"); sw.setAttribute("aria-label", "Color");
+        sw.setAttribute("role", "group"); sw.setAttribute("aria-label", t("color"));
 
         var paintPreview = function () {
           preview.style.background = color; preview.style.color = textOn(color);
           avatarFace(preview, nameIn.value.trim() || me.name, avatar);
-          upBtn.textContent = avatar ? "Cambiar foto" : "Subir foto";
+          upBtn.textContent = avatar ? t("changePhoto") : t("uploadPhoto");
           rmBtn.hidden = !avatar;
         };
         var setColor = function (c) {
@@ -1027,7 +1173,7 @@
         COLORS.forEach(function (c) {
           var b = el("button", "mc-swatch", sw);
           b.type = "button"; b.style.background = c; b.style.color = c; b.dataset.c = c;
-          b.setAttribute("aria-label", "Color " + c);
+          b.setAttribute("aria-label", t("colorN", { c: c }));
           b.addEventListener("click", function () { setColor(c); });
         });
         upBtn.addEventListener("click", function () { file.click(); });
@@ -1036,11 +1182,11 @@
           var f = file.files && file.files[0];
           file.value = "";
           if (!f) return;
-          if (!/^image\//.test(f.type)) { note.textContent = "Ese archivo no es una imagen."; return; }
-          upBtn.textContent = "Procesando…";
+          if (!/^image\//.test(f.type)) { note.textContent = t("notImage"); return; }
+          upBtn.textContent = t("processing");
           imageToAvatar(f, function (url) {
-            if (url) { avatar = url; note.textContent = NOTE; }
-            else note.textContent = "No se ha podido usar esa imagen. Prueba con otra.";
+            if (url) { avatar = url; note.textContent = t("photoNote"); }
+            else note.textContent = t("badImage");
             paintPreview();
           });
         });
@@ -1048,16 +1194,16 @@
         setColor(color);
 
         var row = el("div", "mc-row", body);
-        var dice = el("button", "mc-btn", row); dice.type = "button"; dice.textContent = "🎲 Al azar";
-        dice.title = "Nombre y color al azar";
-        dice.addEventListener("click", function () {         // cambia nombre Y color (nunca repite)
+        var dice = el("button", "mc-btn", row); dice.type = "button"; dice.textContent = t("random");
+        dice.title = t("randomTip");
+        dice.addEventListener("click", function () {         // random name AND color (never the same)
           var n, c, tries = 0;
-          do { n = randomName(); } while (n === nameIn.value && ++tries < 20);
+          do { n = nameFor(randomGen(), lang); } while (n === nameIn.value && ++tries < 20);
           do { c = pick(COLORS); } while (c === color && ++tries < 40);
           nameIn.value = n;
           setColor(c);
         });
-        var save = el("button", "mc-btn mc-primary", row); save.type = "button"; save.textContent = "Guardar";
+        var save = el("button", "mc-btn mc-primary", row); save.type = "button"; save.textContent = t("save");
         var commit = function () { setIdentity(nameIn.value, color, avatar); closePop(); };
         save.addEventListener("click", commit);
         nameIn.addEventListener("keydown", function (e) {
@@ -1075,18 +1221,18 @@
         if (editable) el("div", "mc-divider", body);
         var srow = el("div", "mc-switch-row", body);
         var stxt = el("div", "", srow); stxt.style.flex = "1";
-        el("b", "", stxt).textContent = "Modo fantasma";
-        el("small", "", stxt).textContent = "Oculta los cursores de los demás y deja de compartir el tuyo.";
+        el("b", "", stxt).textContent = t("ghost");
+        el("small", "", stxt).textContent = t("ghostHelp");
         var swBtn = el("button", "mc-switch", srow);
         swBtn.type = "button"; swBtn.setAttribute("role", "switch");
         swBtn.setAttribute("aria-checked", String(ghost));
-        swBtn.setAttribute("aria-label", "Modo fantasma");
+        swBtn.setAttribute("aria-label", t("ghost"));
         swBtn.addEventListener("click", function () { setGhost(!ghost); });
       }
       if (nameIn) { nameIn.focus(); nameIn.select(); }
     }
 
-    // ---- límite de cursores + inactividad (cada segundo) ----
+    // ---- cursor cap + idle state (every second) ----
     function housekeeping() {
       var now = performance.now();
       if (autoRoom) {
@@ -1100,7 +1246,7 @@
         if (idle !== !!p.idle) { p.idle = idle; p.el.classList.toggle("mc-idle", idle); }
         if (p.visible && !p.retired && !p.self) list.push(p);
       }
-      // prioridad: personas reales > bots; activos > inactivos; recientes > antiguos
+      // priority: real people > bots; active > idle; most recent first
       list.sort(function (a, b) {
         return (!!a.bot - !!b.bot) || (!!a.idle - !!b.idle) || (b.lastActive - a.lastActive);
       });
@@ -1109,7 +1255,7 @@
         if (capped !== !!p.capped) { p.capped = capped; p.el.classList.toggle("mc-capped", capped); }
       });
       emitStats();
-      if (openPop && openPop.kind === "people") openPop.update();   // "Activo" → "Ausente", etc.
+      if (openPop && openPop.kind === "people") openPop.update();   // "Active" → "Away", etc.
     }
 
     function emitStats() {
@@ -1117,13 +1263,13 @@
       if (key === statsKey) return;
       statsKey = key;
       if (openPop && openPop.update) openPop.update();
-      if (typeof opts.onStats === "function") { try { opts.onStats(s); } catch (e) { /* no rompas la web */ } }
+      if (typeof opts.onStats === "function") { try { opts.onStats(s); } catch (e) { /* never break the host page */ } }
     }
 
-    // ---- bots: usuarios ficticios ----
-    // Elige un punto "interesante" (un botón, un titular...) en coordenadas compartidas.
-    // here=true → dentro de lo que el visitante ve; here=false → fuera de su vista
-    // (devuelve null si la página es tan corta que no hay "fuera").
+    // ---- bots: fake visitors ----
+    // Picks an "interesting" point (a button, a heading…) in shared coordinates.
+    // here=true → inside what the visitor sees; here=false → outside their view
+    // (returns null when the page is so short there is no "outside").
     function pickBotTarget(here) {
       var vis = [], out = [], vh = innerHeight, vw = document.documentElement.clientWidth;
       var els = document.querySelectorAll(opts.botTargets || BOT_TARGETS);
@@ -1152,24 +1298,24 @@
       var names = {}, colors = {};
       names[me.name] = 1; colors[me.color] = 1;
       for (var i = 0; i < n; i++) {
-        var name, color, tries = 0;
-        do { name = randomName(); } while (names[name] && ++tries < 50);
+        var g, name, color, tries = 0;
+        do { g = randomGen(); name = nameFor(g, lang); } while (names[name] && ++tries < 50);
         do { color = pick(COLORS); } while (colors[color] && ++tries < 100);
         names[name] = 1; colors[color] = 1;
-        // El primero empieza de visita; el resto, por otras zonas de la página.
+        // The first one starts on screen; the rest elsewhere on the page.
         var now = performance.now(), here = i === 0;
         var start = pickBotTarget(here) || pickBotTarget(true), id = "bot-" + i;
         upsertPeer({ id: id, name: name, color: color, x: start.x, y: start.y, visible: true });
         peers[id].bot = true;
-        bots.push({ id: id, seg: null, waitUntil: now + rand(200, 2000), chat: null,
+        bots.push({ id: id, gen: g, seg: null, waitUntil: now + rand(200, 2000), chat: null,
           here: here, modeUntil: now + (here ? rand(BOT_HERE_MS[0], BOT_HERE_MS[1]) : rand(4000, 12000)),
           nextChat: now + rand(4000, 8000) });
       }
       renderPresence();
     }
 
-    // Alterna cada bot entre "de visita" (en tu pantalla) y "a lo suyo" (fuera de ella).
-    // Normalmente solo hay uno de visita a la vez, y a ratos ninguno.
+    // Each bot alternates between "visiting" (on your screen) and "away" (off screen).
+    // Usually only one is visiting at a time, and sometimes none.
     function updateBotMode(b, now) {
       if (now < b.modeUntil || b.chat || following === b.id) return;
       var visiting = bots.filter(function (o) { return o.here && o !== b; }).length;
@@ -1179,16 +1325,16 @@
       } else if (visiting === 0 || Math.random() < 0.15) {
         b.here = true;
         b.modeUntil = now + rand(BOT_HERE_MS[0], BOT_HERE_MS[1]);
-        // en ~la mitad de las visitas dice algo; en el resto solo curiosea
+        // says something in about half of its visits; otherwise it just looks around
         b.nextChat = Math.random() < 0.5 ? now + rand(2500, 6000) : Infinity;
       } else {
-        b.modeUntil = now + rand(3000, 8000);       // ya hay alguien de visita: espera
+        b.modeUntil = now + rand(3000, 8000);       // someone is already visiting: wait
         return;
       }
-      if (!b.seg) b.waitUntil = now;                 // ponte en marcha ya
+      if (!b.seg) b.waitUntil = now;                 // get moving right away
     }
 
-    // Con suficiente gente real, los bots se retiran; vuelven si la página se vacía.
+    // With enough real people, the bots retire; they come back if the page empties.
     function updateBotRetirement() {
       var retire = realCount() >= botsRetireAt, changed = false;
       bots.forEach(function (b) {
@@ -1216,15 +1362,15 @@
         if (!p || p.retired) return;
         updateBotMode(b, now);
 
-        if (b.seg) {                                   // desplazándose (curva Bézier)
-          var s = b.seg, t = Math.min(1, (now - s.t0) / s.dur), e = ease(t), u = 1 - e;
+        if (b.seg) {                                   // moving (cubic Bézier curve)
+          var s = b.seg, tt = Math.min(1, (now - s.t0) / s.dur), e = ease(tt), u = 1 - e;
           p.x = u*u*u*s.x0 + 3*u*u*e*s.x1 + 3*u*e*e*s.x2 + e*e*e*s.x3;
           p.y = u*u*u*s.y0 + 3*u*u*e*s.y1 + 3*u*e*e*s.y2 + e*e*e*s.y3;
           setActive(p, now);
-          if (t >= 1) {
+          if (tt >= 1) {
             b.seg = null;
             b.waitUntil = now + (Math.random() < 0.2 ? rand(2500, 5000) : rand(300, 1800));
-            if (b.here) {                              // al llegar: a veces hace clic o reacciona
+            if (b.here) {                              // on arrival: sometimes clicks or reacts
               var roll = Math.random();
               if (roll < 0.22) spawnRipple(p, p.color);
               else if (roll < 0.27 && reactions) spawnReaction(p, pick(reactions));
@@ -1233,7 +1379,7 @@
           return;
         }
 
-        if (b.chat) {                                  // escribiendo / mostrando mensaje
+        if (b.chat) {                                  // typing / showing a message
           var c = b.chat;
           if (c.i < c.text.length && now >= c.nextAt) {
             c.i++; c.nextAt = now + rand(40, 110);
@@ -1242,7 +1388,7 @@
           } else if (c.until && now >= c.until) {
             b.chat = null;
             upsertPeer({ id: b.id, chat: "" });
-            b.nextChat = Infinity;                     // un mensaje por visita como mucho
+            b.nextChat = Infinity;                     // at most one message per visit
             b.waitUntil = now + rand(300, 900);
           }
           return;
@@ -1251,13 +1397,13 @@
         var inView = p.y > global.scrollY + 60 && p.y < global.scrollY + innerHeight - 80;
         var someoneTalking = bots.some(function (o) { return o.chat; });
         if (opts.botChat !== false && b.here && now >= b.nextChat && inView && !someoneTalking) {
-          b.chat = { text: pick(opts.botPhrases || BOT_PHRASES), i: 0, nextAt: now + rand(300, 700), until: 0 };
+          b.chat = { text: pick(botPhrases()), i: 0, nextAt: now + rand(300, 700), until: 0 };
           return;
         }
 
-        if (now >= b.waitUntil) {                      // nuevo destino
+        if (now >= b.waitUntil) {                      // new destination
           var to = pickBotTarget(b.here);
-          if (!to) {                                   // página corta: "se va" ocultándose
+          if (!to) {                                   // short page: "leaves" by fading out
             if (p.visible) upsertPeer({ id: b.id, visible: false });
             b.waitUntil = now + 1000;
             return;
@@ -1269,21 +1415,21 @@
             x0: p.x, y0: p.y, x3: to.x, y3: to.y,
             x1: p.x + dx * 0.3 + nx * k1, y1: p.y + dy * 0.3 + ny * k1,
             x2: p.x + dx * 0.7 + nx * k2, y2: p.y + dy * 0.7 + ny * k2 };
-        } else if (Math.random() < 0.04) {             // micro-movimientos en reposo
+        } else if (Math.random() < 0.04) {             // tiny moves while resting
           p.x += rand(-2, 2); p.y += rand(-2, 2);
           setActive(p, now);
         }
       });
     }
 
-    // ---- animación ----
+    // ---- animation ----
     function kick() { if (!raf && !ghost && !destroyed) raf = requestAnimationFrame(tick); }
     function tick(now) {
       raf = 0;
       if (ghost) return;
       if (bots.length) updateBots(now || performance.now());
       var ox = originX(), moving = bots.length > 0 || following !== null;
-      // clientWidth (no scrollWidth): así un cursor lejano nunca provoca scroll horizontal
+      // clientWidth (not scrollWidth): a far-away cursor never causes horizontal scroll
       var maxX = document.documentElement.clientWidth - 24;
       for (var id in peers) {
         var p = peers[id];
@@ -1294,7 +1440,7 @@
         var left = Math.max(0, Math.min(maxX, ox + p.cx));
         p.el.style.transform = "translate3d(" + left + "px," + p.cy + "px,0)";
       }
-      if (following !== null && peers[following]) {   // la vista sigue al cursor elegido
+      if (following !== null && peers[following]) {   // the view follows the chosen cursor
         var f = peers[following];
         var target = Math.max(0, f.cy - innerHeight * 0.4);
         var d = target - global.scrollY;
@@ -1303,18 +1449,18 @@
       if (moving) kick();
     }
 
-    // ---- presencia (la píldora) ----
+    // ---- presence (the pill) ----
     function renderPresence() {
       if (!presence) { emitStats(); return; }
       presence.classList.toggle("mc-ghost", ghost);
       if (ghost) { emitStats(); return; }
       var arr = peopleList(), others = arr.slice(1);
 
-      // Botón "Personas": caras de los demás + cuántos sois
-      var key = arr.length + "|" + following + "|" + others.slice(0, 3).map(function (u) {
+      // "People" button: other people's faces + how many of you there are
+      var key = lang + "|" + arr.length + "|" + following + "|" + others.slice(0, 3).map(function (u) {
         return u.id + u.name + u.color + (u.avatar ? u.avatar.length : "");
       }).join("|");
-      if (peopleBtn._key !== key) {                // no reconstruir sin cambios (no se pierden clics)
+      if (peopleBtn._key !== key) {                // don't rebuild without changes (no lost clicks)
         peopleBtn._key = key;
         peopleBtn.innerHTML = "";
         peopleBtn.classList.toggle("mc-alone", !others.length);
@@ -1325,35 +1471,32 @@
             if (u.id === following) a.style.boxShadow = "0 0 0 2px " + u.color;
           });
           if (others.length > 3) el("span", "mc-avatar mc-more", stack).textContent = "+" + (others.length - 3);
-          el("span", "", peopleBtn).textContent = arr.length + " aquí";
-          peopleBtn.dataset.tip = "Ver quién está aquí";
-          peopleBtn.setAttribute("aria-label", arr.length + " personas aquí. Ver quiénes son");
+          el("span", "", peopleBtn).textContent = t("nHere", { n: arr.length });
+          setTip(peopleBtn, t("seeWho"), t("nHereLabel", { n: arr.length }));
         } else {
           peopleBtn.innerHTML = ICON_PEOPLE;
-          el("span", "", peopleBtn).textContent = "Solo tú";
-          peopleBtn.dataset.tip = "Aún no hay nadie más";
-          peopleBtn.setAttribute("aria-label", "Solo tú en esta página");
+          el("span", "", peopleBtn).textContent = t("onlyYou");
+          setTip(peopleBtn, t("nobodyYet"), t("onlyYouLabel"));
         }
       }
 
-      // Botón "Tu perfil": tu cara + flecha
-      var mk = me.name + me.color + (me.avatar ? me.avatar.length : "");
+      // "Your profile" button: your face + chevron
+      var mk = lang + me.name + me.color + (me.avatar ? me.avatar.length : "");
       if (meBtn._key !== mk) {
         meBtn._key = mk;
         meBtn.innerHTML = "";
         face("", me, meBtn);
         meBtn.insertAdjacentHTML("beforeend", ICON_CHEV);
-        meBtn.dataset.tip = "Tu perfil · " + me.name;
-        meBtn.setAttribute("aria-label", "Tu perfil: " + me.name);
+        setTip(meBtn, t("profileOf", { name: me.name }), t("profileLabel", { name: me.name }));
       }
       setExpanded();
       emitStats();
       if (openPop && openPop.update) openPop.update();
     }
 
-    // ---- chat local ----
-    function isTyping(t) {
-      return t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    // ---- local chat ----
+    function isTyping(node) {
+      return node && (node.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName));
     }
     function placeLocal() {
       var x = Math.max(0, Math.min(last.cx, innerWidth - 250)), y = Math.max(0, Math.min(last.cy, innerHeight - 80));
@@ -1379,7 +1522,7 @@
       }
     }
 
-    // ---- eventos ----
+    // ---- events ----
     function onMove(e) {
       last.cx = e.clientX; last.cy = e.clientY; last.has = true;
       if (local.classList.contains("mc-open")) placeLocal();
@@ -1389,10 +1532,10 @@
     function onLeave(e) { if (!e.relatedTarget) send({ visible: false }); }
     function onVisibility() { send({ visible: !document.hidden && last.has }); }
     function onDown(e) {
-      var t = e.target;
-      if (openPop && !openPop.el.contains(t) && !(presence && presence.contains(t)) && !followBox.contains(t)) closePop();
-      if (picker && !picker.contains(t) && t !== reactBtn && !(reactBtn && reactBtn.contains(t))) closePicker();
-      if (e.button !== 0 || ghost || (t.closest && t.closest(UI))) return;
+      var target = e.target;
+      if (openPop && !openPop.el.contains(target) && !(presence && presence.contains(target)) && !followBox.contains(target)) closePop();
+      if (picker && !picker.contains(target) && !(reactBtn && reactBtn.contains(target))) closePicker();
+      if (e.button !== 0 || ghost || (target.closest && target.closest(UI))) return;
       var now = performance.now();
       if (now - lastClick < 120) return;
       lastClick = now;
@@ -1412,7 +1555,7 @@
         if (picker) closePicker();
         else openPicker(last.has ? last.cx : innerWidth / 2, last.has ? last.cy : innerHeight / 2, false);
       } else if (following !== null && /^(Arrow(Up|Down)|Page(Up|Down)|Home|End| )$/.test(e.key)) {
-        unfollow();                                  // el usuario retoma el control del scroll
+        unfollow();                                  // the user takes back control of scrolling
       }
     }
     function onUserScrollIntent() { unfollow(); }
@@ -1442,6 +1585,7 @@
     input.addEventListener("input", onInput);
     input.addEventListener("blur", onInputBlur);
 
+    applyStaticTexts();
     layer.classList.toggle("mc-off", ghost);
     if (botCount) createBots(botCount);
     renderPresence();
@@ -1449,7 +1593,7 @@
     coachTimer = setTimeout(showCoach, 1500);
     connect();
 
-    // Abre una parte de la píldora desde tu propia interfaz
+    // Opens a part of the pill from your own UI
     function open(what) {
       if (what === "chat") { if (ghost) setGhost(false); closePop(); openChat(); }
       else if (what === "reactions") {
@@ -1468,10 +1612,12 @@
       get room() { return room; },
       get ghost() { return ghost; },
       get stats() { return currentStats(); },
-      // Cambio manual de sala: a partir de aquí deja de seguir la ruta automáticamente
+      get lang() { return lang; },
+      // Manual room change: from now on it stops following the page path automatically
       setRoom: function (r) { autoRoom = false; setRoom(r); },
       setGhost: setGhost,
       setIdentity: setIdentity,
+      setLang: setLang,
       open: open,
       close: function () { closePop(); closePicker(); },
       react: react,
@@ -1499,5 +1645,5 @@
     };
   }
 
-  global.MultiCursor = { init: init };
+  global.MultiCursor = { init: init, languages: Object.keys(I18N) };
 })(window);
