@@ -119,8 +119,8 @@ mc.destroy();
 It runs anywhere with Python or Docker (Render, Fly.io, Railway, a VPS…), **as a single instance**:
 
 ```bash
-docker build -t cursors .
-docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://mydomain.com cursors
+docker build -t roomful .
+docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://mydomain.com roomful
 ```
 
 | Variable | Purpose | Default |
@@ -131,6 +131,17 @@ docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://mydomain.com cursors
 | `PORT` / `HOST` | Port and interface | 8080 / 0.0.0.0 |
 
 The server validates every field (photos included: never SVG), limits messages to 40 per second per client, closes dead connections and exposes `GET /health`. In production, use HTTPS and `wss://`. The full deployment guide, with an nginx config and a checklist, is in the [documentation](docs/DOCUMENTATION.md#10-production-deployment).
+
+### Deploy on Render
+
+The repo includes a [`render.yaml`](render.yaml) Blueprint that publishes everything (landing + WebSocket server) as one free web service:
+
+1. Sign in to [Render](https://render.com) with your GitHub account.
+2. **New → Blueprint**, pick this repository and press **Apply**.
+3. Wait for the first build (a couple of minutes). Your site will be live at `https://roomful-XXXX.onrender.com`.
+4. Optional but recommended: in the service's **Environment**, set `ALLOWED_ORIGINS` to that URL.
+
+Every push to `main` redeploys automatically. On the free plan the service sleeps after 15 minutes without visits, and the first visitor waits about 50 seconds while it wakes up.
 
 ## Known limitations
 
@@ -148,6 +159,7 @@ public/multicursor.js   The integration (client)
 public/index.html       Demo landing page explaining the pill (EN/ES)
 server.py               WebSocket relay + static files + /health
 Dockerfile              Deployment image
+render.yaml             Render Blueprint (one-click deploy)
 docs/DOCUMENTATION.md   Full documentation (English)
 docs/DOCUMENTACION.md   Full documentation (Spanish)
 ```

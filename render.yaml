@@ -1,0 +1,19 @@
+# Render Blueprint: deploys Roomful (landing + WebSocket server) as a single web service.
+# In Render: New → Blueprint → pick this repo. See README "Deploy on Render".
+services:
+  - type: web
+    name: roomful
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    # Keep a single instance: rooms live in the server's memory.
+    numInstances: 1
+    envVars:
+      - key: PORT
+        value: "8080"
+      # Optional: restrict which sites may connect, e.g. https://roomful.onrender.com
+      - key: ALLOWED_ORIGINS
+        sync: false

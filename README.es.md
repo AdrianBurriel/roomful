@@ -119,8 +119,8 @@ mc.destroy();
 Funciona en cualquier sitio con Python o Docker (Render, Fly.io, Railway, un VPS…), **en una sola instancia**:
 
 ```bash
-docker build -t cursores .
-docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://midominio.com cursores
+docker build -t roomful .
+docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://midominio.com roomful
 ```
 
 | Variable | Para qué | Por defecto |
@@ -131,6 +131,17 @@ docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://midominio.com cursores
 | `PORT` / `HOST` | Puerto e interfaz | 8080 / 0.0.0.0 |
 
 El servidor valida cada campo (incluidas las fotos: nunca SVG), limita los mensajes a 40 por segundo por cliente, cierra conexiones muertas y ofrece `GET /health`. En producción, usa HTTPS y `wss://`. La guía completa de despliegue, con la configuración de nginx y una lista de comprobación, está en la [documentación](docs/DOCUMENTACION.md#10-despliegue-en-producción).
+
+### Desplegar en Render
+
+El repo incluye un Blueprint, [`render.yaml`](render.yaml), que publica todo (landing + servidor WebSocket) como un único servicio web gratuito:
+
+1. Entra en [Render](https://render.com) con tu cuenta de GitHub.
+2. **New → Blueprint**, elige este repositorio y pulsa **Apply**.
+3. Espera a la primera compilación (un par de minutos). Tu web estará en `https://roomful-XXXX.onrender.com`.
+4. Opcional, pero recomendable: en **Environment** del servicio, pon esa URL en `ALLOWED_ORIGINS`.
+
+Cada push a `main` se despliega solo. En el plan gratuito el servicio se duerme tras 15 minutos sin visitas y el primero que llega espera unos 50 segundos a que despierte.
 
 ## Limitaciones conocidas
 
@@ -148,6 +159,7 @@ public/multicursor.js   La integración (cliente)
 public/index.html       Landing de demo que explica la píldora (EN/ES)
 server.py               Relay WebSocket + estáticos + /health
 Dockerfile              Imagen de despliegue
+render.yaml             Blueprint de Render (despliegue en un clic)
 docs/DOCUMENTATION.md   Documentación completa (inglés)
 docs/DOCUMENTACION.md   Documentación completa (español)
 ```
