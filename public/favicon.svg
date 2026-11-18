@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .tile{fill:#151515}
+    .edge{stroke:#fff}
+    @media (prefers-color-scheme: dark){.tile{fill:#F1F0EC}.edge{stroke:#151515}}
+  </style>
+  <defs>
+    <path id="c" d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" stroke-width="2.2" stroke-linejoin="round"/>
+  </defs>
+  <rect class="tile" width="32" height="32" rx="8"/>
+  <use href="#c" class="edge" fill="#F24E1E" transform="translate(4 2) scale(.9)"/>
+  <use href="#c" class="edge" fill="#A259FF" transform="translate(13 10.5) scale(.9)"/>
+</svg>
