@@ -166,7 +166,9 @@
   var SEND_EVERY_MS = 40;   // ~25 position updates per second at most
   var LERP = 0.28;          // smoothing of remote cursors (0..1; 1 = none)
   var CHAT_LINGER_MS = 4000;
-  var CHAT_MAX_W = 216;     // the chat box grows with the text up to this width (px), then stops accepting more
+  var CHAT_MAX_W = 216;     // the chat box grows in width up to this (px), then wraps and grows in height…
+  var CHAT_MAX_LINES = 4;   // …up to this many lines; then it stops accepting more
+  var CHAT_LINE_H = 17;
   var UI = ".mc-presence,.mc-local,.mc-layer,.mc-pop,.mc-picker,.mc-coach,.mc-follow";
 
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
@@ -273,14 +275,16 @@
     /* your own cursor: the arrow is the real pointer (CSS cursor, no lag); the name tag follows it */
     ".mc-local{position:fixed;left:0;top:0;pointer-events:none;z-index:2147483001;display:none}",
     ".mc-local.mc-show,.mc-local.mc-open{display:block}",
-    ".mc-local input{display:none}",
+    ".mc-local textarea{display:none}",
     ".mc-local.mc-open .mc-tag{pointer-events:auto;padding:7px 12px 9px;border-radius:3px 16px 16px 16px}",
     ".mc-local.mc-open .mc-name{font-size:10px;opacity:.8}",
     ".mc-local.mc-open .mc-tag-av{width:14px;height:14px}",
     ".mc-local.mc-open.mc-docked .mc-name{display:none}",
-    ".mc-local.mc-open input{all:unset;display:block;font:400 14px/1.2 " + FONT + ";max-width:" + CHAT_MAX_W + "px;color:inherit;caret-color:currentColor;margin-top:3px}",
-    ".mc-local.mc-open.mc-docked input{margin-top:0}",
-    ".mc-local input::placeholder{color:inherit;opacity:.65}",
+    ".mc-local.mc-open textarea{all:unset;display:block;box-sizing:content-box;font:400 14px/" + CHAT_LINE_H + "px " + FONT + ";",
+    "  max-width:" + CHAT_MAX_W + "px;height:" + CHAT_LINE_H + "px;resize:none;overflow:hidden;white-space:pre-wrap;",
+    "  overflow-wrap:break-word;word-break:break-word;color:inherit;caret-color:currentColor;margin-top:3px}",
+    ".mc-local.mc-open.mc-docked textarea{margin-top:0}",
+    ".mc-local textarea::placeholder{color:inherit;opacity:.65}",
     ".mc-measure{position:absolute;left:0;top:0;visibility:hidden;white-space:pre;pointer-events:none;font:400 14px/1.2 " + FONT + "}",
     /* ---------- pill, panels, tooltip and first-visit hint ---------- */
     ".mc-presence,.mc-pop,.mc-picker,.mc-coach{background:#fff;color:#1E1E1E;border:1px solid rgba(0,0,0,.08);",
@@ -767,7 +771,8 @@
     var localAv = el("img", "mc-tag-av", localName);
     localAv.alt = ""; localAv.hidden = true;
     var localTxt = el("span", "", localName);
-    var input = el("input", "", localTag);
+    var input = el("textarea", "", localTag);
+    input.rows = 1;
     var measure = el("span", "mc-measure", localTag);   // mirrors the text to size the box
     var ownStyle = el("style"); document.head.appendChild(ownStyle);
     input.maxLength = 140;
@@ -1836,11 +1841,11 @@
         var keyboard = vv && vv.height < innerHeight * 0.8;
         var lift = !keyboard && presence ? innerHeight - presence.getBoundingClientRect().top + 8 : 12;
         x = (vv ? vv.offsetLeft : 0) + 12;
-        y = bottom - lift - 48;
+        y = bottom - lift - (localTag.offsetHeight || 40) - 8;   // grows upwards
       } else {
         x = last.cx - 2; y = last.cy - 2;
         if (local.classList.contains("mc-open")) {
-          x = Math.max(0, Math.min(x, innerWidth - 250)); y = Math.max(0, Math.min(y, innerHeight - 80));
+          x = Math.max(0, Math.min(x, innerWidth - 250)); y = Math.max(0, Math.min(y, innerHeight - 140));
         }
       }
       local.classList.toggle("mc-docked", chatDocked);
@@ -1864,14 +1869,18 @@
     // The box is as wide as what you type (or the placeholder), up to CHAT_MAX_W.
     // Text that would go beyond that is cut off: you can't type more than fits.
     function textWidth(s) { measure.textContent = s; return measure.offsetWidth; }
+    // Wider first (up to CHAT_MAX_W), then taller (up to CHAT_MAX_LINES lines).
     function fitInput() {
-      var v = input.value;
-      if (textWidth(v) > CHAT_MAX_W) {
-        while (v && textWidth(v) > CHAT_MAX_W) v = v.slice(0, -1);
-        input.value = v;
-      }
+      var v = input.value.replace(/[\r\n]+/g, " ");           // one paragraph: Enter sends
+      if (v !== input.value) input.value = v;
       var w = Math.max(textWidth(v), v ? 0 : textWidth(input.placeholder));
       input.style.width = Math.min(CHAT_MAX_W, w + 2) + "px";
+      var maxH = CHAT_LINE_H * CHAT_MAX_LINES;
+      input.style.height = CHAT_LINE_H + "px";
+      if (input.scrollHeight > maxH + 2) {                      // too long: cut what doesn't fit
+        while (v && input.scrollHeight > maxH + 2) { v = v.slice(0, -1); input.value = v; }
+      }
+      input.style.height = Math.min(maxH, input.scrollHeight) + "px";
     }
     function closeChat(keep) {
       local.classList.remove("mc-open");
@@ -1974,10 +1983,10 @@
     }
     function onUserScrollIntent() { unfollow(); }
     function onInputKey(e) {
-      if (e.key === "Enter") { e.preventDefault(); closeChat(true); }
+      if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); closeChat(true); }
       else if (e.key === "Escape") { e.preventDefault(); closeChat(false); }
     }
-    function onInput() { fitInput(); send({ chat: input.value }); }
+    function onInput() { fitInput(); if (chatDocked) placeLocal(); send({ chat: input.value }); }
     function onInputBlur() { if (local.classList.contains("mc-open")) closeChat(true); }
     function onResize() {
       kick();

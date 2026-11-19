@@ -273,7 +273,7 @@ Everything is **per browser and domain**: another browser, another device, a pri
 
 | Feature | Detail |
 |---|---|
-| Chat | The box grows with the text and stops at 216 px: once it's full you can't type more (max. 140 characters in any case). Sent while typing (others see it letter by letter). |
+| Chat | The box grows with the text: first in width up to 216 px, then in height up to 4 lines; once it's full you can't type more (max. 140 characters in any case). `Enter` sends, so there are no line breaks. Sent while typing (others see it letter by letter). |
 | Clicks | Every left click outside the pill is sent (max. one every 120 ms). Others see a ripple in your color. You don't see your own. |
 | Reactions | Three emojis float up and fade out from your cursor (max. one every 250 ms). |
 | Wave | Four changes of direction (strokes of ≥ 40 px) in under 0.9 s send a 👋 reaction; at most one every 2.5 s. It travels as a normal reaction, so the server needs no changes. |
