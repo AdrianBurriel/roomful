@@ -72,7 +72,7 @@ python3 server.py                 # → http://localhost:8080
 - Comprobar que está vivo: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
 - La pizarra compartida se guarda en `board.json`, junto a `server.py` (git lo ignora). Bórralo para empezar con la pizarra vacía.
 
-La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, arranca con 2 bots, tiene una pizarra compartida y un tour guiado de 13 pasos (se ofrece en la primera visita y siempre está disponible desde el botón de arriba). Está en **inglés por defecto** y tiene un selector **EN | ES** en la barra superior (también vale `?lang=es` en la URL); la elección se recuerda.
+La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, arranca con 2 bots, tiene una pizarra compartida y un tour guiado de 13 pasos (se ofrece en la primera visita y siempre está disponible desde el botón de arriba). Se abre **en español cuando el idioma principal del navegador es el español** (o catalán, gallego o euskera) y **en inglés para todos los demás**. El selector **EN | ES** de la barra superior lo cambia y la elección se recuerda; `?lang=es` / `?lang=en` en la URL manda sobre ambos.
 
 ## 4. Integrarlo en un proyecto
 

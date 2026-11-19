@@ -638,7 +638,10 @@
     var q = new URLSearchParams(location.search).get("lang");
     if (q === "en" || q === "es") return q;
     try { var s = localStorage.getItem(LANG_KEY); if (s === "en" || s === "es") return s; } catch (e) {}
-    return "en";                                     // English by default
+    // First visit: Spanish if the browser's main language is Spanish (or another
+    // language of Spain: Catalan, Galician, Basque); English for everyone else.
+    var nav = ((navigator.languages && navigator.languages[0]) || navigator.language || "").toLowerCase();
+    return /^(es|ca|gl|eu)\b/.test(nav) ? "es" : "en";
   }
   var lang = pickLang();
   function d(key, vars) {

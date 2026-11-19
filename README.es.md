@@ -27,7 +27,7 @@ python3 server.py            # → http://localhost:8080
 
 Abre `http://localhost:8080` y, para verte desde fuera, ábrelo también **en otro navegador o en otro dispositivo de tu red** (`http://<tu-ip-local>:8080`). Las pestañas del mismo navegador se reconocen como la misma persona.
 
-La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía (marcados como **BOT**; uno se queda siempre). Una **pizarra compartida** para dibujar y un **tour guiado** de 13 pasos se ofrece en la primera visita y está siempre disponible desde el botón de arriba. Está en inglés por defecto, con un selector **EN | ES** en la barra superior.
+La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía (marcados como **BOT**; uno se queda siempre). Tiene una **pizarra compartida** para dibujar y un **tour guiado** de 13 pasos que se ofrece en la primera visita y está siempre disponible desde el botón de arriba. Se abre **en español si tu navegador está en español** (o en catalán, gallego o euskera) y en inglés en los demás casos, con un selector **EN | ES** en la barra superior que se recuerda.
 
 ## Qué incluye
 

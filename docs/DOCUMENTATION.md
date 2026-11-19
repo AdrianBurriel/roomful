@@ -72,7 +72,7 @@ python3 server.py                 # → http://localhost:8080
 - Health check: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
 - The shared board is saved in `board.json` next to `server.py` (ignored by git). Delete it to start with an empty board.
 
-The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, starts with 2 bots, has a shared board and a 13-step guided tour (offered on the first visit, always available from the button at the top). It is **in English by default** and has an **EN | ES** switch in the top bar (`?lang=es` in the URL also works); the choice is remembered.
+The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, starts with 2 bots, has a shared board and a 13-step guided tour (offered on the first visit, always available from the button at the top). It opens **in Spanish when the browser's main language is Spanish** (or Catalan, Galician or Basque) and **in English for everyone else**. The **EN | ES** switch in the top bar changes it and the choice is remembered; `?lang=es` / `?lang=en` in the URL wins over both.
 
 ## 4. Adding it to a project
 

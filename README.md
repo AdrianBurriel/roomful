@@ -27,7 +27,7 @@ python3 server.py            # → http://localhost:8080
 
 Open `http://localhost:8080` and, to see yourself from the outside, also open it **in another browser or on another device on your network** (`http://<your-local-ip>:8080`). Tabs of the same browser count as the same person.
 
-The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty (labelled **BOT**; one always stays). A **shared board** to draw on and a **guided tour** of 13 steps is offered on the first visit and is always available from the button at the top. It's in English by default, with an **EN | ES** switch in the top bar.
+The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty (labelled **BOT**; one always stays). It has a **shared board** to draw on, and a **guided tour** of 13 steps that's offered on the first visit and always available from the button at the top. It opens **in Spanish if your browser is in Spanish** (or Catalan, Galician or Basque) and in English otherwise, with an **EN | ES** switch in the top bar that's remembered.
 
 ## What's included
 
