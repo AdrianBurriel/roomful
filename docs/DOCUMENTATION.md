@@ -69,7 +69,7 @@ python3 server.py                 # → http://localhost:8080
 - Stop it with `Ctrl+C`.
 - Health check: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
 
-The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, starts with 2 bots and has a 12-step guided tour (offered on the first visit, always available from the button at the top). It is **in English by default** and has an **EN | ES** switch in the top bar (`?lang=es` in the URL also works); the choice is remembered.
+The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, starts with 2 bots has a shared board and a 13-step guided tour (offered on the first visit, always available from the button at the top). It is **in English by default** and has an **EN | ES** switch in the top bar (`?lang=es` in the URL also works); the choice is remembered.
 
 ## 4. Adding it to a project
 
@@ -182,6 +182,8 @@ const mc = Roomful.init({ ... });
 | `mc.follow(id)` / `mc.unfollow()` | function | Starts or stops following someone. You can't follow yourself. |
 | `mc.startTour(step?)` / `mc.stopTour()` | function | Starts the guided tour (without `step`, where the visitor left it) or closes it. |
 | `mc.tour` | object | `{ active, step, total, saved }`: whether the tour is running, the current step, how many there are and the remembered step. |
+| `mc.uid` | string | Anonymous browser id (the same in every tab). |
+| `mc.signal("board")` / `mc.on("board", fn)` | function | Tell the room the shared board changed / hear it (`on` returns a function to stop listening). Used by `roomful-board.js`. |
 | `mc.destroy()` | function | Disconnects and removes every element and listener. Use it on unmount. |
 
 `Roomful.languages` also lists the built-in languages (`["en", "es"]`).
@@ -367,7 +369,37 @@ Roomful.init({
 });
 ```
 
-Each text can be a string or `{ en, es, … }`. `text` is HTML: inside it, `<span class="mc-kb">…</span>` only shows with a mouse and keyboard, and `<span class="mc-tch">…</span>` only on touch screens, so each device gets the right instructions. The landing (`public/index.html`) has a complete 12-step tour as an example.
+Each text can be a string or `{ en, es, … }`. `text` is HTML: inside it, `<span class="mc-kb">…</span>` only shows with a mouse and keyboard, and `<span class="mc-tch">…</span>` only on touch screens, so each device gets the right instructions. The landing (`public/index.html`) has a complete 13-step tour as an example.
+
+### 8.14 Shared board
+
+`public/roomful-board.js` is an add-on: a board where everyone in the room can draw and write, and the drawings stay for whoever comes next. It uses the Roomful instance for your browser id, your color, the language and the "someone drew" signal.
+
+```js
+const mc = Roomful.init({ … });
+const board = RoomfulBoard.mount(document.querySelector("#board"), {
+  mc,                      // required for the color, id and live updates
+  api: "/api/board",       // default
+  lang: "es",              // default: mc.lang
+  strings: { en: { … } }   // optional text overrides
+});
+board.setLang("en"); board.refresh(); board.destroy();
+```
+
+- **Tools:** pen (thin) and marker (thick, double ink), always in your profile color, plus **text** (click, type up to 60 characters, `Enter`). Each drawing is sent when you finish it.
+- **Ink:** 5,000 units per browser and day; a stroke costs its length in board units (the board is 1600 × 1000), the marker double, text 40 per character. A bar shows what's left and when it refills (00:00 UTC). If you run out mid-stroke, the stroke ends there. The server is the one that checks it: per browser id, and 25,000 per IP so a shared network can't be abused.
+- **Capacity:** when the ink on the board goes over 60,000 (or there are more than 300 drawings), the oldest are erased until it fits; the newest always stays. The oldest ones fade a little once the board is three-quarters full, so you can tell what's about to go.
+- **Live:** when a drawing is saved, `mc.signal("board")` tells the room and everyone else's board fetches the changes. It also fetches when it comes into view, when the tab comes back, and every minute while visible. The drawing itself only appears once finished.
+- **Storage:** `server.py` keeps it in `BOARD_FILE` (JSON); on Vercel, `api/board.js` keeps it in Upstash Redis with an atomic script. Both apply the same rules (constants at the top of each file).
+
+**HTTP API** (same in both):
+
+| Request | Response |
+|---|---|
+| `GET /api/board?uid=<id>&rev=<n>` | `{ rev, total, cap, ink: { left, max, resetAt }, items? }`; `items` only if the board changed since `rev`. |
+| `POST /api/board` `{ uid, item }` | `200 { rev, cost, ink }`; `429 { error: "no-ink", ink }`; `400` invalid; `403` origin not allowed; `503` no storage. |
+
+`item` is `{ k: "s", c: "#RRGGBB", w: 3 | 9, p: [x0, y0, x1, y1, …] }` (2–600 integer points) or `{ k: "t", c, x, y, t: "text" }`.
 
 ## 9. The server
 
@@ -381,6 +413,7 @@ Each text can be a string or `{ en, es, … }`. `text` is HTML: inside it, `<spa
 | `MAX_PER_ROOM` | Max users per room (above it, responds 503) | `100` |
 | `MAX_CLIENTS` | Max connections in total (above it, responds 503) | `5000` |
 | `STATIC_DIR` | Static files folder. `""` to serve only the WebSocket and `/health` | `./public` |
+| `BOARD_FILE` | JSON file where the shared board is kept (`""` = no board). In Docker, mount it on a volume or it's lost with the container | `./board.json` |
 
 ### 9.2 Routes
 
@@ -388,6 +421,7 @@ Each text can be a string or `{ en, es, … }`. `text` is HTML: inside it, `<spa
 |---|---|
 | `GET /ws?room=<room>` with `Upgrade: websocket` | WebSocket connection. 403 if the `Origin` isn't allowed, 503 if a limit is exceeded. |
 | `GET /health` | `200 {"ok": true, "clients": N, "rooms": M}` |
+| `GET` / `POST /api/board` | Shared board (see [§8.14](#814-shared-board)). |
 | Any other `GET` / `HEAD` | File from `STATIC_DIR` (`/` → `index.html`). 404 if missing or if it tries to escape the folder. |
 | Other methods | 405 |
 
@@ -415,7 +449,7 @@ The server only forwards known, valid fields; everything else is dropped.
 | `visible` | Boolean |
 | `chat` | Text up to 140 characters |
 | `sel` | `null` or `{a, ao, f, fo}`: paths of ≤ 64 integer indexes and integer offsets |
-| event `kind` | `"click"` or `"reaction"` |
+| event `kind` | `"click"`, `"reaction"` or `"board"` (the shared board changed; no extra data) |
 | event `emoji` | 1–8 characters with no letters, digits, spaces or `< > & " '` |
 
 A client isn't announced to the others until it sends a valid `name`.
@@ -483,6 +517,8 @@ Roomful.init({ ably: { authUrl: "/api/ably-token" } });
 - **Tokens:** `api/ably-token.js` (a Vercel function) signs token requests with `ABLY_API_KEY`. Tokens are bound to the connection id, last one hour and only allow the `roomful:*` channels. Only pages of the same site get tokens, unless `ALLOWED_ORIGINS` lists other sites.
 - **Rate:** positions are sent at most every 100 ms (instead of 40 ms) so the plan lasts longer.
 - **Differences from `server.py`:** the day's peak is the highest number this visitor has seen, not a server-wide record; `MAX_PER_ROOM`/`MAX_CLIENTS` give way to the limits of your Ably plan.
+
+- **Shared board:** `api/board.js` keeps it in Upstash Redis (connect it under **Storage** in the Vercel project; it adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`). Without it, `/api/board` answers 503 and the board says it's not available.
 
 Setup steps are in the [README](../README.md#deploy-on-vercel).
 
@@ -587,9 +623,13 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 ```
 roomful/
 ├── public/
-│   ├── roomful.js     # The integration (client)
-│   └── index.html         # Demo landing page explaining the pill, with a guided tour (EN/ES)
-├── server.py              # WebSocket relay + static files + /health
+│   ├── roomful.js         # The integration (client)
+│   ├── roomful-board.js   # The shared board (add-on)
+│   └── index.html         # Demo landing page explaining the pill, with a shared board and a guided tour (EN/ES)
+├── api/
+│   ├── ably-token.js      # Vercel: Ably tokens
+│   └── board.js           # Vercel: the shared board in Upstash Redis
+├── server.py              # WebSocket relay + shared board + static files + /health
 ├── Dockerfile             # Deployment image
 ├── docs/
 │   ├── DOCUMENTATION.md   # This document (English)

@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇪🇸 [Español](README.es.md)
 
-**Turn any website into a room full of people.** Every page becomes a room: visitors see each other's cursors in real time, Figma multiplayer style, each one with a fun name ("Zen Capybara", "Ninja Axolotl"…). From a pill in the corner, their door to the room, they can see who's in, chat next to their cursor, react with emojis, wave, follow someone and choose how they show up. A grey guide can walk newcomers through it all.
+**Turn any website into a room full of people.** Every page becomes a room: visitors see each other's cursors in real time, Figma multiplayer style, each one with a fun name ("Zen Capybara", "Ninja Axolotl"…). From a pill in the corner, their door to the room, they can see who's in, chat next to their cursor, react with emojis, wave, draw on a shared board, follow someone and choose how they show up. A grey guide can walk newcomers through it all.
 
 🔴 **Live demo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app). Open it in two different browsers (or on your phone and your computer) and watch your cursors meet. Tabs of the same browser count as you, so they don't show each other.
 
@@ -27,7 +27,7 @@ python3 server.py            # → http://localhost:8080
 
 Open `http://localhost:8080` and, to see yourself from the outside, also open it **in another browser or on another device on your network** (`http://<your-local-ip>:8080`). Tabs of the same browser count as the same person.
 
-The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty (labelled **BOT**; one always stays). A **guided tour** of 12 steps is offered on the first visit and is always available from the button at the top. It's in English by default, with an **EN | ES** switch in the top bar.
+The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty (labelled **BOT**; one always stays). A **shared board** to draw on and a **guided tour** of 13 steps is offered on the first visit and is always available from the button at the top. It's in English by default, with an **EN | ES** switch in the top bar.
 
 ## What's included
 
@@ -45,6 +45,7 @@ The demo is a landing page that explains every part of the pill, with demos that
 | 😴 **Idle** | Cursors that stop moving fade out with animated "zzz" |
 | 📱 **Phones and tablets** | Your finger is your cursor; chat and reactions from the pill's buttons |
 | 🤖 **Optional bots** | Companion visitors, labelled **BOT**. When real people arrive they step out, but one always stays |
+| ✏️ **Shared board** | Draw and write on a board that stays for whoever comes next; daily ink per person, and the oldest drawings are erased when it's full (`roomful-board.js`) |
 | 🗺️ **Guided tour** | A grey guide flies to each part of the page and explains it, step by step, moving on by itself (`tour`) |
 | 🌍 **Languages** | English (default) and Spanish; add your own with `strings` |
 | ♿ **Accessible** | Keyboard friendly, ARIA labels, dark mode and reduced motion |
@@ -127,6 +128,23 @@ mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang; mc.tour;
 mc.destroy();
 ```
 
+### Shared board
+
+`roomful-board.js` adds a board where everyone can draw (pen or thick marker) and write, in their own color. Drawings are stored on the server and stay for whoever comes next.
+
+```html
+<div id="board"></div>
+<script src="/roomful-board.js"></script>
+<script>
+  const board = RoomfulBoard.mount(document.querySelector("#board"), { mc });   // mc = Roomful.init(…)
+</script>
+```
+
+- **Ink:** each person gets 5,000 units a day (about 3 long strokes or 10 short ones; the marker uses double, text 40 per letter). It refills every day at 00:00 UTC. The server checks it per browser, with a looser cap per network.
+- **Always something there:** when the ink on the board goes over 60,000, the oldest drawings are erased first (they fade a little beforehand). The newest one always stays.
+- **Live:** when someone finishes a drawing, everyone else's board updates straight away.
+- **Storage:** with `server.py`, in a file (`BOARD_FILE`); on Vercel, in Upstash Redis (see [Deploy on Vercel](#deploy-on-vercel)).
+
 ## Deploying
 
 Two ways: on your own server with `server.py`, or on Vercel with Ably and no server at all.
@@ -145,6 +163,7 @@ docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://mydomain.com roomful
 | `ALLOWED_ORIGINS` | Origins allowed to connect (**set it in production**) | any |
 | `MAX_PER_ROOM` / `MAX_CLIENTS` | User limits per room / in total | 100 / 5000 |
 | `STATIC_DIR` | Static files folder (`""` = WebSocket only) | `./public` |
+| `BOARD_FILE` | Where the shared board is saved (`""` = no board). In Docker, put it on a volume | `./board.json` |
 | `PORT` / `HOST` | Port and interface | 8080 / 0.0.0.0 |
 
 The server validates every field (photos included: never SVG), limits messages to 40 per second per client, closes dead connections and exposes `GET /health`. In production, use HTTPS and `wss://`. The full deployment guide, with an nginx config and a checklist, is in the [documentation](docs/DOCUMENTATION.md#10-production-deployment).
@@ -156,7 +175,8 @@ Vercel serves the site, and [Ably](https://ably.com) carries the real-time traff
 1. Create a free account at [Ably](https://ably.com), create an app and copy its **API key** (the one with *publish*, *subscribe* and *presence*).
 2. In [Vercel](https://vercel.com), **Add New → Project** and import this GitHub repository. Leave the defaults: [`vercel.json`](vercel.json) already says what to publish.
 3. Before deploying, add the environment variable `ABLY_API_KEY` with that key, then press **Deploy**.
-4. That's it: by default the function only hands out tokens to pages of the same site. Set `ALLOWED_ORIGINS` only if other sites (or a custom domain on another host) should connect too.
+4. **For the shared board:** in the project, open **Storage → Upstash (Redis) → Connect** and create a free database. Vercel adds its keys (`KV_REST_API_URL`, `KV_REST_API_TOKEN`) by itself; redeploy once. [`api/board.js`](api/board.js) keeps the board there. Without it, the board shows "not available" and everything else works.
+5. That's it: by default the functions only serve pages of the same site. Set `ALLOWED_ORIGINS` only if other sites (or a custom domain on another host) should connect too.
 
 Every push to `main` redeploys automatically. The landing uses Ably when published and `server.py` on `localhost`. Ably's free plan is plenty for a demo (check its current limits in your Ably dashboard); a moving cursor sends up to 10 messages per second.
 
@@ -169,16 +189,19 @@ Every push to `main` redeploys automatically. The landing uses Ably when publish
 - **Your own colored pointer** and the **wave** need a mouse; on touch screens your finger is the cursor and you wave with the reactions.
 - **With Ably,** "today's peak" is the highest number each visitor has seen, not a server-wide record, and every message counts towards your Ably plan.
 - **Shared selection** requires everyone to have the same content on the page.
+- **The board's ink is per browser:** clearing the browser's data gives fresh ink (the per-network cap limits abuse). There's no moderation: anyone can draw anything, and it stays until the board erases it.
 - **No automated tests:** checks have been done by hand and with test WebSocket clients.
 
 ## Structure
 
 ```
 public/roomful.js       The integration (client)
-public/index.html       Demo landing page explaining the pill, with a 12-step guided tour (EN/ES)
-server.py               WebSocket relay + static files + /health
+public/roomful-board.js The shared board (draw and write, daily ink)
+public/index.html       Demo landing page explaining the pill, with a shared board and a 13-step guided tour (EN/ES)
+server.py               WebSocket relay + shared board + static files + /health
 Dockerfile              Deployment image
 api/ably-token.js       Vercel function that issues Ably tokens
+api/board.js            Vercel function that keeps the shared board in Upstash Redis
 vercel.json             Vercel settings (publishes public/)
 package.json            Dependencies of the Vercel function
 docs/DOCUMENTATION.md   Full documentation (English)

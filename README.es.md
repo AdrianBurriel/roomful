@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) · 🇪🇸 **Español**
 
-**Convierte cualquier web en una sala llena de gente.** Cada página es una sala: los visitantes ven los cursores de los demás en tiempo real, al estilo multijugador de Figma, cada uno con un nombre divertido ("Capibara Zen", "Ajolote Ninja"…). Desde una píldora en la esquina, su puerta a la sala, pueden ver quién hay, chatear junto al cursor, reaccionar con emojis, saludar, seguir a otra persona y elegir cómo aparecen. Una guía gris puede enseñárselo todo a quien llega por primera vez.
+**Convierte cualquier web en una sala llena de gente.** Cada página es una sala: los visitantes ven los cursores de los demás en tiempo real, al estilo multijugador de Figma, cada uno con un nombre divertido ("Capibara Zen", "Ajolote Ninja"…). Desde una píldora en la esquina, su puerta a la sala, pueden ver quién hay, chatear junto al cursor, reaccionar con emojis, saludar, dibujar en una pizarra compartida, seguir a otra persona y elegir cómo aparecen. Una guía gris puede enseñárselo todo a quien llega por primera vez.
 
 🔴 **Demo en directo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app/?lang=es). Ábrela en dos navegadores distintos (o en el móvil y el ordenador) y mira cómo se encuentran vuestros cursores. Las pestañas del mismo navegador cuentan como tú, así que no se ven entre sí.
 
@@ -27,7 +27,7 @@ python3 server.py            # → http://localhost:8080
 
 Abre `http://localhost:8080` y, para verte desde fuera, ábrelo también **en otro navegador o en otro dispositivo de tu red** (`http://<tu-ip-local>:8080`). Las pestañas del mismo navegador se reconocen como la misma persona.
 
-La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía (marcados como **BOT**; uno se queda siempre). Un **tour guiado** de 12 pasos se ofrece en la primera visita y está siempre disponible desde el botón de arriba. Está en inglés por defecto, con un selector **EN | ES** en la barra superior.
+La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía (marcados como **BOT**; uno se queda siempre). Una **pizarra compartida** para dibujar y un **tour guiado** de 13 pasos se ofrece en la primera visita y está siempre disponible desde el botón de arriba. Está en inglés por defecto, con un selector **EN | ES** en la barra superior.
 
 ## Qué incluye
 
@@ -45,6 +45,7 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 | 😴 **Reposo** | Los cursores quietos se atenúan con unas "zzz" animadas |
 | 📱 **Móvil y tablet** | Tu dedo es tu cursor; chat y reacciones desde los botones de la píldora |
 | 🤖 **Bots opcionales** | Visitantes de compañía, marcados con la etiqueta **BOT**. Se retiran cuando llega gente real, pero siempre se queda uno |
+| ✏️ **Pizarra compartida** | Dibuja y escribe en una pizarra que se queda para quien venga después; tinta diaria por persona, y lo más antiguo se borra cuando se llena (`roomful-board.js`) |
 | 🗺️ **Tour guiado** | Una guía gris vuela a cada parte de la página y la explica paso a paso, avanzando sola (`tour`) |
 | 🌍 **Idiomas** | Inglés (por defecto) y español; añade los tuyos con `strings` |
 | ♿ **Accesible** | Manejable con teclado, etiquetas ARIA, modo oscuro y reducir movimiento |
@@ -127,6 +128,23 @@ mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang; mc.tour;
 mc.destroy();
 ```
 
+### Pizarra compartida
+
+`roomful-board.js` añade una pizarra donde todos pueden dibujar (lápiz o rotulador grueso) y escribir, cada uno con su color. Los dibujos se guardan en el servidor y se quedan para quien venga después.
+
+```html
+<div id="board"></div>
+<script src="/roomful-board.js"></script>
+<script>
+  const board = RoomfulBoard.mount(document.querySelector("#board"), { mc });   // mc = Roomful.init(…)
+</script>
+```
+
+- **Tinta:** cada persona tiene 5.000 unidades al día (unos 3 trazos largos o 10 cortos; el rotulador gasta el doble y el texto 40 por letra). Se recarga cada día a las 00:00 UTC. El servidor la controla por navegador, con un límite más amplio por red.
+- **Siempre hay algo:** cuando la tinta de la pizarra pasa de 60.000, se borran primero los dibujos más antiguos (antes se atenúan un poco). El más nuevo se queda siempre.
+- **En directo:** cuando alguien termina un dibujo, la pizarra de los demás se actualiza al momento.
+- **Guardado:** con `server.py`, en un archivo (`BOARD_FILE`); en Vercel, en Upstash Redis (ver [Desplegar en Vercel](#desplegar-en-vercel)).
+
 ## Desplegar
 
 Dos vías: en tu propio servidor con `server.py`, o en Vercel con Ably y sin servidor.
@@ -145,6 +163,7 @@ docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://midominio.com roomful
 | `ALLOWED_ORIGINS` | Dominios que pueden conectarse (**ponlo en producción**) | cualquiera |
 | `MAX_PER_ROOM` / `MAX_CLIENTS` | Límites de usuarios por sala / en total | 100 / 5000 |
 | `STATIC_DIR` | Carpeta de estáticos (`""` = solo WebSocket) | `./public` |
+| `BOARD_FILE` | Dónde se guarda la pizarra compartida (`""` = sin pizarra). En Docker, ponlo en un volumen | `./board.json` |
 | `PORT` / `HOST` | Puerto e interfaz | 8080 / 0.0.0.0 |
 
 El servidor valida cada campo (incluidas las fotos: nunca SVG), limita los mensajes a 40 por segundo por cliente, cierra conexiones muertas y ofrece `GET /health`. En producción, usa HTTPS y `wss://`. La guía completa de despliegue, con la configuración de nginx y una lista de comprobación, está en la [documentación](docs/DOCUMENTACION.md#10-despliegue-en-producción).
@@ -156,7 +175,8 @@ Vercel sirve la web, y [Ably](https://ably.com) lleva el tráfico en tiempo real
 1. Crea una cuenta gratuita en [Ably](https://ably.com), crea una app y copia su **API key** (la que tiene *publish*, *subscribe* y *presence*).
 2. En [Vercel](https://vercel.com), **Add New → Project** e importa este repositorio de GitHub. Deja los valores por defecto: [`vercel.json`](vercel.json) ya indica qué publicar.
 3. Antes de desplegar, añade la variable de entorno `ABLY_API_KEY` con esa clave y pulsa **Deploy**.
-4. Ya está: por defecto la función solo entrega tokens a las páginas de la propia web. Pon `ALLOWED_ORIGINS` solo si otras webs (o un dominio propio en otro hosting) también deben conectarse.
+4. **Para la pizarra compartida:** en el proyecto, abre **Storage → Upstash (Redis) → Connect** y crea una base de datos gratuita. Vercel añade sus claves (`KV_REST_API_URL`, `KV_REST_API_TOKEN`) solo; vuelve a desplegar una vez. [`api/board.js`](api/board.js) guarda ahí la pizarra. Sin ella, la pizarra dice "no disponible" y todo lo demás funciona.
+5. Ya está: por defecto las funciones solo atienden a las páginas de la propia web. Pon `ALLOWED_ORIGINS` solo si otras webs (o un dominio propio en otro hosting) también deben conectarse.
 
 Cada push a `main` se despliega solo. La landing usa Ably cuando está publicada y `server.py` en `localhost`. El plan gratuito de Ably da de sobra para una demo (consulta sus límites actuales en tu panel de Ably); un cursor en movimiento envía hasta 10 mensajes por segundo.
 
@@ -169,16 +189,19 @@ Cada push a `main` se despliega solo. La landing usa Ably cuando está publicada
 - **Tu puntero de color** y el **saludo** necesitan ratón; en pantallas táctiles tu dedo es el cursor y se saluda con las reacciones.
 - **Con Ably,** el "pico de hoy" es el máximo que ha visto cada visitante, no un récord del servidor, y cada mensaje cuenta en tu plan de Ably.
 - **La selección compartida** requiere que todos tengan el mismo contenido en la página.
+- **La tinta de la pizarra es por navegador:** borrar los datos del navegador da tinta nueva (el límite por red frena los abusos). No hay moderación: cualquiera puede dibujar cualquier cosa, y se queda hasta que la pizarra lo borra.
 - **Sin tests automáticos:** las comprobaciones se han hecho a mano y con clientes WebSocket de prueba.
 
 ## Estructura
 
 ```
 public/roomful.js       La integración (cliente)
-public/index.html       Landing de demo que explica la píldora, con un tour guiado de 12 pasos (EN/ES)
-server.py               Relay WebSocket + estáticos + /health
+public/roomful-board.js La pizarra compartida (dibujar y escribir, tinta diaria)
+public/index.html       Landing de demo que explica la píldora, con pizarra compartida y un tour guiado de 13 pasos (EN/ES)
+server.py               Relay WebSocket + pizarra compartida + estáticos + /health
 Dockerfile              Imagen de despliegue
 api/ably-token.js       Función de Vercel que entrega tokens de Ably
+api/board.js            Función de Vercel que guarda la pizarra compartida en Upstash Redis
 vercel.json             Configuración de Vercel (publica public/)
 package.json            Dependencias de la función de Vercel
 docs/DOCUMENTATION.md   Documentación completa (inglés)

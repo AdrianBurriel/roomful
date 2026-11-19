@@ -59,11 +59,12 @@
  * Returns { me, peers, room, ghost, stats, lang, setRoom(), setGhost(), setIdentity(),
  *           setLang(), open("people"|"profile"|"chat"|"reactions"), close(),
  *           react(emoji), follow(id), unfollow(), startTour(step?), stopTour(),
+ *           uid, on("board", fn) → off(), signal("board"),
  *           tour → { active, step, total, saved }, destroy() }.
  *
  * Protocol (JSON over WebSocket, connecting to <url>?room=<room>):
  *   client → server  { t:"update", name?, color?, avatar?, uid?, x?, y?, visible?, chat?, sel? }
- *                    { t:"event", kind:"click"|"reaction", x, y, emoji? }
+ *                    { t:"event", kind:"click"|"reaction"|"board", x, y, emoji? }
  *   server → client  { t:"welcome", id, room, peers:[{id,...state}] }
  *                    { t:"update", id, ...fields }   { t:"leave", id }
  *                    { t:"event", id, kind, x, y, emoji? }
@@ -589,7 +590,7 @@
     return n ? out : null;
   }
   function abEvent(m) {
-    if (!m || (m.kind !== "click" && m.kind !== "reaction") || !abNum(m.x, 1e6) || !abNum(m.y, 1e7)) return null;
+    if (!m || (m.kind !== "click" && m.kind !== "reaction" && m.kind !== "board") || !abNum(m.x, 1e6) || !abNum(m.y, 1e7)) return null;
     var out = { kind: m.kind, x: m.x, y: m.y };
     if (m.kind === "reaction") {
       var e = m.emoji;
@@ -810,6 +811,7 @@
     var wave = { x: null, dir: 0, run: 0, flips: [], at: -1e9 };
     var tourSteps = opts.tour && opts.tour.steps && opts.tour.steps.length ? opts.tour.steps : null;
     var tour = null, spot = null, card = null, tourEls = {};
+    var listeners = { board: [] };   // "board": someone changed the shared board (see roomful-board.js)
 
     // ---- DOM ----
     var style = el("style"); style.textContent = CSS; document.head.appendChild(style);
@@ -1318,6 +1320,10 @@
     }
 
     function onPeerEvent(m) {
+      if (m.kind === "board") {                      // no drawing here: just "go and fetch the board"
+        listeners.board.forEach(function (fn) { try { fn(); } catch (e) {} });
+        return;
+      }
       var p = peers[m.id];
       if (!p || ghost || p.self) return;
       setActive(p, performance.now());
@@ -2333,6 +2339,20 @@
       follow: follow,
       unfollow: unfollow,
       startTour: startTour,
+      get uid() { return uid; },
+      // Tiny hooks for add-ons such as the shared board: tell the room that
+      // something changed, and hear when somebody else says so.
+      on: function (kind, fn) {
+        var l = listeners[kind];
+        if (!l || typeof fn !== "function") return function () {};
+        l.push(fn);
+        return function () { var i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); };
+      },
+      signal: function (kind) {
+        if (!listeners[kind]) return;
+        var pt = myPoint();
+        send({ t: "event", kind: kind, x: pt.x, y: pt.y });
+      },
       stopTour: function () { stopTour(false); },
       get tour() {
         var saved = store("localStorage", TOUR_KEY);

@@ -227,6 +227,8 @@
   .zzz span:nth-child(3){animation-delay:1.6s;font-size:10px}
   @keyframes zzz{0%{transform:translate(0,6px) scale(.6);opacity:0}20%{opacity:1}100%{transform:translate(16px,-20px) scale(1.2);opacity:0}}
 
+  .board-host{margin-top:28px}
+  .board-host .rb{--rb-bg:var(--surface);--rb-ink:var(--ink);--rb-line:var(--line);--rb-paper:var(--canvas)}
   .wave-demo{position:relative;height:170px;margin-top:22px;border-radius:12px;background:var(--canvas);overflow:hidden}
   .wave-demo .fake{left:34%;top:78px;animation:shake 3s ease-in-out infinite}
   .wave-demo .hi{position:absolute;left:4px;top:-8px;font-size:28px;line-height:1;opacity:0;animation:hi 3s ease-out infinite}
@@ -286,6 +288,7 @@
       <a href="#chat" data-i18n="navChat">Chat</a>
       <a href="#reactions" data-i18n="navReactions">Reactions</a>
       <a href="#profile" data-i18n="navProfile">Your profile</a>
+      <a href="#board" data-i18n="navBoard">Board</a>
       <a href="#integrate" data-i18n="navIntegrate">Integrate</a>
     </nav>
     <div class="lang" role="group" data-i18n-attr="aria-label:langLabel" aria-label="Language">
@@ -442,6 +445,19 @@
   </div>
 </section>
 
+<!-- ============ 05 BOARD ============ -->
+<section id="board">
+  <div class="wrap">
+    <div class="frame" data-size="Board · 16:10" data-i18n-attr="data-size:boardSize">
+      <span class="frame-label" data-i18n="boardLabel">05 — Board</span>
+      <div class="kicker"><span class="num">✎</span> <span data-i18n="boardKicker">Leave your mark</span></div>
+      <h2 class="h2" data-i18n="boardTitle">A wall for <em>everyone</em> in the room.</h2>
+      <p class="lede" data-i18n="boardLede">Draw or write whatever you like: it stays here for whoever comes next. You get some ink every day, so make it count. When the board fills up, the oldest drawings fade and get erased first, so there's always something to see.</p>
+      <div class="board-host" data-board data-mc-target></div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ WITHOUT TOUCHING THE PILL ============ -->
 <section>
   <div class="wrap">
@@ -532,6 +548,7 @@
 
 <!-- The integration -->
 <script src="/roomful.js"></script>
+<script src="/roomful-board.js"></script>
 <script>
 (function () {
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -541,7 +558,7 @@
   // English lives in the HTML itself (so the page works without JS); Spanish lives here.
   var ES = {
     navLabel: "Secciones", navPeople: "Personas", navChat: "Chat", navReactions: "Reacciones",
-    navProfile: "Tu perfil", navIntegrate: "Integrar", langLabel: "Idioma",
+    navProfile: "Tu perfil", navBoard: "Pizarra", navIntegrate: "Integrar", langLabel: "Idioma",
     ghLabel: "Ver el proyecto en GitHub (se abre en otra pestaña)",
     heroKicker: "Adelante, pasa",
     heroTitle: "Alguien más está <em>leyendo</em> esto.",
@@ -570,6 +587,9 @@
     s4Label: "04 — Tu perfil", s4Kicker: "Tu cara, a la derecha", s4Title: "Tú decides <em>cómo</em> te ven. O si te ven.",
     s4Text: "Cambia tu nombre, tu color o pon una foto desde tu ordenador: se guarda solo sobre la marcha, sin botones. ¿Sin ideas? El dado elige nombre y color al azar. Tu propio cursor también los lleva, igual que el de los demás, y te recordaremos la próxima vez que entres.",
     s4Btn: "Editar mi perfil", ghostTitle: "Modo <em>fantasma</em>",
+    boardSize: "Pizarra · 16:10", boardLabel: "05 — Pizarra", boardKicker: "Deja tu huella",
+    boardTitle: "Un muro para <em>todos</em> los de la sala.",
+    boardLede: "Dibuja o escribe lo que quieras: se queda aquí para quien venga después. Cada día tienes algo de tinta, así que aprovéchala. Cuando la pizarra se llena, los dibujos más antiguos se atenúan y se borran primero, así que siempre hay algo que ver.",
     ghostText: "Pasa por la sala sin que te vean: desaparecen los cursores de los demás y dejas de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.",
     extrasKicker: "Lo que pasa sin tocar la píldora", extrasTitle: "Y la sala se entera, <em>sin que hagas nada</em>…",
     clicksLabel: "Clics", clicksTitle: "Tus clics se <em>notan</em>",
@@ -728,6 +748,13 @@
         en: "Your profile also has the <b>Ghost mode</b> switch. Turn it on and you stop seeing everyone else's cursors, and you disconnect completely: nobody sees you, not even in the list. The pill shrinks to “Cursors hidden · <b>Show</b>” so you can come back whenever you want, and your choice is remembered for next time.",
         es: "En tu perfil también está el interruptor <b>Modo fantasma</b>. Al activarlo dejas de ver los cursores de los demás y te desconectas del todo: nadie te ve, ni siquiera en la lista. La píldora se queda en «Cursores ocultos · <b>Mostrar</b>» para que vuelvas cuando quieras, y tu elección se recuerda para la próxima vez."
       } },
+    { target: "#board .board-host",
+      say: { en: "Leave your mark ✏️", es: "Deja tu huella ✏️" },
+      title: { en: "5 · The shared board", es: "5 · La pizarra compartida" },
+      text: {
+        en: "Draw or write whatever you like and it <b>stays here</b> for everyone who comes after you. Pick the <b>pen</b>, the <b>marker</b> (thicker, uses double ink) or <b>text</b><span class=\"mc-kb\">: click on the board, type and press <kbd>Enter</kbd></span><span class=\"mc-tch\">: tap the board and type</span>. You draw in your color. Everyone gets a daily amount of <b>ink</b>, shown by the bar; it refills every day. When the board fills up, the oldest drawings fade and get erased first, so there's always something on it.",
+        es: "Dibuja o escribe lo que quieras y <b>se queda aquí</b> para todos los que vengan después. Elige el <b>lápiz</b>, el <b>rotulador</b> (más grueso, gasta el doble) o el <b>texto</b><span class=\"mc-kb\">: pulsa sobre la pizarra, escribe y pulsa <kbd>Enter</kbd></span><span class=\"mc-tch\">: toca la pizarra y escribe</span>. Dibujas con tu color. Cada persona tiene una cantidad de <b>tinta</b> al día, que ves en la barra, y se recarga cada día. Cuando la pizarra se llena, los dibujos más antiguos se atenúan y se borran primero, así que siempre hay algo."
+      } },
     { target: ".trio > .frame:first-child",
       say: { en: "Everything shows here", es: "Aquí todo se nota" },
       title: { en: "Clicks and selection", es: "Clics y selección" },
@@ -756,7 +783,7 @@
     tour: { steps: TOUR, name: { en: "Capybara", es: "Capibara" } },
     ably: isLocal ? null : { authUrl: "/api/ably-token" },
     bots: 2,
-    botTargets: "h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, pre",
+    botTargets: "h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, .board-host, pre",
     botPhrases: {
       en: ["Hi 👋", "What does the eye do?", "Press E, you'll see", "Love this typography",
         "Follow me 🏃", "This feels so Figma", "Testing the chat…", "Capybaras rule 🦫", "How many of us are there?"],
@@ -765,6 +792,9 @@
     },
     onStats: paintStats
   });
+
+  // The shared board (roomful-board.js): drawings stored on the server, ink per day
+  var board = RoomfulBoard.mount($("[data-board]"), { mc: mc, lang: lang });
 
 
   // Paints the page with your color and name (and keeps it in sync when you change them)
@@ -815,6 +845,7 @@
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
     applyLang();
     mc.setLang(lang);
+    board.setLang(lang);
     lastKey = "";                                    // repaint name / ghost texts
     syncMe();
     paintStats(mc.stats);

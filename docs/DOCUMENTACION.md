@@ -69,7 +69,7 @@ python3 server.py                 # → http://localhost:8080
 - Para pararlo, pulsa `Ctrl+C`.
 - Comprobar que está vivo: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
 
-La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, arranca con 2 bots y tiene un tour guiado de 12 pasos (se ofrece en la primera visita y siempre está disponible desde el botón de arriba). Está en **inglés por defecto** y tiene un selector **EN | ES** en la barra superior (también vale `?lang=es` en la URL); la elección se recuerda.
+La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, arranca con 2 bots tiene una pizarra compartida y un tour guiado de 13 pasos (se ofrece en la primera visita y siempre está disponible desde el botón de arriba). Está en **inglés por defecto** y tiene un selector **EN | ES** en la barra superior (también vale `?lang=es` en la URL); la elección se recuerda.
 
 ## 4. Integrarlo en un proyecto
 
@@ -182,6 +182,8 @@ const mc = Roomful.init({ ... });
 | `mc.follow(id)` / `mc.unfollow()` | función | Empieza o deja de seguir a otra persona. No se puede seguir a uno mismo. |
 | `mc.startTour(step?)` / `mc.stopTour()` | función | Lanza el tour guiado (sin `step`, donde lo dejó el visitante) o lo cierra. |
 | `mc.tour` | objeto | `{ active, step, total, saved }`: si el tour está en marcha, el paso actual, cuántos hay y el paso recordado. |
+| `mc.uid` | string | Id anónimo del navegador (el mismo en todas sus pestañas). |
+| `mc.signal("board")` / `mc.on("board", fn)` | función | Avisa a la sala de que la pizarra compartida ha cambiado / escúchalo (`on` devuelve una función para dejar de escuchar). Lo usa `roomful-board.js`. |
 | `mc.destroy()` | función | Desconecta, quita todos los elementos y listeners. Úsalo al desmontar. |
 
 Además, `Roomful.languages` lista los idiomas incluidos (`["en", "es"]`).
@@ -367,7 +369,37 @@ Roomful.init({
 });
 ```
 
-Cada texto puede ser una cadena o `{ en, es, … }`. `text` es HTML: dentro, `<span class="mc-kb">…</span>` solo se muestra con ratón y teclado, y `<span class="mc-tch">…</span>` solo en pantallas táctiles, para que cada dispositivo reciba las instrucciones correctas. La landing (`public/index.html`) tiene un tour completo de 12 pasos como ejemplo.
+Cada texto puede ser una cadena o `{ en, es, … }`. `text` es HTML: dentro, `<span class="mc-kb">…</span>` solo se muestra con ratón y teclado, y `<span class="mc-tch">…</span>` solo en pantallas táctiles, para que cada dispositivo reciba las instrucciones correctas. La landing (`public/index.html`) tiene un tour completo de 13 pasos como ejemplo.
+
+### 8.14 Pizarra compartida
+
+`public/roomful-board.js` es un complemento: una pizarra donde todos los de la sala pueden dibujar y escribir, y los dibujos se quedan para quien venga después. Usa la instancia de Roomful para tu id de navegador, tu color, el idioma y el aviso de "alguien ha dibujado".
+
+```js
+const mc = Roomful.init({ … });
+const board = RoomfulBoard.mount(document.querySelector("#board"), {
+  mc,                      // necesario para el color, el id y las actualizaciones en directo
+  api: "/api/board",       // por defecto
+  lang: "es",              // por defecto: mc.lang
+  strings: { es: { … } }   // textos propios, opcional
+});
+board.setLang("en"); board.refresh(); board.destroy();
+```
+
+- **Herramientas:** lápiz (fino) y rotulador (grueso, el doble de tinta), siempre con el color de tu perfil, y **texto** (pulsa, escribe hasta 60 caracteres, `Enter`). Cada dibujo se envía al terminarlo.
+- **Tinta:** 5.000 unidades por navegador y día; un trazo cuesta su longitud en unidades de la pizarra (que mide 1600 × 1000), el rotulador el doble y el texto 40 por carácter. Una barra muestra lo que queda y cuándo se recarga (00:00 UTC). Si se acaba a mitad de trazo, el trazo termina ahí. Quien la controla es el servidor: por id de navegador, y 25.000 por IP para que una red compartida no abuse.
+- **Capacidad:** cuando la tinta de la pizarra pasa de 60.000 (o hay más de 300 dibujos), se borran los más antiguos hasta que quepa; el más nuevo se queda siempre. Los más antiguos se atenúan un poco cuando la pizarra está llena a tres cuartos, para que se vea qué está a punto de irse.
+- **En directo:** al guardarse un dibujo, `mc.signal("board")` avisa a la sala y la pizarra de los demás pide los cambios. También los pide al aparecer en pantalla, al volver a la pestaña y cada minuto mientras se ve. El dibujo en sí aparece cuando está terminado.
+- **Guardado:** `server.py` la guarda en `BOARD_FILE` (JSON); en Vercel, `api/board.js` la guarda en Upstash Redis con un script atómico. Los dos aplican las mismas reglas (constantes al principio de cada archivo).
+
+**API HTTP** (igual en los dos):
+
+| Petición | Respuesta |
+|---|---|
+| `GET /api/board?uid=<id>&rev=<n>` | `{ rev, total, cap, ink: { left, max, resetAt }, items? }`; `items` solo si la pizarra cambió desde `rev`. |
+| `POST /api/board` `{ uid, item }` | `200 { rev, cost, ink }`; `429 { error: "no-ink", ink }`; `400` no válido; `403` origen no permitido; `503` sin almacenamiento. |
+
+`item` es `{ k: "s", c: "#RRGGBB", w: 3 | 9, p: [x0, y0, x1, y1, …] }` (de 2 a 600 puntos enteros) o `{ k: "t", c, x, y, t: "texto" }`.
 
 ## 9. El servidor
 
@@ -381,6 +413,7 @@ Cada texto puede ser una cadena o `{ en, es, … }`. `text` es HTML: dentro, `<s
 | `MAX_PER_ROOM` | Máximo de usuarios por sala (al pasarse, responde 503) | `100` |
 | `MAX_CLIENTS` | Máximo de conexiones en total (al pasarse, responde 503) | `5000` |
 | `STATIC_DIR` | Carpeta de ficheros estáticos. `""` para servir solo el WebSocket y `/health` | `./public` |
+| `BOARD_FILE` | Archivo JSON donde se guarda la pizarra compartida (`""` = sin pizarra). En Docker, móntalo en un volumen o se pierde con el contenedor | `./board.json` |
 
 ### 9.2 Rutas
 
@@ -388,6 +421,7 @@ Cada texto puede ser una cadena o `{ en, es, … }`. `text` es HTML: dentro, `<s
 |---|---|
 | `GET /ws?room=<sala>` con `Upgrade: websocket` | Conexión WebSocket. 403 si el `Origin` no está permitido, 503 si se supera un límite. |
 | `GET /health` | `200 {"ok": true, "clients": N, "rooms": M}` |
+| `GET` / `POST /api/board` | Pizarra compartida (ver [§8.14](#814-pizarra-compartida)). |
 | `GET` / `HEAD` cualquier otra | Fichero de `STATIC_DIR` (`/` → `index.html`). 404 si no existe o intenta salir de la carpeta. |
 | Otros métodos | 405 |
 
@@ -415,7 +449,7 @@ El servidor solo reenvía campos conocidos y válidos; el resto se descarta.
 | `visible` | Booleano |
 | `chat` | Texto de hasta 140 caracteres |
 | `sel` | `null` o `{a, ao, f, fo}`: rutas de ≤ 64 índices enteros y offsets enteros |
-| evento `kind` | `"click"` o `"reaction"` |
+| evento `kind` | `"click"`, `"reaction"` o `"board"` (la pizarra compartida ha cambiado; sin más datos) |
 | evento `emoji` | 1–8 caracteres sin letras, números, espacios ni `< > & " '` |
 
 Un cliente no se anuncia al resto hasta que envía un `name` válido.
@@ -483,6 +517,8 @@ Roomful.init({ ably: { authUrl: "/api/ably-token" } });
 - **Tokens:** `api/ably-token.js` (una función de Vercel) firma las peticiones de token con `ABLY_API_KEY`. Los tokens van ligados al id de la conexión, duran una hora y solo permiten los canales `roomful:*`. Solo las páginas de la propia web reciben tokens, salvo que `ALLOWED_ORIGINS` indique otras webs.
 - **Ritmo:** las posiciones se envían como mucho cada 100 ms (en vez de 40 ms) para que el plan dure más.
 - **Diferencias con `server.py`:** el pico del día es el máximo que ha visto este visitante, no un récord de todo el servidor; `MAX_PER_ROOM`/`MAX_CLIENTS` dejan paso a los límites de tu plan de Ably.
+
+- **Pizarra compartida:** `api/board.js` la guarda en Upstash Redis (conéctalo en **Storage** dentro del proyecto de Vercel; añade `KV_REST_API_URL` y `KV_REST_API_TOKEN`). Sin él, `/api/board` responde 503 y la pizarra dice que no está disponible.
 
 Los pasos de configuración están en el [README](../README.es.md#desplegar-en-vercel).
 
@@ -586,9 +622,13 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 ```
 roomful/
 ├── public/
-│   ├── roomful.js     # La integración (cliente)
-│   └── index.html         # Landing de demo que explica la píldora, con tour guiado (EN/ES)
-├── server.py              # Relay WebSocket + estáticos + /health
+│   ├── roomful.js         # La integración (cliente)
+│   ├── roomful-board.js   # La pizarra compartida (complemento)
+│   └── index.html         # Landing de demo que explica la píldora, con pizarra compartida y tour guiado (EN/ES)
+├── api/
+│   ├── ably-token.js      # Vercel: tokens de Ably
+│   └── board.js           # Vercel: la pizarra compartida en Upstash Redis
+├── server.py              # Relay WebSocket + pizarra compartida + estáticos + /health
 ├── Dockerfile             # Imagen de despliegue
 ├── docs/
 │   ├── DOCUMENTATION.md   # Documentación completa (inglés)

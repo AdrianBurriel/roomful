@@ -15,6 +15,11 @@ Environment variables:
   MAX_PER_ROOM     Max users per room                         (100)
   MAX_CLIENTS      Max connections in total                   (5000)
   STATIC_DIR       Static files folder; "" to disable         (./public)
+  BOARD_FILE       Where the shared board is saved; "" to disable (./board.json)
+
+The shared board (GET/POST /api/board) follows the same rules as
+api/board.js on Vercel: daily ink per browser and per IP, and the oldest
+drawings are erased when the board is full (the newest always stays).
 """
 import asyncio
 import base64
@@ -24,6 +29,7 @@ import json
 import mimetypes
 import os
 import re
+import math
 import struct
 import time
 from pathlib import Path
@@ -36,6 +42,9 @@ MAX_PER_ROOM = int(os.environ.get("MAX_PER_ROOM", "100"))
 MAX_CLIENTS = int(os.environ.get("MAX_CLIENTS", "5000"))
 _static = os.environ.get("STATIC_DIR", str(Path(__file__).parent / "public"))
 ROOT = Path(_static).resolve() if _static else None
+
+_board = os.environ.get("BOARD_FILE", str(Path(__file__).parent / "board.json"))
+BOARD_FILE = Path(_board) if _board else None
 
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 MAX_FRAME = 16 * 1024
@@ -86,7 +95,7 @@ def _is_emoji(v):
     return isinstance(v, str) and 0 < len(v) <= 8 and not NOT_EMOJI_RE.search(v)
 
 
-EVENT_KINDS = {"click", "reaction"}
+EVENT_KINDS = {"click", "reaction", "board"}
 FIELDS = {
     "name": lambda v: isinstance(v, str) and 0 < len(v) <= 32,
     "color": lambda v: isinstance(v, str) and bool(COLOR_RE.match(v)),
@@ -118,6 +127,133 @@ def room_stats(room):
     day, peak = peaks.get(room, (today(), 0))
     return {"t": "stats", "room": len(rooms.get(room, {})), "site": total_clients(),
             "peak": peak if day == today() else len(rooms.get(room, {}))}
+
+
+# ------------------------------------------------------------ Shared board --
+# Same rules and limits as api/board.js (keep both in sync).
+BOARD_W, BOARD_H = 1600, 1000
+INK_PER_DAY, INK_PER_IP = 5000, 25000
+BOARD_CAPACITY, BOARD_MAX_ITEMS = 60000, 300
+MAX_POINTS, MAX_TEXT, WIDTHS, TEXT_COST = 600, 60, (3, 9), 40
+CTRL_RE = re.compile(r"[\x00-\x1f\x7f]")
+
+board = {"rev": 0, "items": [], "costs": []}
+ink_used = {}              # (day, "u"|"i", key) -> ink spent that day (in memory)
+
+
+def board_load():
+    if BOARD_FILE and BOARD_FILE.is_file():
+        try:
+            data = json.loads(BOARD_FILE.read_text())
+            if isinstance(data.get("items"), list) and len(data.get("costs", [])) == len(data["items"]):
+                board.update(rev=int(data.get("rev", 0)), items=data["items"], costs=data["costs"])
+        except (ValueError, OSError):
+            pass
+
+
+def board_save():
+    if not BOARD_FILE:
+        return
+    tmp = BOARD_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(board, separators=(",", ":")))
+    tmp.replace(BOARD_FILE)
+
+
+def _is_int(v, lo, hi):
+    return isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi
+
+
+def clean_item(raw):
+    """Validates a drawing; returns (item, ink cost) or None."""
+    if not isinstance(raw, dict) or not isinstance(raw.get("c"), str) or not COLOR_RE.match(raw["c"]):
+        return None
+    c = raw["c"].upper()
+    if raw.get("k") == "s":
+        p, w = raw.get("p"), raw.get("w")
+        if w not in WIDTHS or not isinstance(p, list) or not 4 <= len(p) <= MAX_POINTS * 2 or len(p) % 2:
+            return None
+        if not all(_is_int(v, 0, BOARD_H if i % 2 else BOARD_W) for i, v in enumerate(p)):
+            return None
+        length = sum(math.hypot(p[i] - p[i - 2], p[i + 1] - p[i - 1]) for i in range(2, len(p), 2))
+        return {"k": "s", "c": c, "w": w, "p": p}, max(20, round(length * (2 if w == WIDTHS[1] else 1)))
+    if raw.get("k") == "t":
+        t = CTRL_RE.sub("", raw.get("t") if isinstance(raw.get("t"), str) else "").strip()
+        x, y = raw.get("x"), raw.get("y")
+        if not t or len(t) > MAX_TEXT or not _is_int(x, 0, BOARD_W) or not _is_int(y, 0, BOARD_H):
+            return None
+        return {"k": "t", "c": c, "x": x, "y": y, "t": t}, len(t) * TEXT_COST
+    return None
+
+
+def utc_day():
+    return time.strftime("%Y-%m-%d", time.gmtime())
+
+
+def ink_info(used):
+    now = time.time()
+    return {"left": max(0, INK_PER_DAY - used), "max": INK_PER_DAY, "resetAt": int((now // 86400 + 1) * 86400 * 1000)}
+
+
+def board_add(uid, ip, item, cost):
+    d = utc_day()
+    for k in [k for k in ink_used if k[0] != d]:
+        del ink_used[k]
+    used_u, used_i = ink_used.get((d, "u", uid), 0), ink_used.get((d, "i", ip), 0)
+    if used_u + cost > INK_PER_DAY or used_i + cost > INK_PER_IP:
+        return None, used_u
+    ink_used[(d, "u", uid)], ink_used[(d, "i", ip)] = used_u + cost, used_i + cost
+    board["rev"] += 1
+    board["items"].append({"id": board["rev"], **item})
+    board["costs"].append(cost)
+    while (sum(board["costs"]) > BOARD_CAPACITY or len(board["items"]) > BOARD_MAX_ITEMS) and len(board["items"]) > 1:
+        board["items"].pop(0)
+        board["costs"].pop(0)
+    board_save()
+    return board["rev"], used_u + cost
+
+
+def http_json(writer, code, obj):
+    body = json.dumps(obj, separators=(",", ":")).encode()
+    reason = {200: "OK", 400: "Bad Request", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed",
+              413: "Payload Too Large", 429: "Too Many Requests"}.get(code, "OK")
+    writer.write(f"HTTP/1.1 {code} {reason}\r\nContent-Type: application/json\r\nCache-Control: no-store\r\n"
+                 f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n".encode() + body)
+
+
+async def board_http(reader, writer, method, headers, query):
+    if not BOARD_FILE:
+        return http_json(writer, 404, {"error": "disabled"})
+    d = utc_day()
+    if method == "GET":
+        q = parse_qs(query)
+        uid = q.get("uid", [""])[0]
+        used = ink_used.get((d, "u", uid), 0) if UID_RE.match(uid) else 0
+        out = {"rev": board["rev"], "total": sum(board["costs"]), "cap": BOARD_CAPACITY, "ink": ink_info(used)}
+        if q.get("rev", [""])[0] != str(board["rev"]):
+            out["items"] = board["items"]
+        return http_json(writer, 200, out)
+    if method != "POST":
+        return http_json(writer, 405, {"error": "method"})
+    origin = headers.get("origin", "").rstrip("/")
+    if ALLOWED_ORIGINS and origin not in ALLOWED_ORIGINS:
+        return http_json(writer, 403, {"error": "origin"})
+    n = int(headers.get("content-length") or 0)
+    if n > 32 * 1024:
+        return http_json(writer, 413, {"error": "too-big"})
+    try:
+        body = json.loads(await asyncio.wait_for(reader.readexactly(n), timeout=10))
+    except (ValueError, asyncio.IncompleteReadError):
+        return http_json(writer, 400, {"error": "invalid"})
+    uid = body.get("uid") if isinstance(body, dict) else None
+    clean = clean_item(body.get("item")) if isinstance(uid, str) and UID_RE.match(uid) else None
+    if not clean:
+        return http_json(writer, 400, {"error": "invalid"})
+    peer = writer.get_extra_info("peername")
+    ip = headers.get("x-forwarded-for", "").split(",")[0].strip() or (peer[0] if peer else "")
+    rev, used = board_add(uid, ip, *clean)
+    if rev is None:
+        return http_json(writer, 429, {"error": "no-ink", "ink": ink_info(used)})
+    return http_json(writer, 200, {"rev": rev, "cost": clean[1], "ink": ink_info(used)})
 
 
 # ---------------------------------------------------------------- WebSocket --
@@ -353,6 +489,8 @@ async def handle(reader, writer):
         url = urlsplit(target)
         if url.path == "/ws" and headers.get("upgrade", "").lower() == "websocket":
             await ws_session(reader, writer, headers, url.query)
+        elif url.path == "/api/board":
+            await board_http(reader, writer, method, headers, url.query)
         elif url.path == "/health":
             body = json.dumps({"ok": True, "clients": total_clients(), "rooms": len(rooms)}).encode()
             writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
@@ -370,6 +508,7 @@ async def handle(reader, writer):
 
 
 async def main():
+    board_load()
     server = await asyncio.start_server(handle, HOST, PORT)
     asyncio.ensure_future(heartbeat())
     asyncio.ensure_future(stats_loop())
