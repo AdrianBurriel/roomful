@@ -273,7 +273,7 @@ Todo es por **navegador y dominio**: en otro navegador, otro dispositivo, una ve
 
 | Función | Detalle |
 |---|---|
-| Chat | Máx. 140 caracteres. Se envía mientras se escribe (los demás lo ven letra a letra). |
+| Chat | La caja crece con el texto y se detiene en 216 px: cuando está llena no deja escribir más (máx. 140 caracteres en cualquier caso). Se envía mientras escribes (los demás lo ven letra a letra). |
 | Clics | Se envía cada clic izquierdo fuera de la píldora (máx. uno cada 120 ms). Los demás ven una onda de tu color. Tú no ves la tuya. |
 | Reacciones | Tres emojis que suben y se desvanecen desde tu cursor (máx. una cada 250 ms). |
 | Saludo | Cuatro cambios de dirección (trazos de ≥ 40 px) en menos de 0,9 s envían una reacción 👋; como mucho una cada 2,5 s. Viaja como una reacción normal, así que el servidor no necesita cambios. |
