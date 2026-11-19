@@ -143,13 +143,16 @@ All of them are optional. The former names still work: `MultiCursor.init()` is a
 | `clicks` | boolean | `true` | Shows other people's clicks as ripples in their color. |
 | `selection` | boolean | `true` | Shows the text other people select. |
 | `follow` | boolean | `true` | "Follow" button in the people panel. |
-| `editable` | boolean | `true` | Lets the visitor edit name, color and photo. `false` when `name` is given. |
+| `editable` | boolean | `true` | Lets the visitor edit name, color and photo. Every change is saved on its own (no Save button). `false` when `name` is given. |
+| `selfCursor` | boolean | `true` | Your own pointer looks like everyone else's: an arrow in your color with your name tag. Only with a mouse; ghost mode restores the normal pointer. |
+| `wave` | boolean \| emoji | `true` | Shaking the cursor quickly from side to side sends a 👋 reaction. `false` disables it; a string uses another emoji. |
 | `onStats` | function | — | `({ page, site, peak }) => …` whenever the numbers change (see [§8.9](#89-stats)). |
 | `anchor` | `"center"` \| `"left"` | `"center"` | Horizontal reference for coordinates (see [§8.10](#810-coordinates)). |
 | `maxCursors` | number | `12` | Max cursors visible at the same time. |
 | `idleMs` | number (ms) | `30000` | Inactivity before someone counts as away (faded cursor + "zzz"). |
 | `bots` | number | `0` | Fake visitors (max. 12). See [§8.8](#88-bots). |
 | `botsRetireAt` | number | `= bots` (min. 1) | Bots retire once at least this many real people are here. |
+| `botsMin` | number | `1` | Bots that never retire, however many people there are. `0` lets them all leave. |
 | `botChat` | boolean | `true` | Bots type a message now and then. |
 | `botTargets` | CSS selector | links, buttons, headings, images… | Elements the bots move towards. Supports `[data-mc-target]`. |
 | `botPhrases` | array \| object | phrases per language | Bot chat phrases: an array, or `{ en: [...], es: [...] }` so they follow the language. |
@@ -171,7 +174,7 @@ const mc = Roomful.init({ ... });
 | `mc.setRoom(room)` | function | Changes room manually (reconnects). From then on it stops following the page path automatically. |
 | `mc.setGhost(bool)` | function | Turns ghost mode on or off (remembered). |
 | `mc.setLang(lang)` | function | Switches the language of the pill, panels and random names instantly. |
-| `mc.setIdentity(name, color, avatar?)` | function | Changes and saves the identity. `avatar`: data URL, `""` to remove it, `undefined` to leave it as is. |
+| `mc.setIdentity(name, color, avatar?)` | function | Changes and saves the identity. `avatar`: data URL, `""` to remove it, `undefined` to leave it as is. Returns `false` if nothing changed. |
 | `mc.open(part)` | function | Opens `"people"`, `"profile"`, `"chat"` or `"reactions"`. Turns ghost mode off if needed (except for `"profile"`). |
 | `mc.close()` | function | Closes panels and the emoji picker. |
 | `mc.react(emoji)` | function | Sends a reaction from your cursor (at most one every 250 ms). |
@@ -194,7 +197,7 @@ const mc = Roomful.init({ ... });
 | **People** | Up to 3 faces + "N here" ("Just you" when nobody else is around). Opens a panel with the numbers (on this page, on the whole site, today's peak) and the list of people with their status (**Active**, **Typing…**, **Away**) and a **Follow** button. Your row has **Edit**. |
 | **Chat 💬** | Opens a text field next to your cursor. Hidden on touch screens (there's no cursor). |
 | **Reactions 😊** | Opens the emoji picker above the pill. |
-| **Your profile ▾** | Photo (upload, change or remove), name, color, 🎲 Random (name and color), **Save** and the **Ghost mode** switch. |
+| **Your profile ▾** | Photo (upload, change or remove), name, color, 🎲 Random (name and color) and the **Ghost mode** switch. There's no Save button: color, photo and dice apply instantly, the name after a short pause in typing (or on `Enter` / leaving the field), and "✓ Saved" confirms it. |
 
 Special states:
 
@@ -210,6 +213,7 @@ Special states:
 | `Enter` (in the chat) | Send; the message stays for 4 s and disappears |
 | `Esc` (in the chat) | Clear the message and close |
 | `E` | Open/close the emoji picker next to your cursor |
+| Shake the mouse side to side | Wave 👋 at the room |
 | `1`–`9` (with the picker open) | Send that emoji (hidden shortcut) |
 | `Esc` | Close panels and picker; stop following |
 | Wheel, `↑` `↓` `PgUp` `PgDn` `Home` `End` `Space`, swiping on a touch screen | Stop following (you get scrolling back) |
@@ -242,7 +246,7 @@ The room is the heart of Roomful: you see the cursors, messages and reactions of
 
 ### 8.3 Identity and your other tabs
 
-- **Random name and color** are generated per tab (`sessionStorage`): every new tab gets a different one **until the visitor saves their profile**. From then on, the saved one is used in every tab and visit (`localStorage`).
+- **Random name and color** are generated per tab (`sessionStorage`): every new tab gets a different one **until the visitor changes anything in their profile** (it's saved automatically). From then on, the saved one is used in every tab and visit (`localStorage`).
 - The random name is stored as "animal + adjective" (two indexes), so it's shown in the active language and translated when it changes: "Zen Capybara" ↔ "Capibara Zen". A name saved by the visitor is never translated.
 - **Browser id** (`mc:uid`): 20 random characters shared by every tab of the same browser and domain. It stops your other tabs from showing up as somebody else: they aren't listed in the pill, can't be followed, and their cursor, clicks, reactions and selections aren't drawn.
 - If a tab doesn't send an id (e.g. it still runs an older version of the script), it counts as "you" when it has your same name and color.
@@ -272,6 +276,8 @@ Everything is **per browser and domain**: another browser, another device, a pri
 | Chat | Max. 140 characters. Sent while typing (others see it letter by letter). |
 | Clicks | Every left click outside the pill is sent (max. one every 120 ms). Others see a ripple in your color. You don't see your own. |
 | Reactions | Three emojis float up and fade out from your cursor (max. one every 250 ms). |
+| Wave | Four changes of direction (strokes of ≥ 40 px) in under 0.9 s send a 👋 reaction; at most one every 2.5 s. It travels as a normal reaction, so the server needs no changes. |
+| Your cursor | With a mouse, your pointer becomes the same arrow others see, in your color (a CSS cursor, so there's no lag), with your name tag next to it. Links, text fields and elements with their own `cursor` keep theirs. |
 | Selection | **Which text** is selected is shared (DOM node path + offset), not pixels. Each browser highlights it on its own layout, so it lines up even when the text wraps differently. Selections inside text fields and `contenteditable` are ignored. If the page DOM differs between visitors, it simply isn't drawn. |
 
 ### 8.7 Idle state and cursor cap
@@ -286,8 +292,9 @@ The room's regulars: fake visitors so a room never looks empty.
 - They are **local**: each visitor sees their own and they never travel through the server.
 - They move along smooth curves towards real elements on the page (`botTargets`) and take short pauses.
 - **They take turns so they're not annoying:** each bot alternates between "visiting" your screen (7–16 s) and "away" off screen (12–30 s). Usually only one is visiting.
-- They talk at most once per visit, in roughly half of their visits, and never two at once. Sometimes they click (22 % on arrival) or react (5 %).
-- **They retire** once there are `botsRetireAt` real people, and come back if the room empties.
+- They talk at most once per visit, in roughly half of their visits, and never two at once. Sometimes they click (22 % on arrival) or react (5 %), and in about 40 % of their visits they wave 👋 when they arrive.
+- **They're labelled:** a small **BOT** chip on their cursor and in the people panel, so nobody mistakes them for real people.
+- **They retire** once there are `botsRetireAt` real people, and come back if the room empties. `botsMin` of them (1 by default) always stay.
 - They don't appear if the visitor has *reduce motion* enabled (`prefers-reduced-motion`).
 - They count in the pill's numbers (see [§8.9](#89-stats)).
 
@@ -322,7 +329,7 @@ Turning it on **closes the connection**: you don't see cursors and nobody sees y
 ```js
 Roomful.init({
   lang: "fr",
-  strings: { fr: { seeWho: "Voir qui est là", chatTip: "Écrire à côté de ton curseur", save: "Enregistrer" /* … */ } }
+  strings: { fr: { seeWho: "Voir qui est là", chatTip: "Écrire à côté de ton curseur", saved: "✓ Enregistré" /* … */ } }
 });
 ```
 
@@ -534,7 +541,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 | Connection refused (503) | `MAX_PER_ROOM` or `MAX_CLIENTS` was exceeded. |
 | Works locally but not in production | Use `wss://` if the site runs on HTTPS; check that the proxy forwards `Upgrade`/`Connection` ([§10.4](#104-behind-nginx)). |
 | I see myself in the list | That tab runs an older version of the script: reload it. |
-| I get a different name after reloading | You haven't saved your profile: random names are per tab. Open "Your profile" and click **Save**. |
+| I get a different name after reloading | You haven't touched your profile: random names are per tab. Open "Your profile" and change anything (it saves on its own). |
 | Bots don't show up | There are enough real people (`botsRetireAt`), the visitor has *reduce motion* enabled, or `bots` is 0. |
 | Someone's selection isn't highlighted | Their page DOM differs from yours (personalized or dynamic content). Expected. |
 | "Couldn't use that image" | The browser doesn't support the format (e.g. HEIC in some) or the image is damaged. Try JPG or PNG. |

@@ -143,13 +143,16 @@ Todas son opcionales. Los nombres anteriores siguen funcionando: `MultiCursor.in
 | `clicks` | boolean | `true` | Muestra los clics de los demás como ondas de su color. |
 | `selection` | boolean | `true` | Muestra el texto que seleccionan los demás. |
 | `follow` | boolean | `true` | Botón "Seguir" en el panel de personas. |
-| `editable` | boolean | `true` | Permite editar nombre, color y foto. Es `false` si se pasa `name`. |
+| `editable` | boolean | `true` | Permite editar nombre, color y foto. Cada cambio se guarda solo (no hay botón Guardar). Es `false` si se pasa `name`. |
+| `selfCursor` | boolean | `true` | Tu propio puntero se ve como el de los demás: una flecha de tu color con tu etiqueta de nombre. Solo con ratón; el modo fantasma devuelve el puntero normal. |
+| `wave` | boolean \| emoji | `true` | Agitar el cursor rápido de lado a lado envía una reacción 👋. `false` lo desactiva; un texto usa otro emoji. |
 | `onStats` | función | — | `({ page, site, peak }) => …` cada vez que cambian las cifras (ver [§8.9](#89-estadísticas)). |
 | `anchor` | `"center"` \| `"left"` | `"center"` | Referencia horizontal de las coordenadas (ver [§8.10](#810-coordenadas)). |
 | `maxCursors` | número | `12` | Máximo de cursores visibles a la vez. |
 | `idleMs` | número (ms) | `30000` | Tiempo sin actividad para considerar a alguien ausente (cursor atenuado + "zzz"). |
 | `bots` | número | `0` | Usuarios ficticios (máx. 12). Ver [§8.8](#88-bots). |
 | `botsRetireAt` | número | `= bots` (mín. 1) | Los bots se retiran cuando hay al menos este número de personas reales. |
+| `botsMin` | número | `1` | Bots que no se retiran nunca, haya la gente que haya. `0` deja que se vayan todos. |
 | `botChat` | boolean | `true` | Los bots escriben mensajes de vez en cuando. |
 | `botTargets` | selector CSS | enlaces, botones, títulos, imágenes… | Elementos hacia los que se mueven los bots. Admite `[data-mc-target]`. |
 | `botPhrases` | array \| objeto | frases según idioma | Frases del chat de los bots: un array, o `{ en: [...], es: [...] }` para que sigan el idioma. |
@@ -171,7 +174,7 @@ const mc = Roomful.init({ ... });
 | `mc.setRoom(room)` | función | Cambia de sala manualmente (reconecta). Desde ese momento deja de seguir la ruta de la página de forma automática. |
 | `mc.setGhost(bool)` | función | Activa o desactiva el modo fantasma (se recuerda). |
 | `mc.setLang(lang)` | función | Cambia el idioma de la píldora, los paneles y los nombres aleatorios al momento. |
-| `mc.setIdentity(name, color, avatar?)` | función | Cambia la identidad y la guarda. `avatar`: data URL, `""` para quitarla, `undefined` para no tocarla. |
+| `mc.setIdentity(name, color, avatar?)` | función | Cambia la identidad y la guarda. `avatar`: data URL, `""` para quitarla, `undefined` para no tocarla. Devuelve `false` si no cambia nada. |
 | `mc.open(part)` | función | Abre `"people"`, `"profile"`, `"chat"` o `"reactions"`. Si está en modo fantasma, lo desactiva (salvo para `"profile"`). |
 | `mc.close()` | función | Cierra paneles y el selector de emojis. |
 | `mc.react(emoji)` | función | Lanza una reacción desde tu cursor (máximo una cada 250 ms). |
@@ -194,7 +197,7 @@ Además, `Roomful.languages` lista los idiomas incluidos (`["en", "es"]`).
 | **Personas** | Caras de hasta 3 personas + "N aquí" ("Solo tú" si no hay nadie). Abre un panel con las cifras (en esta página, en toda la web, pico de hoy) y la lista de personas con su estado (**Activo**, **Escribiendo…**, **Ausente**) y un botón **Seguir**. Tu fila tiene **Editar**. |
 | **Chat 💬** | Abre un campo de texto junto a tu cursor. Se oculta en pantallas táctiles (no hay cursor). |
 | **Reacciones 😊** | Abre el selector de emojis encima de la píldora. |
-| **Tu perfil ▾** | Foto (subir, cambiar o quitar), nombre, color, 🎲 Al azar (nombre y color), **Guardar** y el interruptor **Modo fantasma**. |
+| **Tu perfil ▾** | Foto (subir, cambiar o quitar), nombre, color, 🎲 Al azar (nombre y color) y el interruptor **Modo fantasma**. No hay botón Guardar: color, foto y dado se aplican al momento, el nombre tras una breve pausa al escribir (o con `Enter` / al salir del campo), y "✓ Guardado" lo confirma. |
 
 Estados especiales:
 
@@ -210,6 +213,7 @@ Estados especiales:
 | `Enter` (en el chat) | Enviar; el mensaje se queda 4 s y desaparece |
 | `Esc` (en el chat) | Borrar el mensaje y cerrar |
 | `E` | Abrir/cerrar el selector de emojis junto al cursor |
+| Agitar el ratón de lado a lado | Saludar 👋 a la sala |
 | `1`–`9` (con el selector abierto) | Lanzar ese emoji (atajo oculto) |
 | `Esc` | Cerrar paneles y selector; dejar de seguir |
 | Rueda, `↑` `↓` `RePág` `AvPág` `Inicio` `Fin` `Espacio`, deslizar en una pantalla táctil | Dejar de seguir (recuperas el control del scroll) |
@@ -242,7 +246,7 @@ La sala es el corazón de Roomful: ves los cursores, mensajes y reacciones de qu
 
 ### 8.3 Identidad y tus otras pestañas
 
-- **Nombre y color aleatorios** se generan por pestaña (`sessionStorage`): cada pestaña nueva recibe uno distinto **hasta que el visitante guarda su perfil**. Desde ese momento, se usa el guardado en todas las pestañas y visitas (`localStorage`).
+- **Nombre y color aleatorios** se generan por pestaña (`sessionStorage`): cada pestaña nueva recibe uno distinto **hasta que el visitante cambia algo de su perfil** (se guarda solo). Desde ese momento, se usa el guardado en todas las pestañas y visitas (`localStorage`).
 - El nombre aleatorio se guarda como "animal + adjetivo" (dos índices), así que se muestra en el idioma activo y se traduce al cambiarlo: "Zen Capybara" ↔ "Capibara Zen". Un nombre guardado por el visitante no se traduce nunca.
 - **Id de navegador** (`mc:uid`): 20 caracteres aleatorios, compartidos por todas las pestañas del mismo navegador y dominio. Sirve para que tus otras pestañas no aparezcan como otra persona: no salen en la píldora, no se pueden seguir y no se dibuja su cursor ni sus clics, reacciones o selecciones.
 - Si una pestaña no envía id (por ejemplo, tiene cargada una versión antigua del script), se considera "tú" si tiene tu mismo nombre y color.
@@ -272,6 +276,8 @@ Todo es por **navegador y dominio**: en otro navegador, otro dispositivo, una ve
 | Chat | Máx. 140 caracteres. Se envía mientras se escribe (los demás lo ven letra a letra). |
 | Clics | Se envía cada clic izquierdo fuera de la píldora (máx. uno cada 120 ms). Los demás ven una onda de tu color. Tú no ves la tuya. |
 | Reacciones | Tres emojis que suben y se desvanecen desde tu cursor (máx. una cada 250 ms). |
+| Saludo | Cuatro cambios de dirección (trazos de ≥ 40 px) en menos de 0,9 s envían una reacción 👋; como mucho una cada 2,5 s. Viaja como una reacción normal, así que el servidor no necesita cambios. |
+| Tu cursor | Con ratón, tu puntero pasa a ser la misma flecha que ven los demás, en tu color (un cursor CSS, sin retraso), con tu etiqueta de nombre al lado. Los enlaces, los campos de texto y los elementos con su propio `cursor` conservan el suyo. |
 | Selección | Se comparte **qué texto** está seleccionado (ruta de nodos DOM + posición), no píxeles. Cada navegador lo resalta sobre su propio diseño, así que encaja aunque el texto ocupe líneas distintas. Se ignoran las selecciones dentro de campos de texto y `contenteditable`. Si el DOM de la página no coincide entre visitantes, simplemente no se pinta. |
 
 ### 8.7 Reposo y límite de cursores
@@ -286,8 +292,9 @@ Los habituales de la sala: visitantes ficticios para que ninguna sala parezca va
 - Son **locales**: cada visitante ve los suyos y no viajan por el servidor.
 - Se mueven en curvas suaves hacia elementos reales de la página (`botTargets`) y hacen pequeñas pausas.
 - **Se turnan para no molestar:** cada bot alterna entre "de visita" en tu pantalla (7–16 s) y "a lo suyo" fuera de ella (12–30 s). Normalmente solo hay uno de visita.
-- Hablan como mucho una vez por visita, en la mitad de las visitas aproximadamente, y nunca dos a la vez. A veces hacen clic (22 % al llegar) o reaccionan (5 %).
-- **Se retiran** cuando hay `botsRetireAt` personas reales y vuelven si la sala se vacía.
+- Hablan como mucho una vez por visita, en la mitad de las visitas aproximadamente, y nunca dos a la vez. A veces hacen clic (22 % al llegar) o reaccionan (5 %), y en un 40 % de sus visitas saludan 👋 al llegar.
+- **Van marcados:** una pequeña etiqueta **BOT** en su cursor y en el panel de personas, para que nadie los confunda con gente real.
+- **Se retiran** cuando hay `botsRetireAt` personas reales y vuelven si la sala se vacía. `botsMin` de ellos (1 por defecto) se quedan siempre.
 - No aparecen si el visitante tiene activado *reducir movimiento* (`prefers-reduced-motion`).
 - Cuentan en las cifras de la píldora (ver [§8.9](#89-estadísticas)).
 
@@ -322,7 +329,7 @@ Al activarlo se **cierra la conexión**: no ves cursores y nadie te ve, ni siqui
 ```js
 Roomful.init({
   lang: "fr",
-  strings: { fr: { seeWho: "Voir qui est là", chatTip: "Écrire à côté de ton curseur", save: "Enregistrer" /* … */ } }
+  strings: { fr: { seeWho: "Voir qui est là", chatTip: "Écrire à côté de ton curseur", saved: "✓ Enregistré" /* … */ } }
 });
 ```
 
@@ -533,7 +540,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 | Conexión rechazada (503) | Se ha superado `MAX_PER_ROOM` o `MAX_CLIENTS`. |
 | Funciona en local pero no en producción | Usa `wss://` si la web va por HTTPS; revisa que el proxy reenvíe `Upgrade`/`Connection` ([§10.4](#104-detrás-de-nginx)). |
 | Me veo a mí mismo en la lista | Esa pestaña tiene cargada una versión antigua del script: recárgala. |
-| Al recargar tengo otro nombre | No has guardado el perfil: los aleatorios son por pestaña. Abre "Tu perfil" y pulsa **Guardar**. |
+| Al recargar tengo otro nombre | No has tocado tu perfil: los aleatorios son por pestaña. Abre "Tu perfil" y cambia cualquier cosa (se guarda solo). |
 | Los bots no aparecen | Ya hay suficiente gente real (`botsRetireAt`), el visitante tiene *reducir movimiento* activado o `bots` es 0. |
 | La selección de otro no se resalta | El DOM de su página no coincide con el tuyo (contenido personalizado o dinámico). Es esperado. |
 | "No se ha podido usar esa imagen" | Formato no soportado por el navegador (p. ej. HEIC en algunos) o imagen dañada. Prueba con JPG o PNG. |

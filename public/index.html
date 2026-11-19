@@ -206,7 +206,7 @@
   body.is-ghost .state{background:color-mix(in srgb,var(--muted) 18%,transparent);color:var(--muted)}
 
   /* ---------- Without touching the pill ---------- */
-  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:56px}
+  .trio{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:56px}
   .trio .frame{padding:30px}
   .trio h3{font-size:24px;margin:6px 0 10px}
   .trio p{font-size:15px}
@@ -226,6 +226,15 @@
   .zzz span:nth-child(3){animation-delay:1.6s;font-size:10px}
   @keyframes zzz{0%{transform:translate(0,6px) scale(.6);opacity:0}20%{opacity:1}100%{transform:translate(16px,-20px) scale(1.2);opacity:0}}
 
+  .wave-demo{position:relative;height:170px;margin-top:22px;border-radius:12px;background:var(--canvas);overflow:hidden}
+  .wave-demo .fake{left:34%;top:78px;animation:shake 3s ease-in-out infinite}
+  .wave-demo .hi{position:absolute;left:4px;top:-8px;font-size:28px;line-height:1;opacity:0;animation:hi 3s ease-out infinite}
+  @keyframes shake{0%,4%{transform:translateX(0)}8%{transform:translateX(-22px)}14%{transform:translateX(22px)}20%{transform:translateX(-22px)}
+    26%{transform:translateX(22px)}32%,100%{transform:translateX(0)}}
+  @keyframes hi{0%,32%{transform:translateY(0) scale(.4);opacity:0}40%{transform:translateY(-12px) scale(1.15);opacity:1}
+    75%{transform:translateY(-58px) scale(.95) rotate(-12deg);opacity:0}100%{opacity:0}}
+  .botchip{display:inline-block;font:700 9px/1 var(--sans);letter-spacing:.06em;padding:3px 4px 2px;border-radius:4px;
+    box-shadow:inset 0 0 0 1px currentColor;opacity:.7;margin-left:7px;vertical-align:2px}
   .bots{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;margin-top:22px}
   .bots .stack i{width:52px;height:52px;font-size:16px;border-color:var(--surface)}
 
@@ -339,7 +348,7 @@
           <li><i class="avatar me" data-me-initials>ME</i><div><strong data-me-name>You</strong><small data-i18n="mockYou">You</small></div><span class="mbtn" data-i18n="mockEdit">Edit</span></li>
           <li><i style="background:var(--c4)">ZA</i><div><strong data-i18n="botAxolotl">Zen Axolotl</strong><small><em class="dot"></em><span data-i18n="mockActive">Active</span></small></div><span class="mbtn" data-i18n="mockFollow">Follow</span></li>
           <li><i style="background:var(--c1)">TT</i><div><strong data-i18n="botTapir">Turbo Tapir</strong><small><em class="dot blue"></em><span data-i18n="mockTyping">Typing…</span></small></div><span class="mbtn on" data-i18n="mockFollowing">Following</span></li>
-          <li><i style="background:var(--c3)">LK</i><div><strong data-i18n="botKoala">Lunar Koala</strong><small><em class="dot grey"></em><span data-i18n="mockAway">Away</span></small></div><span class="mbtn" data-i18n="mockFollow2">Follow</span></li>
+          <li><i style="background:var(--c3)">LK</i><div><strong><span data-i18n="botKoala">Lunar Koala</span><span class="botchip" title="Bot">BOT</span></strong><small><em class="dot grey"></em><span data-i18n="mockAway">Away</span></small></div><span class="mbtn" data-i18n="mockFollow2">Follow</span></li>
         </ul>
       </div>
     </div>
@@ -379,7 +388,7 @@
       <div>
         <div class="kicker"><span class="num">3</span> <span data-i18n="s3Kicker">The smiley</span></div>
         <h2 class="h2" data-i18n="s3Title">Applaud without <em>saying</em> a word.</h2>
-        <p class="lede" data-i18n="s3Lede">The smiley opens the emojis. With the keyboard it's faster: press <kbd>E</kbd> wherever your cursor is and pick one. They float up from there and the whole room sees them.</p>
+        <p class="lede" data-i18n="s3Lede">The smiley opens the emojis. With the keyboard it's faster: press <kbd>E</kbd> wherever your cursor is and pick one. They float up from there and the whole room sees them. And to say hi, just shake your cursor from side to side: 👋.</p>
         <p class="note" data-i18n="s3Note">Try it right here: click any of these emojis.</p>
       </div>
       <div class="emoji-grid" data-mc-target>
@@ -407,7 +416,7 @@
         <div class="card">
           <div class="avatar me" data-me-initials>ME</div>
           <h3><span data-me-name>You</span></h3>
-          <p data-i18n="s4Text">Change your name, your color or add a photo from your computer. Out of ideas? The dice picks a random name and color. We'll remember you next time you walk in.</p>
+          <p data-i18n="s4Text">Change your name, your color or add a photo from your computer: it saves on its own as you go, no button needed. Out of ideas? The dice picks a random name and color. Your own cursor wears them too, just like everyone else's, and we'll remember you next time you walk in.</p>
           <button class="btn" type="button" data-open="profile" data-i18n="s4Btn">Edit my profile</button>
         </div>
         <div class="card">
@@ -454,6 +463,14 @@
           <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c2)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c2);color:#1e1e1e" data-i18n="botSloth">Zen Sloth</div><div class="zzz" style="color:var(--c2)"><span>z</span><span>z</span><span>z</span></div></div>
         </div>
       </div>
+      <div class="frame" data-size="Wave" data-i18n-attr="data-size:waveLabel">
+        <span class="frame-label" data-i18n="waveLabel">Wave</span>
+        <h3 data-i18n="waveTitle">Shake it to <em>say hi</em></h3>
+        <p data-i18n="waveText">Move your cursor quickly from side to side and a 👋 floats up for the whole room. Try it right here.</p>
+        <div class="wave-demo" data-mc-target aria-hidden="true">
+          <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--me)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--me);color:var(--me-ink)" data-me-name>You</div><div class="hi">👋</div></div>
+        </div>
+      </div>
     </div>
 
     <div class="frame" style="margin-top:56px" data-size="Company" data-i18n-attr="data-size:botsSize">
@@ -462,7 +479,7 @@
         <div class="stack" aria-hidden="true"><i style="background:var(--c5)">ZC</i><i style="background:var(--c2);color:#1e1e1e">FQ</i></div>
         <div>
           <h3 style="font-size:26px;margin-bottom:8px" data-i18n="botsTitle">Walked into an empty room? You <em>won't</em> be alone.</h3>
-          <p data-i18n="botsText">When nobody's around, a couple of regulars wander in, look around and say hi now and then. As soon as real people arrive, they quietly head for the door.</p>
+          <p data-i18n="botsText">When nobody's around, a couple of regulars wander in, look around and wave hello now and then. They wear a <span class="botchip">BOT</span> label, so nobody mistakes them for people. When real people arrive, most of them head for the door, but one always stays to keep you company.</p>
         </div>
       </div>
     </div>
@@ -543,10 +560,10 @@
     s2Lede: "Pulsa el bocadillo o la tecla <kbd>/</kbd> y escribe: tu mensaje aparece pegado a tu cursor, en directo, para toda la sala. <kbd>Enter</kbd> lo deja unos segundos y <kbd>Esc</kbd> lo borra.",
     s2Btn: "Escribir algo", bubbleMe: "¿Os gusta este titular?", bubbleOther: "¡Mucho! 🙌",
     s3Label: "03 — Reacciones", s3Kicker: "La carita", s3Title: "Aplaude sin <em>decir</em> nada.",
-    s3Lede: "La carita abre los emojis. Con teclado es más rápido: pulsa <kbd>E</kbd> donde tengas el cursor y elige. Salen flotando desde ahí y los ve toda la sala.",
+    s3Lede: "La carita abre los emojis. Con teclado es más rápido: pulsa <kbd>E</kbd> donde tengas el cursor y elige. Salen flotando desde ahí y los ve toda la sala. Y para saludar, basta con agitar el cursor de lado a lado: 👋.",
     s3Note: "Pruébalo aquí mismo: pulsa cualquiera de estos emojis.",
     s4Label: "04 — Tu perfil", s4Kicker: "Tu cara, a la derecha", s4Title: "Tú decides <em>cómo</em> te ven. O si te ven.",
-    s4Text: "Cambia tu nombre, tu color o pon una foto desde tu ordenador. ¿Sin ideas? El dado elige nombre y color al azar. Te recordaremos la próxima vez que entres.",
+    s4Text: "Cambia tu nombre, tu color o pon una foto desde tu ordenador: se guarda solo sobre la marcha, sin botones. ¿Sin ideas? El dado elige nombre y color al azar. Tu propio cursor también los lleva, igual que el de los demás, y te recordaremos la próxima vez que entres.",
     s4Btn: "Editar mi perfil", ghostTitle: "Modo <em>fantasma</em>",
     ghostText: "Pasa por la sala sin que te vean: desaparecen los cursores de los demás y dejas de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.",
     extrasKicker: "Lo que pasa sin tocar la píldora", extrasTitle: "Y la sala se entera, <em>sin que hagas nada</em>…",
@@ -557,8 +574,10 @@
     selDemo: "Selecciona esta frase y mira la otra pestaña: <mark>aparece resaltada</mark> con tu color.",
     idleLabel: "Reposo", idleTitle: "Si te vas, <em>se nota</em>",
     idleText: "Tras 30 segundos sin moverte, tu cursor se atenúa y se echa una siesta en un rincón: zzz.",
+    waveLabel: "Saludo", waveTitle: "Agítalo para <em>saludar</em>",
+    waveText: "Mueve el cursor rápido de lado a lado y sale un 👋 flotando para toda la sala. Pruébalo aquí mismo.",
     botsSize: "Compañía", botsLabel: "Nunca vacía", botsTitle: "¿Entras en una sala vacía? <em>No</em> estarás solo.",
-    botsText: "Cuando no hay nadie, un par de habituales se pasean, curiosean y saludan de vez en cuando. En cuanto llega gente de verdad, se van discretamente hacia la puerta.",
+    botsText: "Cuando no hay nadie, un par de habituales se pasean, curiosean y saludan con la mano de vez en cuando. Llevan la etiqueta <span class=\"botchip\">BOT</span>, para que nadie los confunda con personas. Cuando llega gente de verdad, casi todos se van hacia la puerta, pero uno se queda siempre a hacerte compañía.",
     codeSize: "Código", intLabel: "Integrar", intKicker: "Para desarrolladores",
     intTitle: "Dos líneas y tu web se llena de <em>gente</em>.", copy: "Copiar",
     code: '<span class="c">&lt;!-- 1. El script --&gt;</span>\n&lt;<span class="k">script</span> src=<span class="s">"/roomful.js"</span>&gt;&lt;/<span class="k">script</span>&gt;\n\n<span class="c">&lt;!-- 2. Conéctalo a tu servidor --&gt;</span>\n&lt;<span class="k">script</span>&gt;\n  Roomful.<span class="f">init</span>({\n    url: <span class="s">"wss://cursores.tuweb.com/ws"</span>,\n    lang: <span class="s">"es"</span>,\n    bots: <span class="s">2</span>,\n    onStats: s =&gt; console.<span class="f">log</span>(s.page, <span class="s">"personas aquí"</span>)\n  });\n&lt;/<span class="k">script</span>&gt;',

@@ -33,17 +33,18 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 
 | | |
 |---|---|
-| 🖱️ **Cursores en vivo** | Movimiento suavizado, nombre y foto en la etiqueta, una sala por página |
+| 🖱️ **Cursores en vivo** | Movimiento suavizado, nombre y foto en la etiqueta, una sala por página. El tuyo se ve igual: una flecha de tu color con tu nombre |
 | 👥 **Personas** | Quién está, su estado (activo, escribiendo, ausente) y estadísticas en directo |
 | 🧭 **Seguir** | Tu página se mueve con la de otra persona para ver lo mismo que ella |
 | 💬 **Chat** | Mensajes que aparecen junto a tu cursor, letra a letra (`/`) |
 | 🎉 **Reacciones** | Emojis que flotan desde tu cursor (`E`) |
+| 👋 **Saludo** | Agita el cursor rápido de lado a lado y saludas a la sala |
 | ✨ **Clics y selección** | Los demás ven tus clics como ondas y el texto que seleccionas |
-| 🙂 **Perfil** | Nombre, color y foto propios, recordados entre visitas |
+| 🙂 **Perfil** | Nombre, color y foto propios, que se guardan solos al cambiarlos y se recuerdan entre visitas |
 | 👻 **Modo fantasma** | Deja de ver cursores y de compartir el tuyo |
 | 😴 **Reposo** | Los cursores quietos se atenúan con unas "zzz" animadas |
 | 📱 **Móvil y tablet** | Tu dedo es tu cursor; chat y reacciones desde los botones de la píldora |
-| 🤖 **Bots opcionales** | Visitantes de compañía que se retiran cuando llega gente real |
+| 🤖 **Bots opcionales** | Visitantes de compañía, marcados con la etiqueta **BOT**. Se retiran cuando llega gente real, pero siempre se queda uno |
 | 🌍 **Idiomas** | Inglés (por defecto) y español; añade los tuyos con `strings` |
 | ♿ **Accesible** | Manejable con teclado, etiquetas ARIA, modo oscuro y reducir movimiento |
 
@@ -94,9 +95,12 @@ En **React / Next.js**, llámalo dentro de un `useEffect` en el layout raíz y d
 | `room` | ruta de la página | Sala; `"global"` para compartirla en toda la web |
 | `lang` | `"en"` | Idioma de la interfaz: `"en"`, `"es"` o `"auto"` |
 | `strings` | — | Textos propios o idiomas nuevos |
-| `bots` | `0` | Visitantes ficticios (máx. 12) |
+| `bots` | `0` | Visitantes ficticios (máx. 12), marcados como **BOT** |
+| `botsMin` | `1` | Bots que se quedan haya la gente que haya |
 | `chat`, `reactions`, `clicks`, `selection`, `follow` | activadas | Activar o desactivar cada función |
-| `editable` | `true` | Dejar que el visitante edite nombre, color y foto |
+| `editable` | `true` | Dejar que el visitante edite nombre, color y foto (se guardan solos) |
+| `selfCursor` | `true` | Tu propio puntero con tu color y tu nombre al lado |
+| `wave` | `true` | Agitar el cursor para saludar 👋 (`false`, u otro emoji) |
 | `name`, `color`, `avatar` | aleatorios | Identidad fija o inicial |
 | `onStats` | — | Recibir `{ page, site, peak }` para usarlas en tu interfaz |
 | `onboarding` | `true` | Aviso de bienvenida en la primera visita |
@@ -156,7 +160,7 @@ Cada push a `main` se despliega solo. La landing usa Ably cuando está publicada
 - **Sin autenticación:** cualquiera que pueda abrir la página entra en su sala (con `server.py`, cualquiera con la URL del WebSocket). No sirve para salas privadas tal cual.
 - **`server.py` es un solo proceso con todo en memoria:** no se puede repartir entre varias instancias sin añadir un canal compartido (p. ej. Redis), y las estadísticas se pierden al reiniciar.
 - **El perfil es por navegador:** en otro navegador o dispositivo se empieza de cero.
-- **Los bots son locales:** cada visitante ve los suyos.
+- **Los bots son locales:** cada visitante ve los suyos (y siempre se queda al menos uno, salvo con `botsMin: 0`).
 - **Con Ably,** el "pico de hoy" es el máximo que ha visto cada visitante, no un récord del servidor, y cada mensaje cuenta en tu plan de Ably.
 - **La selección compartida** requiere que todos tengan el mismo contenido en la página.
 - **Sin tests automáticos:** las comprobaciones se han hecho a mano y con clientes WebSocket de prueba.

@@ -27,7 +27,12 @@
  *   clicks      Show other people's clicks as ripples                (true)
  *   selection   Show the text other people select                    (true)
  *   follow      "Follow" button in the people panel                  (true)
- *   editable    Edit name, color and photo in your profile           (true)
+ *   editable    Edit name, color and photo in your profile. Changes save
+ *               on their own as you make them (no Save button)       (true)
+ *   selfCursor  Your own pointer looks like everyone else's: an arrow in
+ *               your color with your name next to it                 (true)
+ *   wave        Shake the cursor quickly from side to side to wave 👋
+ *               at the room. true | false | another emoji            (true)
  *   onStats     fn({ page, site, peak }) — called whenever the numbers change
  *   anchor      "center" | "left" — horizontal reference used to map positions
  *               between screens of different widths                 ("center")
@@ -37,6 +42,8 @@
  *               (each visitor sees their own) and disabled with
  *               prefers-reduced-motion.                              (0)
  *   botsRetireAt  Bots leave once this many real people are here   (= bots)
+ *   botsMin     Bots that stay however many people there are        (1)
+ *               Bots are always labelled "BOT" (cursor and people list).
  *   botChat     Bots type a message now and then                     (true)
  *   botTargets  CSS selector of elements the bots move towards
  *   botPhrases  Bot chat phrases: an array, or { en: [...], es: [...] }
@@ -97,6 +104,7 @@
         processing: "Processing…", badImage: "Couldn't use that image. Try another one.",
         name: "Name", color: "Color", colorN: "Color {c}",
         random: "🎲 Random", randomTip: "Random name and color", save: "Save",
+        autoSave: "Saves automatically", saved: "✓ Saved", bot: "Bot", botTip: "Bot: not a real person",
         ghost: "Ghost mode", ghostHelp: "Hides other people's cursors and stops sharing yours.",
         nHere: "{n} here", nHereLabel: "{n} people here. See who they are",
         onlyYou: "Just you", nobodyYet: "Nobody else yet", onlyYouLabel: "Just you on this page"
@@ -139,6 +147,7 @@
         processing: "Procesando…", badImage: "No se ha podido usar esa imagen. Prueba con otra.",
         name: "Nombre", color: "Color", colorN: "Color {c}",
         random: "🎲 Al azar", randomTip: "Nombre y color al azar", save: "Guardar",
+        autoSave: "Se guarda solo", saved: "✓ Guardado", bot: "Bot", botTip: "Bot: no es una persona real",
         ghost: "Modo fantasma", ghostHelp: "Oculta los cursores de los demás y deja de compartir el tuyo.",
         nHere: "{n} aquí", nHereLabel: "{n} personas aquí. Ver quiénes son",
         onlyYou: "Solo tú", nobodyYet: "Aún no hay nadie más", onlyYouLabel: "Solo tú en esta página"
@@ -260,10 +269,16 @@
     "  100%{transform:translate(var(--dx),-110px) scale(.9) rotate(var(--rot));opacity:0}}",
     "@media (prefers-reduced-motion:reduce){.mc-float{animation-duration:1.2s}.mc-ripple{animation:none;opacity:0}}",
     /* local chat */
+    /* your own cursor: the arrow is the real pointer (CSS cursor, no lag); the name tag follows it */
     ".mc-local{position:fixed;left:0;top:0;pointer-events:none;z-index:2147483001;display:none}",
-    ".mc-local.mc-open{display:block}",
-    ".mc-local .mc-tag{pointer-events:auto;padding:7px 12px 9px;border-radius:3px 16px 16px 16px}",
-    ".mc-local input{all:unset;font:400 14px/1.2 " + FONT + ";width:200px;color:inherit;caret-color:currentColor}",
+    ".mc-local.mc-show,.mc-local.mc-open{display:block}",
+    ".mc-local input{display:none}",
+    ".mc-local.mc-open .mc-tag{pointer-events:auto;padding:7px 12px 9px;border-radius:3px 16px 16px 16px}",
+    ".mc-local.mc-open .mc-name{font-size:10px;opacity:.8}",
+    ".mc-local.mc-open .mc-tag-av{width:14px;height:14px}",
+    ".mc-local.mc-open.mc-docked .mc-name{display:none}",
+    ".mc-local.mc-open input{all:unset;display:block;font:400 14px/1.2 " + FONT + ";width:200px;color:inherit;caret-color:currentColor;margin-top:3px}",
+    ".mc-local.mc-open.mc-docked input{margin-top:0}",
     ".mc-local input::placeholder{color:inherit;opacity:.65}",
     /* ---------- pill, panels, tooltip and first-visit hint ---------- */
     ".mc-presence,.mc-pop,.mc-picker,.mc-coach{background:#fff;color:#1E1E1E;border:1px solid rgba(0,0,0,.08);",
@@ -315,7 +330,7 @@
     ".mc-person:hover{background:rgba(0,0,0,.035)}",
     ".mc-person .mc-avatar{margin:0;border:0;width:34px;height:34px;font-size:12px}",
     ".mc-who{flex:1;min-width:0}",
-    ".mc-who b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".mc-who b{font-weight:600}",
     ".mc-status{font-size:12px;font-weight:400;opacity:.65;display:flex;align-items:center;gap:6px;margin-top:1px}",
     ".mc-status i{width:7px;height:7px;border-radius:50%;background:#14AE5C;display:inline-block}",
     ".mc-status.mc-away i{background:#B3B3B3}",
@@ -347,6 +362,16 @@
     "  box-shadow:0 0 0 1.5px rgba(255,255,255,.75)}",
     ".mc-tag-av[hidden]{display:none}",
     ".mc-tag.mc-has-av:not(.mc-talking){padding:3px 10px 3px 3px;border-radius:4px 14px 14px 14px}",
+    ".mc-local:not(.mc-open) .mc-tag.mc-has-av{padding:3px 10px 3px 3px;border-radius:4px 14px 14px 14px}",
+    /* bots are labelled: a small outlined "BOT" chip */
+    ".mc-badge{flex:none;font:700 9px/1 " + FONT + ";letter-spacing:.06em;text-transform:uppercase;padding:3px 4px 2px;",
+    "  border-radius:4px;box-shadow:inset 0 0 0 1px currentColor;opacity:.85}",
+    ".mc-tag.mc-talking .mc-badge{font-size:8px;padding:2px 3px 1px}",
+    ".mc-who b{display:flex;align-items:center;gap:6px}",
+    ".mc-who b>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    ".mc-who .mc-badge{opacity:.6}",
+    ".mc-saved{align-self:center;font-size:12px;font-weight:500;opacity:.5;transition:opacity .2s}",
+    ".mc-saved.mc-on{opacity:1;color:#14AE5C}",
     ".mc-tag.mc-talking .mc-tag-av{width:14px;height:14px}",
     ".mc-photo{display:flex;align-items:center;gap:12px;margin-bottom:16px}",
     ".mc-photo .mc-avatar{width:56px;height:56px;margin:0;border:0;font-size:18px}",
@@ -667,6 +692,10 @@
     var reducedMotion = global.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
     var botCount = reducedMotion ? 0 : Math.max(0, Math.min(12, opts.bots | 0));
     var botsRetireAt = opts.botsRetireAt > 0 ? opts.botsRetireAt : Math.max(1, botCount);
+    var botsMin = Math.min(botCount, opts.botsMin == null ? 1 : Math.max(0, opts.botsMin | 0));
+    var waveEmoji = opts.wave === false ? null : (typeof opts.wave === "string" && opts.wave ? opts.wave : "👋");
+    var hoverDevice = !global.matchMedia || matchMedia("(hover: hover)").matches;
+    var selfCursor = opts.selfCursor !== false && hoverDevice;
     var reactions = opts.reactions === false ? null : (opts.reactions || REACTIONS).slice(0, 9);
     var showClicks = opts.clicks !== false, showSel = opts.selection !== false;
     var canFollow = opts.follow !== false, editable = opts.editable !== false && !opts.name;
@@ -718,10 +747,11 @@
     var ws = null, destroyed = false, retry = 0, retryTimer = null;
     var last = { cx: 0, cy: 0, has: false, sent: 0, pending: null };
     var chatTimer = null, raf = 0, houseTimer = null, selTimer = null, resizeTimer = null;
-    var lastSelJSON = "null", lastClick = 0, lastReact = 0;
+    var lastSelJSON = "null", lastClick = -1e9, lastReact = -1e9;
     var following = null, openPop = null, picker = null;
     var serverStats = { room: 0, site: 0, peak: 0 }, statsKey = "";
     var bots = [];
+    var wave = { x: null, dir: 0, run: 0, flips: [], at: -1e9 };
 
     // ---- DOM ----
     var style = el("style"); style.textContent = CSS; document.head.appendChild(style);
@@ -731,7 +761,12 @@
 
     var local = el("div", "mc-local", document.body);
     var localTag = el("div", "mc-tag", local);
+    var localName = el("div", "mc-name", localTag);
+    var localAv = el("img", "mc-tag-av", localName);
+    localAv.alt = ""; localAv.hidden = true;
+    var localTxt = el("span", "", localName);
     var input = el("input", "", localTag);
+    var ownStyle = el("style"); document.head.appendChild(ownStyle);
     input.maxLength = 140;
 
     var followBox = el("div", "mc-follow", document.body);
@@ -840,7 +875,27 @@
       if (coach) { coach.remove(); coach = null; }
     }
 
-    function paintLocalTag() { localTag.style.background = me.color; localTag.style.color = textOn(me.color); }
+    // Your own cursor and name tag, painted in your color
+    function paintLocalTag() {
+      localTag.style.background = me.color; localTag.style.color = textOn(me.color);
+      localTxt.textContent = me.name;
+      if (me.avatar) localAv.src = me.avatar;
+      localAv.hidden = !me.avatar;
+      localTag.classList.toggle("mc-has-av", !!me.avatar);
+      if (selfCursor) {
+        var svg = cursorSVG(me.color).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+        ownStyle.textContent = "html.mc-own{cursor:url(\"data:image/svg+xml," + encodeURIComponent(svg) + "\") 2 2,auto}" +
+          ":where(html.mc-own) :where(input,textarea,select,[contenteditable]){cursor:auto}";
+      }
+      showSelf();
+    }
+    // Shown with a mouse, while the pointer is on the page and you're not a ghost
+    var pointerIn = false;
+    function showSelf() {
+      var on = selfCursor && !ghost && !destroyed;
+      document.documentElement.classList.toggle("mc-own", on);
+      local.classList.toggle("mc-show", on && pointerIn && last.has && lastInput === "mouse");
+    }
     paintLocalTag();
 
     // ---- coordinates ----
@@ -951,6 +1006,7 @@
         connect();
         kick();
       }
+      showSelf();
       renderPresence();
     }
 
@@ -959,6 +1015,7 @@
     function setIdentity(name, color, avatar) {
       name = String(name || "").replace(/\s+/g, " ").trim().slice(0, 32) || me.name;
       color = /^#[0-9a-fA-F]{6}$/.test(color || "") ? color.toUpperCase() : me.color;
+      if (name === me.name && color === me.color && (avatar === undefined || validAvatar(avatar) === me.avatar)) return false;
       me.name = name; me.color = color;
       if (avatar !== undefined) me.avatar = validAvatar(avatar);
       gen = null;                                 // chosen by the visitor: no longer random
@@ -967,6 +1024,7 @@
       for (var id in peers) markSelf(peers[id]);  // your name/color changed: re-check which tabs are "you"
       send({ name: name, color: color, avatar: me.avatar });
       renderPresence();
+      return true;
     }
 
     // ---- language ----
@@ -977,11 +1035,13 @@
       if (gen) {                                  // random names follow the language
         me.name = nameFor(gen, lang);
         saveRandomIdentity();
+        paintLocalTag();
         send({ name: me.name });
       }
       bots.forEach(function (b) {
         var p = peers[b.id];
         if (p) upsertPeer({ id: b.id, name: nameFor(b.gen, lang) });
+        if (p && p.badge) { p.badge.textContent = t("bot"); p.badge.title = t("botTip"); }
       });
       applyStaticTexts();
       if (peopleBtn) peopleBtn._key = null;
@@ -1239,7 +1299,10 @@
     }
 
     // ---- panels: people and profile ----
-    function closePop() { if (openPop) { openPop.el.remove(); openPop = null; } setExpanded(); }
+    function closePop() {
+      if (openPop) { var o = openPop; openPop = null; if (o.flush) o.flush(); o.el.remove(); }
+      setExpanded();
+    }
     function togglePop(kind) {
       if (openPop && openPop.kind === kind) return closePop();
       closePop(); closePicker(); hideTip(); dismissCoach();
@@ -1315,7 +1378,9 @@
         var li = el("li", "mc-person", list);
         face("", u, li);
         var who = el("div", "mc-who", li);
-        el("b", "", who).textContent = u.name;
+        var nm = el("b", "", who);
+        el("span", "", nm).textContent = u.name;
+        if (u.bot) { var bg = el("span", "mc-badge", nm); bg.textContent = t("bot"); bg.title = t("botTip"); }
         var st = statusOf(u), status = el("span", "mc-status " + st[1], who);
         if (!u.me) el("i", "", status);
         status.appendChild(document.createTextNode(st[0]));
@@ -1381,19 +1446,31 @@
           upBtn.textContent = avatar ? t("changePhoto") : t("uploadPhoto");
           rmBtn.hidden = !avatar;
         };
-        var setColor = function (c) {
+        // No Save button: every change is applied and remembered right away
+        // (the name after a short pause in typing, on Enter or when leaving the field).
+        var savedEl = null, savedTimer = null, nameTimer = null;
+        var commit = function () {
+          clearTimeout(nameTimer); nameTimer = null;
+          if (!setIdentity(nameIn.value, color, avatar) || !savedEl) return;
+          savedEl.textContent = t("saved"); savedEl.classList.add("mc-on");
+          clearTimeout(savedTimer);
+          savedTimer = setTimeout(function () { savedEl.textContent = t("autoSave"); savedEl.classList.remove("mc-on"); }, 1600);
+        };
+        openPop.flush = function () { clearTimeout(savedTimer); if (nameTimer) commit(); };
+        var setColor = function (c, save) {
           color = c;
           sw.querySelectorAll(".mc-swatch").forEach(function (o) { o.setAttribute("aria-pressed", String(o.dataset.c === c)); });
           paintPreview();
+          if (save) commit();
         };
         COLORS.forEach(function (c) {
           var b = el("button", "mc-swatch", sw);
           b.type = "button"; b.style.background = c; b.style.color = c; b.dataset.c = c;
           b.setAttribute("aria-label", t("colorN", { c: c }));
-          b.addEventListener("click", function () { setColor(c); });
+          b.addEventListener("click", function () { setColor(c, true); });
         });
         upBtn.addEventListener("click", function () { file.click(); });
-        rmBtn.addEventListener("click", function () { avatar = ""; paintPreview(); });
+        rmBtn.addEventListener("click", function () { avatar = ""; paintPreview(); commit(); });
         file.addEventListener("change", function () {
           var f = file.files && file.files[0];
           file.value = "";
@@ -1404,9 +1481,17 @@
             if (url) { avatar = url; note.textContent = t("photoNote"); }
             else note.textContent = t("badImage");
             paintPreview();
+            if (url) commit();
           });
         });
-        nameIn.addEventListener("input", paintPreview);
+        nameIn.addEventListener("input", function () {
+          paintPreview();
+          clearTimeout(nameTimer);
+          if (nameIn.value.trim()) nameTimer = setTimeout(commit, 600);
+        });
+        nameIn.addEventListener("blur", function () {
+          if (!nameIn.value.trim()) { nameIn.value = me.name; paintPreview(); } else commit();
+        });
         setColor(color);
 
         var row = el("div", "mc-row", body);
@@ -1417,15 +1502,14 @@
           do { n = nameFor(randomGen(), lang); } while (n === nameIn.value && ++tries < 20);
           do { c = pick(COLORS); } while (c === color && ++tries < 40);
           nameIn.value = n;
-          setColor(c);
+          setColor(c, true);
         });
-        var save = el("button", "mc-btn mc-primary", row); save.type = "button"; save.textContent = t("save");
-        var commit = function () { setIdentity(nameIn.value, color, avatar); closePop(); };
-        save.addEventListener("click", commit);
+        savedEl = el("span", "mc-saved", row);
+        savedEl.setAttribute("role", "status");
+        savedEl.textContent = t("autoSave");
         nameIn.addEventListener("keydown", function (e) {
           e.stopPropagation();
-          if (e.key === "Enter") commit();
-          else if (e.key === "Escape") closePop();
+          if (e.key === "Enter" || e.key === "Escape") { if (nameIn.value.trim()) commit(); closePop(); }
         });
       } else {
         var fixed = el("div", "mc-photo", body);
@@ -1522,12 +1606,21 @@
         var now = performance.now(), here = i === 0;
         var start = pickBotTarget(here) || pickBotTarget(true), id = "bot-" + i;
         upsertPeer({ id: id, name: name, color: color, x: start.x, y: start.y, visible: true });
-        peers[id].bot = true;
-        bots.push({ id: id, gen: g, seg: null, waitUntil: now + rand(200, 2000), chat: null,
+        markBot(peers[id]);
+        bots.push({ id: id, gen: g, seg: null, waitUntil: now + rand(200, 2000), chat: null, greet: here,
           here: here, modeUntil: now + (here ? rand(BOT_HERE_MS[0], BOT_HERE_MS[1]) : rand(4000, 12000)),
           nextChat: now + rand(4000, 8000) });
       }
       renderPresence();
+    }
+
+    // Bots are labelled so nobody mistakes them for real people
+    function markBot(p) {
+      p.bot = true;
+      p.el.classList.add("mc-is-bot");
+      var b = el("span", "mc-badge", p.nameEl);
+      b.textContent = t("bot"); b.title = t("botTip");
+      p.badge = b;
     }
 
     // Each bot alternates between "visiting" (on your screen) and "away" (off screen).
@@ -1540,6 +1633,7 @@
         b.modeUntil = now + rand(BOT_AWAY_MS[0], BOT_AWAY_MS[1]);
       } else if (visiting === 0 || Math.random() < 0.15) {
         b.here = true;
+        b.greet = Math.random() < 0.4;              // sometimes waves when it arrives
         b.modeUntil = now + rand(BOT_HERE_MS[0], BOT_HERE_MS[1]);
         // says something in about half of its visits; otherwise it just looks around
         b.nextChat = Math.random() < 0.5 ? now + rand(2500, 6000) : Infinity;
@@ -1550,11 +1644,12 @@
       if (!b.seg) b.waitUntil = now;                 // get moving right away
     }
 
-    // With enough real people, the bots retire; they come back if the page empties.
+    // With enough real people, the bots retire (except botsMin of them, which
+    // always stay); they come back if the page empties.
     function updateBotRetirement() {
-      var retire = realCount() >= botsRetireAt, changed = false;
-      bots.forEach(function (b) {
-        var p = peers[b.id];
+      var crowded = realCount() >= botsRetireAt, changed = false;
+      bots.forEach(function (b, i) {
+        var p = peers[b.id], retire = crowded && i >= botsMin;
         if (!p || !!p.retired === retire) return;
         changed = true;
         p.retired = retire;
@@ -1578,6 +1673,18 @@
         if (!p || p.retired) return;
         updateBotMode(b, now);
 
+        if (b.wave) {                                  // waving: a quick side-to-side shake
+          var wt = now - b.wave.t0;
+          p.x = b.wave.x + Math.sin(wt / 55) * 16;
+          setActive(p, now);
+          if (wt > 700) {
+            p.x = b.wave.x; b.wave = null;
+            if (waveEmoji) spawnReaction(p, waveEmoji);
+            b.waitUntil = now + rand(800, 1600);
+          }
+          return;
+        }
+
         if (b.seg) {                                   // moving (cubic Bézier curve)
           var s = b.seg, tt = Math.min(1, (now - s.t0) / s.dur), e = ease(tt), u = 1 - e;
           p.x = u*u*u*s.x0 + 3*u*u*e*s.x1 + 3*u*e*e*s.x2 + e*e*e*s.x3;
@@ -1586,7 +1693,10 @@
           if (tt >= 1) {
             b.seg = null;
             b.waitUntil = now + (Math.random() < 0.2 ? rand(2500, 5000) : rand(300, 1800));
-            if (b.here) {                              // on arrival: sometimes clicks or reacts
+            if (b.here && b.greet && waveEmoji) {      // first stop of a visit: waves 👋
+              b.greet = false;
+              b.wave = { t0: now, x: p.x };
+            } else if (b.here) {                       // on arrival: sometimes clicks or reacts
               var roll = Math.random();
               if (roll < 0.22) spawnRipple(p, p.color);
               else if (roll < 0.27 && reactions) spawnReaction(p, pick(reactions));
@@ -1725,11 +1835,16 @@
         x = (vv ? vv.offsetLeft : 0) + 12;
         y = bottom - lift - 48;
       } else {
-        x = Math.max(0, Math.min(last.cx, innerWidth - 250)); y = Math.max(0, Math.min(last.cy, innerHeight - 80));
+        x = last.cx - 2; y = last.cy - 2;
+        if (local.classList.contains("mc-open")) {
+          x = Math.max(0, Math.min(x, innerWidth - 250)); y = Math.max(0, Math.min(y, innerHeight - 80));
+        }
       }
+      local.classList.toggle("mc-docked", chatDocked);
       local.style.transform = "translate3d(" + x + "px," + y + "px,0)";
     }
     function onViewport() { if (local.classList.contains("mc-open")) placeLocal(); }
+    function localVisible() { return local.classList.contains("mc-open") || local.classList.contains("mc-show"); }
     function openChat() {
       chatDocked = lastInput === "touch";
       if (coach) dismissCoach();                   // you found the chat: no need for the hint
@@ -1764,6 +1879,7 @@
       if (!p) return;
       lastInput = "touch"; lastTouchAt = performance.now();
       touchStart = { x: p.clientX, y: p.clientY };
+      showSelf();
       if (e.target && e.target.closest && e.target.closest(UI)) return;
       last.cx = p.clientX; last.cy = p.clientY; last.has = true;
       sendPosition();
@@ -1781,11 +1897,37 @@
     function onMove(e) {
       if (performance.now() - lastTouchAt > 800) lastInput = "mouse";   // not the mouse event a tap emulates
       last.cx = e.clientX; last.cy = e.clientY; last.has = true;
-      if (local.classList.contains("mc-open")) placeLocal();
+      pointerIn = true; showSelf();
+      if (localVisible()) placeLocal();
+      detectWave(e.clientX);
       sendPosition();
     }
+
+    // Shaking the cursor quickly from side to side = waving at the room.
+    // 4 changes of direction (each stroke ≥ 40 px) in under 0.9 s.
+    function detectWave(x) {
+      if (!waveEmoji || ghost) return;
+      var now = performance.now();
+      if (wave.x === null) { wave.x = x; return; }
+      var dx = x - wave.x;
+      wave.x = x;
+      if (Math.abs(dx) < 2) return;
+      var dir = dx > 0 ? 1 : -1;
+      if (dir === wave.dir) { wave.run += Math.abs(dx); return; }
+      if (wave.run >= 40) wave.flips.push(now);
+      wave.dir = dir; wave.run = Math.abs(dx);
+      wave.flips = wave.flips.filter(function (t) { return now - t < 900; });
+      if (wave.flips.length >= 4 && now - wave.at > 2500) {
+        wave.at = now; wave.flips = [];
+        react(waveEmoji);
+      }
+    }
     function onScroll() { sendPosition(); }
-    function onLeave(e) { if (!e.relatedTarget) send({ visible: false }); }
+    function onLeave(e) {
+      if (e.relatedTarget) return;
+      pointerIn = false; wave.x = null; showSelf();
+      send({ visible: false });
+    }
     function onVisibility() { send({ visible: !document.hidden && last.has }); }
     function onDown(e) {
       var target = e.target;
@@ -1906,7 +2048,8 @@
         global.removeEventListener("scroll", onScroll);
         global.removeEventListener("resize", onResize);
         closePicker(); closePop(); clearTimeout(coachTimer);
-        [style, layer, local, presence, followBox, tooltip, coach].forEach(function (n) { if (n) n.remove(); });
+        document.documentElement.classList.remove("mc-own");
+        [style, ownStyle, layer, local, presence, followBox, tooltip, coach].forEach(function (n) { if (n) n.remove(); });
       }
     };
   }

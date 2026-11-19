@@ -33,17 +33,18 @@ The demo is a landing page that explains every part of the pill, with demos that
 
 | | |
 |---|---|
-| 🖱️ **Live cursors** | Smoothed movement, name and photo on the label, one room per page |
+| 🖱️ **Live cursors** | Smoothed movement, name and photo on the label, one room per page. Yours looks the same: an arrow in your color with your name |
 | 👥 **People** | Who's here, their status (active, typing, away) and live stats |
 | 🧭 **Follow** | Your page moves along with someone else's so you see what they see |
 | 💬 **Chat** | Messages that appear next to your cursor, letter by letter (`/`) |
 | 🎉 **Reactions** | Emojis that float up from your cursor (`E`) |
+| 👋 **Wave** | Shake your cursor quickly from side to side and you wave at the room |
 | ✨ **Clicks and selection** | Others see your clicks as ripples and the text you select |
-| 🙂 **Profile** | Your own name, color and photo, remembered between visits |
+| 🙂 **Profile** | Your own name, color and photo, saved as you change them and remembered between visits |
 | 👻 **Ghost mode** | Stop seeing cursors and stop sharing yours |
 | 😴 **Idle** | Cursors that stop moving fade out with animated "zzz" |
 | 📱 **Phones and tablets** | Your finger is your cursor; chat and reactions from the pill's buttons |
-| 🤖 **Optional bots** | Companion visitors that step out when real people arrive |
+| 🤖 **Optional bots** | Companion visitors, labelled **BOT**. When real people arrive they step out, but one always stays |
 | 🌍 **Languages** | English (default) and Spanish; add your own with `strings` |
 | ♿ **Accessible** | Keyboard friendly, ARIA labels, dark mode and reduced motion |
 
@@ -94,9 +95,12 @@ In **React / Next.js**, call it inside a `useEffect` in the root layout and retu
 | `room` | page path | Room; `"global"` to share one across the whole site |
 | `lang` | `"en"` | Interface language: `"en"`, `"es"` or `"auto"` |
 | `strings` | — | Custom texts or new languages |
-| `bots` | `0` | Fake visitors (max. 12) |
+| `bots` | `0` | Fake visitors (max. 12), labelled **BOT** |
+| `botsMin` | `1` | Bots that stay however many people there are |
 | `chat`, `reactions`, `clicks`, `selection`, `follow` | enabled | Turn each feature on or off |
-| `editable` | `true` | Let the visitor edit name, color and photo |
+| `editable` | `true` | Let the visitor edit name, color and photo (saved automatically) |
+| `selfCursor` | `true` | Your own pointer in your color, with your name next to it |
+| `wave` | `true` | Shake the cursor to wave 👋 (`false`, or another emoji) |
 | `name`, `color`, `avatar` | random | Fixed or initial identity |
 | `onStats` | — | Get `{ page, site, peak }` to use in your own UI |
 | `onboarding` | `true` | Welcome hint on the first visit |
@@ -156,7 +160,7 @@ Every push to `main` redeploys automatically. The landing uses Ably when publish
 - **No authentication:** anyone who can open the page can join its room (with `server.py`, anyone with the WebSocket URL). Not suitable for private rooms as is.
 - **`server.py` is a single process with everything in memory:** it can't be spread across instances without adding a shared channel (e.g. Redis), and stats are lost on restart.
 - **The profile is per browser:** another browser or device starts from scratch.
-- **Bots are local:** each visitor sees their own.
+- **Bots are local:** each visitor sees their own (and at least one always stays, unless `botsMin: 0`).
 - **With Ably,** "today's peak" is the highest number each visitor has seen, not a server-wide record, and every message counts towards your Ably plan.
 - **Shared selection** requires everyone to have the same content on the page.
 - **No automated tests:** checks have been done by hand and with test WebSocket clients.
