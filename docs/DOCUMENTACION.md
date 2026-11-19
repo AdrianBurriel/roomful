@@ -156,6 +156,7 @@ Todas son opcionales. Los nombres anteriores siguen funcionando: `MultiCursor.in
 | `botChat` | boolean | `true` | Los bots escriben mensajes de vez en cuando. |
 | `botTargets` | selector CSS | enlaces, botones, títulos, imágenes… | Elementos hacia los que se mueven los bots. Admite `[data-mc-target]`. |
 | `botPhrases` | array \| objeto | frases según idioma | Frases del chat de los bots: un array, o `{ en: [...], es: [...] }` para que sigan el idioma. |
+| `tour` | objeto | — | Tour guiado: `{ steps, name?, offer? }`. Una guía gris enseña la página al visitante. Ver [§8.13](#813-tour-guiado). |
 
 ## 6. API del objeto devuelto
 
@@ -179,6 +180,8 @@ const mc = Roomful.init({ ... });
 | `mc.close()` | función | Cierra paneles y el selector de emojis. |
 | `mc.react(emoji)` | función | Lanza una reacción desde tu cursor (máximo una cada 250 ms). |
 | `mc.follow(id)` / `mc.unfollow()` | función | Empieza o deja de seguir a otra persona. No se puede seguir a uno mismo. |
+| `mc.startTour(step?)` / `mc.stopTour()` | función | Lanza el tour guiado (sin `step`, donde lo dejó el visitante) o lo cierra. |
+| `mc.tour` | objeto | `{ active, step, total, saved }`: si el tour está en marcha, el paso actual, cuántos hay y el paso recordado. |
 | `mc.destroy()` | función | Desconecta, quita todos los elementos y listeners. Úsalo al desmontar. |
 
 Además, `Roomful.languages` lista los idiomas incluidos (`["en", "es"]`).
@@ -260,6 +263,7 @@ La sala es el corazón de Roomful: ves los cursores, mensajes y reacciones de qu
 | `mc:uid` | `localStorage` | Id anónimo del navegador. |
 | `mc:ghost` | `localStorage` | `true` si el modo fantasma está activo. |
 | `mc:onboarded` | `localStorage` | `true` cuando ya se vio el aviso de bienvenida. |
+| `mc:tour` | `localStorage` | Paso en el que el visitante dejó el tour guiado (se borra al terminarlo). |
 
 Todo es por **navegador y dominio**: en otro navegador, otro dispositivo, una ventana privada o con `www.` y sin `www.` se empieza de cero. Si el navegador bloquea el almacenamiento, el script sigue funcionando sin recordar nada.
 
@@ -334,6 +338,36 @@ Roomful.init({
 ```
 
 Los nombres aleatorios y las frases de los bots de un idioma nuevo usan los del inglés, salvo que pases `botPhrases` con ese idioma.
+
+### 8.13 Tour guiado
+
+Con la opción `tour`, una **guía** enseña la página al visitante. Es un bot en **gris** (ningún color de visitante es gris, así que nadie se le parece) con la etiqueta **GUÍA**.
+
+- En cada paso **desplaza la página** hasta el elemento, **vuela** con su cursor hasta él, escribe una frase corta en su bocadillo y lo **resalta** (el resto de la página se oscurece un poco). Una tarjeta abajo a la izquierda (una hoja inferior en el móvil) explica el paso en detalle.
+- **Avanza sola** cuando ha dado tiempo a leerlo (~220 palabras por minuto, mínimo 8 s por paso), con una barra de progreso. La tarjeta tiene **Atrás**, **Pausar** / **Seguir**, **Siguiente** (**Terminar** en el último) y **✕** para cerrar; con teclado, `←` `→` y `Esc`.
+- Los pasos con `wave: true` hacen que la guía salude 👋 al llegar.
+- **Primera visita:** el aviso de bienvenida ofrece **▶ Haz el tour** (salvo con `offer: false`). Después, se lanza desde tu propia interfaz con `mc.startTour()`.
+- **Se recuerda el progreso** (`mc:tour`): `mc.startTour()` sigue donde lo dejó el visitante; `mc.startTour(0)` empieza de cero. Al terminarlo se olvida el progreso.
+- Mientras tanto, los demás bots se apartan y no hablan. La guía es local (nadie más la ve), no cuenta en las cifras ni sale en la lista de personas. Activar el modo fantasma cierra el tour.
+- Cambiar el idioma con `mc.setLang()` vuelve a mostrar el paso actual en el nuevo idioma.
+- Con *reducir movimiento*, la guía salta en lugar de volar y la página no se desplaza con suavidad.
+
+```js
+Roomful.init({
+  tour: {
+    name: { en: "Capybara", es: "Capibara" },        // nombre de la guía
+    steps: [
+      { target: ".hero h1", wave: true,
+        say:   { en: "Hi! Let me show you around 👋", es: "¡Hola! Te enseño esto 👋" },
+        title: { en: "Welcome", es: "Bienvenido" },
+        text:  { en: "This page is a room…", es: "Esta página es una sala…" } },
+      // …
+    ]
+  }
+});
+```
+
+Cada texto puede ser una cadena o `{ en, es, … }`. `text` es HTML: dentro, `<span class="mc-kb">…</span>` solo se muestra con ratón y teclado, y `<span class="mc-tch">…</span>` solo en pantallas táctiles, para que cada dispositivo reciba las instrucciones correctas. La landing (`public/index.html`) tiene un tour completo de 12 pasos como ejemplo.
 
 ## 9. El servidor
 

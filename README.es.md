@@ -45,6 +45,7 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 | 😴 **Reposo** | Los cursores quietos se atenúan con unas "zzz" animadas |
 | 📱 **Móvil y tablet** | Tu dedo es tu cursor; chat y reacciones desde los botones de la píldora |
 | 🤖 **Bots opcionales** | Visitantes de compañía, marcados con la etiqueta **BOT**. Se retiran cuando llega gente real, pero siempre se queda uno |
+| 🧭 **Tour guiado** | Una guía gris vuela a cada parte de la página y la explica paso a paso, avanzando sola (`tour`) |
 | 🌍 **Idiomas** | Inglés (por defecto) y español; añade los tuyos con `strings` |
 | ♿ **Accesible** | Manejable con teclado, etiquetas ARIA, modo oscuro y reducir movimiento |
 
@@ -104,6 +105,7 @@ En **React / Next.js**, llámalo dentro de un `useEffect` en el layout raíz y d
 | `name`, `color`, `avatar` | aleatorios | Identidad fija o inicial |
 | `onStats` | — | Recibir `{ page, site, peak }` para usarlas en tu interfaz |
 | `onboarding` | `true` | Aviso de bienvenida en la primera visita |
+| `tour` | — | Tour guiado: `{ steps: [...] }`, ofrecido en la primera visita |
 
 Todas las opciones (26) están en la [documentación](docs/DOCUMENTACION.md#5-opciones-de-roomfulinit).
 
@@ -118,6 +120,7 @@ mc.setIdentity("Capibara Jefa", "#A259FF");
 mc.setGhost(true);
 mc.setRoom("/otra-sala");
 mc.follow(id); mc.unfollow();
+mc.startTour(); mc.stopTour();                           // tour guiado (sigue donde se dejó)
 mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang;
 mc.destroy();
 ```

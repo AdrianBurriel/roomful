@@ -47,10 +47,19 @@
  *   botChat     Bots type a message now and then                     (true)
  *   botTargets  CSS selector of elements the bots move towards
  *   botPhrases  Bot chat phrases: an array, or { en: [...], es: [...] }
+ *   tour        Guided tour: { steps: [...], name?, offer? }. A grey "guide" bot
+ *               flies to each step's element, says something and a card explains
+ *               it; it moves on by itself (back / pause / next / close, ← → Esc).
+ *               Step: { target: CSS selector, title, text (HTML), say, wave? },
+ *               each text a string or { en: "…", es: "…" }. Inside text,
+ *               <span class="mc-kb"> shows only with a mouse/keyboard and
+ *               <span class="mc-tch"> only on touch screens. offer (true): the
+ *               first-visit hint offers the tour. Progress is remembered.
  *
  * Returns { me, peers, room, ghost, stats, lang, setRoom(), setGhost(), setIdentity(),
  *           setLang(), open("people"|"profile"|"chat"|"reactions"), close(),
- *           react(emoji), follow(id), unfollow(), destroy() }.
+ *           react(emoji), follow(id), unfollow(), startTour(step?), stopTour(),
+ *           tour → { active, step, total, saved }, destroy() }.
  *
  * Protocol (JSON over WebSocket, connecting to <url>?room=<room>):
  *   client → server  { t:"update", name?, color?, avatar?, uid?, x?, y?, visible?, chat?, sel? }
@@ -105,6 +114,9 @@
         name: "Name", color: "Color", colorN: "Color {c}",
         random: "🎲 Random", randomTip: "Random name and color", save: "Save",
         autoSave: "Saves automatically", saved: "✓ Saved", bot: "Bot", botTip: "Bot: not a real person",
+        guide: "Guide", guideTip: "Your tour guide", tourLabel: "Guided tour", tourStep: "{n} of {total}",
+        tourBack: "Back", tourNext: "Next", tourDone: "Finish", tourPause: "Pause", tourPlay: "Resume",
+        tourClose: "Close the tour", tourOffer: "Take the tour",
         ghost: "Ghost mode", ghostHelp: "Hides other people's cursors and stops sharing yours.",
         nHere: "{n} here", nHereLabel: "{n} people here. See who they are",
         onlyYou: "Just you", nobodyYet: "Nobody else yet", onlyYouLabel: "Just you on this page"
@@ -148,6 +160,9 @@
         name: "Nombre", color: "Color", colorN: "Color {c}",
         random: "🎲 Al azar", randomTip: "Nombre y color al azar", save: "Guardar",
         autoSave: "Se guarda solo", saved: "✓ Guardado", bot: "Bot", botTip: "Bot: no es una persona real",
+        guide: "Guía", guideTip: "Tu guía del tour", tourLabel: "Tour guiado", tourStep: "{n} de {total}",
+        tourBack: "Atrás", tourNext: "Siguiente", tourDone: "Terminar", tourPause: "Pausar", tourPlay: "Seguir",
+        tourClose: "Cerrar el tour", tourOffer: "Haz el tour",
         ghost: "Modo fantasma", ghostHelp: "Oculta los cursores de los demás y deja de compartir el tuyo.",
         nHere: "{n} aquí", nHereLabel: "{n} personas aquí. Ver quiénes son",
         onlyYou: "Solo tú", nobodyYet: "Aún no hay nadie más", onlyYouLabel: "Solo tú en esta página"
@@ -169,7 +184,9 @@
   var CHAT_MAX_W = 216;     // the chat box grows in width up to this (px), then wraps and grows in height…
   var CHAT_MAX_LINES = 4;   // …up to this many lines; then it stops accepting more
   var CHAT_LINE_H = 17;
-  var UI = ".mc-presence,.mc-local,.mc-layer,.mc-pop,.mc-picker,.mc-coach,.mc-follow";
+  var UI = ".mc-presence,.mc-local,.mc-layer,.mc-pop,.mc-picker,.mc-coach,.mc-follow,.mc-tour";
+  var GUIDE_COLOR = "#5F5F66";   // the tour guide is grey: no visitor color looks like it
+  var TOUR_KEY = "mc:tour";
 
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function rand(a, b) { return a + Math.random() * (b - a); }
@@ -287,7 +304,7 @@
     ".mc-local textarea::placeholder{color:inherit;opacity:.65}",
     ".mc-measure{position:absolute;left:0;top:0;visibility:hidden;white-space:pre;pointer-events:none;font:400 14px/1.2 " + FONT + "}",
     /* ---------- pill, panels, tooltip and first-visit hint ---------- */
-    ".mc-presence,.mc-pop,.mc-picker,.mc-coach{background:#fff;color:#1E1E1E;border:1px solid rgba(0,0,0,.08);",
+    ".mc-presence,.mc-pop,.mc-picker,.mc-coach,.mc-tour{background:#fff;color:#1E1E1E;border:1px solid rgba(0,0,0,.08);",
     "  box-shadow:0 8px 28px rgba(0,0,0,.14);font:500 13px/1.3 " + FONT + "}",
     ".mc-presence{position:fixed;right:16px;bottom:16px;display:flex;align-items:center;gap:2px;z-index:2147483002;",
     "  border-radius:999px;padding:4px;max-width:calc(100vw - 32px)}",
@@ -320,7 +337,7 @@
     ".mc-tooltip.mc-on{opacity:1;transform:none}",
     ".mc-tooltip kbd{font:600 11px/1 ui-monospace,Menlo,monospace;background:rgba(255,255,255,.18);border-radius:4px;padding:2px 5px;margin-left:8px}",
     "@media (hover:none){.mc-tooltip{display:none}}",
-    ".mc-pop kbd,.mc-coach kbd{font:600 11px/1 ui-monospace,Menlo,monospace;border:1px solid rgba(0,0,0,.18);border-bottom-width:2px;",
+    ".mc-pop kbd,.mc-coach kbd,.mc-tour kbd{font:600 11px/1 ui-monospace,Menlo,monospace;border:1px solid rgba(0,0,0,.18);border-bottom-width:2px;",
     "  border-radius:5px;padding:1px 5px;margin:0 1px}",
     /* panels */
     ".mc-pop{position:fixed;right:16px;bottom:68px;z-index:2147483003;border-radius:16px;width:300px;max-width:calc(100vw - 32px);",
@@ -401,6 +418,29 @@
     ".mc-coach p{margin:0 0 14px;font-weight:400;opacity:.75;line-height:1.5}",
     ".mc-coach::after{content:'';position:absolute;right:34px;bottom:-7px;width:12px;height:12px;background:inherit;",
     "  border-right:1px solid rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.08);transform:rotate(45deg)}",
+    /* guided tour: spotlight on the element + explanation card */
+    ".mc-spot{position:fixed;left:0;top:0;z-index:2147482998;pointer-events:none;border-radius:16px;display:none;",
+    "  box-shadow:0 0 0 2px rgba(255,255,255,.75),0 0 0 200vmax rgba(18,18,22,.3)}",
+    ".mc-spot.mc-on{display:block}",
+    ".mc-tour{position:fixed;left:16px;bottom:16px;z-index:2147483003;width:370px;max-width:calc(100vw - 32px);box-sizing:border-box;",
+    "  border-radius:16px;padding:14px 16px 14px;animation:mc-in .2s ease-out}",
+    ".mc-tour-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}",
+    ".mc-guide-chip{display:inline-flex;align-items:center;gap:6px;background:" + GUIDE_COLOR + ";color:#fff;font-size:12px;",
+    "  font-weight:600;padding:4px 8px;border-radius:3px 12px 12px 12px}",
+    ".mc-tour-count{margin-left:auto;font-size:12px;font-weight:500;opacity:.55;font-variant-numeric:tabular-nums}",
+    ".mc-tour-x{width:28px;height:28px;font-size:13px;opacity:.6}.mc-tour-x:hover{opacity:1}",
+    ".mc-tour h4{margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-.01em}",
+    ".mc-tour-text{font-size:13.5px;font-weight:400;line-height:1.55;opacity:.85}",
+    ".mc-tour code{font:500 12px ui-monospace,Menlo,monospace}",
+    ".mc-tour .mc-tch{display:none}.mc-tour.mc-touch .mc-tch{display:inline}.mc-tour.mc-touch .mc-kb{display:none}",
+    ".mc-tour-bar{height:3px;border-radius:3px;background:rgba(0,0,0,.08);margin:14px 0 12px;overflow:hidden}",
+    ".mc-tour-bar i{display:block;height:100%;width:0;background:" + GUIDE_COLOR + "}",
+    ".mc-tour-row{display:flex;gap:8px;align-items:center}",
+    ".mc-tour-row .mc-btn{height:32px;padding:0 12px;font-size:12.5px;font-weight:600}",
+    ".mc-tour-row .mc-btn:disabled{opacity:.35;cursor:default}",
+    ".mc-tour-row .mc-primary{margin-left:auto}",
+    "@media (max-width:820px){.mc-tour{left:8px;right:8px;bottom:68px;width:auto;max-width:none}}",
+    ".mc-coach .mc-row{justify-content:flex-start}",
     /* follow mode */
     ".mc-follow{position:fixed;inset:0;border:3px solid;pointer-events:none;z-index:2147482999;display:none}",
     ".mc-follow.mc-on{display:block}",
@@ -411,7 +451,7 @@
     ".mc-follow button:focus-visible{outline:2px solid #0D99FF}",
     /* dark mode */
     "@media (prefers-color-scheme:dark){",
-    "  .mc-presence,.mc-pop,.mc-picker,.mc-coach{background:#1f1f1f;border-color:rgba(255,255,255,.1);color:#EEE}",
+    "  .mc-presence,.mc-pop,.mc-picker,.mc-coach,.mc-tour{background:#1f1f1f;border-color:rgba(255,255,255,.1);color:#EEE}",
     "  .mc-avatar{border-color:#1f1f1f}.mc-btn:hover,.mc-btn[aria-expanded=true]{background:rgba(255,255,255,.08)}",
     "  .mc-sep{background:rgba(255,255,255,.12)}.mc-avatar.mc-more{background:#333;color:#ddd}",
     "  .mc-pill-btn,.mc-primary,.mc-act.mc-on{background:#fff;color:#1E1E1E;border-color:#fff}",
@@ -420,7 +460,8 @@
     "  .mc-head,.mc-foot{border-color:rgba(255,255,255,.08)}.mc-divider{background:rgba(255,255,255,.08)}",
     "  .mc-person:hover{background:rgba(255,255,255,.05)}.mc-switch{background:rgba(255,255,255,.2)}",
     "  .mc-swatch[aria-pressed=true]{box-shadow:0 0 0 2px #1f1f1f,0 0 0 4px currentColor}",
-    "  .mc-pop kbd,.mc-coach kbd{border-color:rgba(255,255,255,.25)}",
+    "  .mc-pop kbd,.mc-coach kbd,.mc-tour kbd{border-color:rgba(255,255,255,.25)}",
+    "  .mc-tour-bar{background:rgba(255,255,255,.12)}.mc-tour-bar i{background:#A1A1AA}",
     "  .mc-coach::after{border-color:rgba(255,255,255,.1)}}"
   ].join("\n");
 
@@ -758,6 +799,8 @@
     var serverStats = { room: 0, site: 0, peak: 0 }, statsKey = "";
     var bots = [];
     var wave = { x: null, dir: 0, run: 0, flips: [], at: -1e9 };
+    var tourSteps = opts.tour && opts.tour.steps && opts.tour.steps.length ? opts.tour.steps : null;
+    var tour = null, spot = null, card = null, tourEls = {};
 
     // ---- DOM ----
     var style = el("style"); style.textContent = CSS; document.head.appendChild(style);
@@ -862,7 +905,7 @@
 
     // First-visit hint: what this is and how to use it (shown once)
     function showCoach() {
-      if (!presence || ghost || coach || opts.onboarding === false || store("localStorage", "mc:onboarded")) return;
+      if (!presence || ghost || coach || tour || opts.onboarding === false || store("localStorage", "mc:onboarded")) return;
       coach = el("div", "mc-coach", document.body);
       coach.setAttribute("role", "dialog");
       coach.setAttribute("aria-label", t("coachLabel"));
@@ -873,7 +916,13 @@
       if (reactions) tips.push(t(touchUI ? "coachReactTouch" : "coachReact"));
       el("p", "", coach).innerHTML = t("coachBody") +
         (tips.length ? " " + t(touchUI ? "coachButtons" : "coachShortcuts") + " " + tips.join(" " + t("and") + " ") + "." : "");
-      var ok = el("button", "mc-btn mc-pill-btn", coach);
+      var row = el("div", "mc-row", coach);
+      if (tourSteps && opts.tour.offer !== false) {
+        var go = el("button", "mc-btn mc-pill-btn", row);
+        go.type = "button"; go.textContent = "▶ " + t("tourOffer");
+        go.addEventListener("click", function () { dismissCoach(); startTour(0); });
+      }
+      var ok = el("button", tourSteps ? "mc-btn mc-outline" : "mc-btn mc-pill-btn", row);
       ok.type = "button"; ok.textContent = t("gotIt");
       ok.addEventListener("click", dismissCoach);
     }
@@ -1006,6 +1055,7 @@
       store("localStorage", "mc:ghost", ghost);
       layer.classList.toggle("mc-off", ghost);
       if (ghost) {
+        stopTour(false);
         if (local.classList.contains("mc-open")) closeChat(false);
         unfollow(); closePicker(); closePop();
         disconnect();
@@ -1051,6 +1101,14 @@
         if (p) upsertPeer({ id: b.id, name: nameFor(b.gen, lang) });
         if (p && p.badge) { p.badge.textContent = t("bot"); p.badge.title = t("botTip"); }
       });
+      if (peers.guide) {
+        upsertPeer({ id: "guide", name: guideName() });
+        peers.guide.badge.textContent = t("guide"); peers.guide.badge.title = t("guideTip");
+      }
+      if (tour) {
+        renderCard();
+        if (tour.arrived) { tour.typing = null; upsertPeer({ id: "guide", chat: tx(tourSteps[tour.i].say) }); }
+      }
       applyStaticTexts();
       if (peopleBtn) peopleBtn._key = null;
       if (meBtn) meBtn._key = null;
@@ -1327,7 +1385,7 @@
     }
     function activeBots() {
       var n = 0;
-      for (var id in peers) if (peers[id].bot && !peers[id].retired) n++;
+      for (var id in peers) if (peers[id].bot && !peers[id].retired && !peers[id].guide) n++;
       return n;
     }
 
@@ -1336,7 +1394,7 @@
       var arr = [{ id: null, me: true, name: me.name, color: me.color, avatar: me.avatar }];
       for (var id in peers) {
         var p = peers[id];
-        if (p.name && !p.retired && !p.self) arr.push(p);
+        if (p.name && !p.retired && !p.self && !p.guide) arr.push(p);
       }
       return arr;
     }
@@ -1559,7 +1617,7 @@
         return (!!a.bot - !!b.bot) || (!!a.idle - !!b.idle) || (b.lastActive - a.lastActive);
       });
       list.forEach(function (p, i) {
-        var capped = i >= maxCursors && p.id !== following;
+        var capped = i >= maxCursors && p.id !== following && !p.guide;
         if (capped !== !!p.capped) { p.capped = capped; p.el.classList.toggle("mc-capped", capped); }
       });
       emitStats();
@@ -1676,6 +1734,15 @@
 
     function updateBots(now) {
       updateBotRetirement();
+      if (tour) {                                      // during the tour they step aside and keep quiet
+        bots.forEach(function (b) {
+          var p = peers[b.id];
+          if (p && p.visible && !p.retired) upsertPeer({ id: b.id, visible: false, chat: "" });
+          b.chat = null; b.seg = null; b.wave = null; b.here = false; b.waitUntil = now + 1500;
+          b.modeUntil = now + rand(3000, 9000);
+        });
+        return;
+      }
       bots.forEach(function (b) {
         var p = peers[b.id];
         if (!p || p.retired) return;
@@ -1756,13 +1823,213 @@
       });
     }
 
+    // ---- guided tour ----
+    // A grey guide bot flies to each step's element (the page scrolls there),
+    // types a short line in its bubble and a card explains the step in detail.
+    // It moves on by itself after enough time to read; you can go back, pause,
+    // skip or close. Other bots step aside meanwhile. Only you see the guide.
+    function tx(v) { return v == null ? "" : typeof v === "string" ? v : (v[lang] || v.en || ""); }
+    function guideName() { return tx((opts.tour && opts.tour.name) || { en: "Capybara", es: "Capibara" }); }
+    function plain(html) { var d = document.createElement("div"); d.innerHTML = html; return d.textContent || ""; }
+    function readMs(step) {                          // ~220 words per minute + a moment to look
+      var words = (tx(step.title) + " " + plain(tx(step.text))).split(/\s+/).filter(Boolean).length;
+      return Math.max(8000, words * 270 + 3000);
+    }
+    function isFixed(node) {
+      for (; node && node.nodeType === 1; node = node.parentElement) {
+        if (getComputedStyle(node).position === "fixed") return true;
+      }
+      return false;
+    }
+
+    function ensureGuide() {
+      var p = peers.guide;
+      if (!p) {
+        var at = myPoint();
+        upsertPeer({ id: "guide", name: guideName(), color: GUIDE_COLOR, x: at.x - 80, y: at.y - 60, visible: true });
+        p = peers.guide;
+        p.bot = true; p.guide = true;
+        p.el.classList.add("mc-is-guide");
+        p.badge = el("span", "mc-badge", p.nameEl);
+      }
+      p.badge.textContent = t("guide"); p.badge.title = t("guideTip");
+      if (!p.visible) upsertPeer({ id: "guide", visible: true });
+      return p;
+    }
+
+    function buildTourUI() {
+      spot = el("div", "mc-spot", document.body);
+      card = el("div", "mc-tour", document.body);
+      card.setAttribute("role", "dialog");
+      var head = el("div", "mc-tour-head", card);
+      tourEls.chip = el("span", "mc-guide-chip", head);
+      tourEls.count = el("span", "mc-tour-count", head);
+      tourEls.x = el("button", "mc-btn mc-tour-x", head);
+      tourEls.x.type = "button"; tourEls.x.textContent = "✕";
+      tourEls.x.addEventListener("click", function () { stopTour(false); });
+      tourEls.title = el("h4", "", card);
+      tourEls.text = el("div", "mc-tour-text", card);
+      tourEls.text.setAttribute("aria-live", "polite");
+      tourEls.bar = el("i", "", el("div", "mc-tour-bar", card));
+      var row = el("div", "mc-tour-row", card);
+      tourEls.back = el("button", "mc-btn mc-outline", row);
+      tourEls.pause = el("button", "mc-btn mc-outline", row);
+      tourEls.next = el("button", "mc-btn mc-primary", row);
+      [tourEls.back, tourEls.pause, tourEls.next].forEach(function (b) { b.type = "button"; });
+      tourEls.back.addEventListener("click", tourBack);
+      tourEls.next.addEventListener("click", tourNext);
+      tourEls.pause.addEventListener("click", function () { if (tour) { tour.paused = !tour.paused; renderCard(); } });
+    }
+
+    function renderCard() {
+      if (!card || !tour) return;
+      var step = tourSteps[tour.i], n = tourSteps.length, last = tour.i === n - 1;
+      card.classList.toggle("mc-touch", isTouchUI());
+      card.setAttribute("aria-label", t("tourLabel"));
+      tourEls.chip.innerHTML = "";
+      el("span", "", tourEls.chip).textContent = guideName();
+      el("span", "mc-badge", tourEls.chip).textContent = t("guide");
+      tourEls.count.textContent = t("tourStep", { n: tour.i + 1, total: n });
+      tourEls.x.setAttribute("aria-label", t("tourClose")); tourEls.x.title = t("tourClose");
+      tourEls.title.textContent = tx(step.title);
+      tourEls.text.innerHTML = tx(step.text);
+      tourEls.back.textContent = "← " + t("tourBack");
+      tourEls.back.disabled = tour.i === 0;
+      tourEls.pause.textContent = tour.paused ? "▶ " + t("tourPlay") : "❚❚ " + t("tourPause");
+      tourEls.pause.setAttribute("aria-pressed", String(tour.paused));
+      tourEls.next.textContent = last ? t("tourDone") + " ✓" : t("tourNext") + " →";
+    }
+
+    // Where the guide points: near the top-left of the element, once scrolled to `sy`
+    function guidePoint(target, sy, fixed) {
+      var vx, vy;
+      if (!target) { vx = innerWidth * 0.45; vy = innerHeight * 0.3; }
+      else {
+        var r = target.getBoundingClientRect();
+        vx = r.left + Math.min(r.width * 0.3, 140);
+        vy = fixed ? r.top - 70 : r.top + global.scrollY - sy + Math.min(r.height * 0.35, 70);
+      }
+      return { x: vx + global.scrollX - originX(), y: vy + sy };
+    }
+
+    function goStep(i) {
+      var step = tourSteps[i], now = performance.now(), p = ensureGuide();
+      tour.i = i; tour.arrived = false; tour.elapsed = 0; tour.dur = readMs(step);
+      tour.typing = null; tour.waveAnim = null; tour.last = now;
+      store("localStorage", TOUR_KEY, i);
+      upsertPeer({ id: "guide", chat: "" });
+      var target = null;
+      try { target = step.target ? document.querySelector(step.target) : null; } catch (e) {}
+      tour.target = target;
+      var fixed = !!target && isFixed(target), sy = global.scrollY;
+      if (target && !fixed) {                        // bring it into the upper part of the screen
+        var r = target.getBoundingClientRect(), top = r.top + global.scrollY;
+        var want = r.height > innerHeight * 0.55 ? top - 90 : top - Math.max(90, (innerHeight - r.height) * 0.3);
+        sy = Math.max(0, Math.min(want, document.documentElement.scrollHeight - innerHeight));
+        global.scrollTo({ top: sy, behavior: reducedMotion ? "instant" : "smooth" });
+      }
+      var to = guidePoint(target, sy, fixed);
+      var dx = to.x - p.x, dy = to.y - p.y, dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      if (reducedMotion || dist < 4) {
+        p.x = p.cx = to.x; p.y = p.cy = to.y; tour.seg = null;
+        tourArrive(now);
+      } else {
+        var nx = -dy / dist, ny = dx / dist, k1 = rand(-0.2, 0.2) * dist, k2 = rand(-0.15, 0.15) * dist;
+        tour.seg = { t0: now, dur: Math.max(600, Math.min(1500, 400 + dist * 0.7)),
+          x0: p.x, y0: p.y, x3: to.x, y3: to.y,
+          x1: p.x + dx * 0.3 + nx * k1, y1: p.y + dy * 0.3 + ny * k1,
+          x2: p.x + dx * 0.7 + nx * k2, y2: p.y + dy * 0.7 + ny * k2 };
+      }
+      renderCard();
+      kick();
+    }
+
+    function tourArrive(now) {
+      var step = tourSteps[tour.i], p = peers.guide;
+      tour.arrived = true;
+      tour.typing = { text: tx(step.say), i: 0, nextAt: now + 150 };
+      if (step.wave && waveEmoji) {
+        if (reducedMotion) spawnReaction(p, waveEmoji);
+        else tour.waveAnim = { t0: now, x: p.x };
+      }
+    }
+
+    function updateTour(now) {
+      var p = peers.guide;
+      if (!p) return;
+      var dt = Math.max(0, Math.min(100, now - tour.last));
+      tour.last = now;
+      if (tour.seg) {                                // flying (cubic Bézier curve)
+        var s = tour.seg, tt = Math.min(1, (now - s.t0) / s.dur), e = ease(tt), u = 1 - e;
+        p.x = u*u*u*s.x0 + 3*u*u*e*s.x1 + 3*u*e*e*s.x2 + e*e*e*s.x3;
+        p.y = u*u*u*s.y0 + 3*u*u*e*s.y1 + 3*u*e*e*s.y2 + e*e*e*s.y3;
+        setActive(p, now);
+        if (tt >= 1) { tour.seg = null; tourArrive(now); }
+      } else if (tour.waveAnim) {                    // waving: quick side-to-side shake
+        var wt = now - tour.waveAnim.t0;
+        p.x = tour.waveAnim.x + Math.sin(wt / 55) * 16;
+        setActive(p, now);
+        if (wt > 700) { p.x = tour.waveAnim.x; tour.waveAnim = null; spawnReaction(p, waveEmoji); }
+      }
+      var c = tour.typing;                           // types its line letter by letter
+      if (c && now >= c.nextAt) {
+        c.i++; c.nextAt = now + rand(30, 70);
+        upsertPeer({ id: "guide", chat: c.text.slice(0, c.i) });
+        if (c.i >= c.text.length) tour.typing = null;
+      }
+      if (tour.arrived && !tour.paused && !document.hidden) tour.elapsed += dt;
+      tourEls.bar.style.width = Math.min(100, tour.elapsed / tour.dur * 100) + "%";
+      var tg = tour.target;                          // spotlight on the element
+      if (tg && tg.isConnected) {
+        var r = tg.getBoundingClientRect(), pad = 8;
+        spot.style.left = (r.left - pad) + "px"; spot.style.top = (r.top - pad) + "px";
+        spot.style.width = (r.width + pad * 2) + "px"; spot.style.height = (r.height + pad * 2) + "px";
+        spot.classList.add("mc-on");
+      } else spot.classList.remove("mc-on");
+      if (tour.elapsed >= tour.dur) tourNext();
+    }
+
+    function tourNext() {
+      if (!tour) return;
+      if (tour.i < tourSteps.length - 1) goStep(tour.i + 1);
+      else stopTour(true);
+    }
+    function tourBack() { if (tour && tour.i > 0) goStep(tour.i - 1); }
+
+    function startTour(i) {
+      if (!tourSteps || destroyed) return;
+      if (ghost) setGhost(false);
+      closePop(); closePicker(); dismissCoach(); unfollow(); hideTip();
+      if (local.classList.contains("mc-open")) closeChat(false);
+      if (i == null) { var saved = store("localStorage", TOUR_KEY); i = typeof saved === "number" ? saved : 0; }
+      i = Math.max(0, Math.min(tourSteps.length - 1, i | 0));
+      if (!tour) { tour = { i: 0, paused: false }; buildTourUI(); }
+      tour.paused = false;
+      goStep(i);
+    }
+
+    // done=true: finished (forgets the progress and the guide waves goodbye)
+    function stopTour(done) {
+      if (!tour) return;
+      tour = null;
+      if (done) store("localStorage", TOUR_KEY, null);
+      if (spot) { spot.remove(); spot = null; }
+      if (card) { card.remove(); card = null; }
+      var p = peers.guide;
+      if (!p) return;
+      upsertPeer({ id: "guide", chat: "" });
+      if (done && waveEmoji) spawnReaction(p, waveEmoji);
+      setTimeout(function () { if (peers.guide === p && !tour) removePeer("guide"); }, done ? 900 : 0);
+    }
+
     // ---- animation ----
     function kick() { if (!raf && !ghost && !destroyed) raf = requestAnimationFrame(tick); }
     function tick(now) {
       raf = 0;
       if (ghost) return;
       if (bots.length) updateBots(now || performance.now());
-      var ox = originX(), moving = bots.length > 0 || following !== null;
+      if (tour) updateTour(now || performance.now());
+      var ox = originX(), moving = bots.length > 0 || following !== null || !!tour;
       // clientWidth (not scrollWidth): a far-away cursor never causes horizontal scroll
       var maxX = document.documentElement.clientWidth - 24;
       for (var id in peers) {
@@ -1967,6 +2234,11 @@
     }
     function onKey(e) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (tour && !isTyping(e.target)) {
+        if (e.key === "ArrowRight") { e.preventDefault(); tourNext(); return; }
+        if (e.key === "ArrowLeft") { e.preventDefault(); tourBack(); return; }
+        if (e.key === "Escape" && !openPop && !picker) { stopTour(false); return; }
+      }
       if (e.key === "Escape") { closePicker(); closePop(); unfollow(); return; }
       if (picker && /^[1-9]$/.test(e.key) && reactions[+e.key - 1]) {
         e.preventDefault(); var emo = reactions[+e.key - 1]; closePicker(); react(emo); return;
@@ -2051,7 +2323,15 @@
       react: react,
       follow: follow,
       unfollow: unfollow,
+      startTour: startTour,
+      stopTour: function () { stopTour(false); },
+      get tour() {
+        var saved = store("localStorage", TOUR_KEY);
+        return { active: !!tour, step: tour ? tour.i : -1, total: tourSteps ? tourSteps.length : 0,
+          saved: typeof saved === "number" ? saved : null };
+      },
       destroy: function () {
+        stopTour(false);
         destroyed = true;
         clearTimeout(chatTimer); clearTimeout(last.pending); clearTimeout(selTimer); clearTimeout(resizeTimer);
         clearInterval(houseTimer);

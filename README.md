@@ -45,6 +45,7 @@ The demo is a landing page that explains every part of the pill, with demos that
 | 😴 **Idle** | Cursors that stop moving fade out with animated "zzz" |
 | 📱 **Phones and tablets** | Your finger is your cursor; chat and reactions from the pill's buttons |
 | 🤖 **Optional bots** | Companion visitors, labelled **BOT**. When real people arrive they step out, but one always stays |
+| 🧭 **Guided tour** | A grey guide flies to each part of the page and explains it, step by step, moving on by itself (`tour`) |
 | 🌍 **Languages** | English (default) and Spanish; add your own with `strings` |
 | ♿ **Accessible** | Keyboard friendly, ARIA labels, dark mode and reduced motion |
 
@@ -104,6 +105,7 @@ In **React / Next.js**, call it inside a `useEffect` in the root layout and retu
 | `name`, `color`, `avatar` | random | Fixed or initial identity |
 | `onStats` | — | Get `{ page, site, peak }` to use in your own UI |
 | `onboarding` | `true` | Welcome hint on the first visit |
+| `tour` | — | Guided tour: `{ steps: [...] }`, offered on the first visit |
 
 Every option (26 of them) is in the [documentation](docs/DOCUMENTATION.md#5-roomfulinit-options).
 
@@ -118,6 +120,7 @@ mc.setIdentity("Boss Capybara", "#A259FF");
 mc.setGhost(true);
 mc.setRoom("/another-room");
 mc.follow(id); mc.unfollow();
+mc.startTour(); mc.stopTour();                           // guided tour (continues where it was left)
 mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang;
 mc.destroy();
 ```

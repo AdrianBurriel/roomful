@@ -92,6 +92,7 @@
   .btn:hover{transform:translateY(-1px)}
   .btn:active{transform:translateY(1px)}
   .btn.solid{background:var(--ink);color:var(--canvas)}
+  .btn:disabled{opacity:.55;cursor:default;transform:none}
   .btn:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
   .note{font-size:14px;margin-top:14px}
@@ -303,6 +304,10 @@
     <div class="kicker"><span class="num">↘</span> <span data-i18n="heroKicker">Come on in</span></div>
     <h1 data-i18n="heroTitle">Someone else is <em>reading</em> this.</h1>
     <p class="lede" data-i18n="heroLede">Right now, everyone on this page is in the room with you. You meet them through one small piece: the pill in the bottom-right corner, your door to the room. It has four parts; here's each one, and every demo is real.</p>
+    <div class="actions hero-tour">
+      <button class="btn solid" type="button" data-tour>▶ Take the guided tour</button>
+      <button class="btn" type="button" data-tour-restart hidden>Start over</button>
+    </div>
 
     <div class="frame anatomy" data-size="Pill · 2× scale" data-i18n-attr="data-size:anatomySize">
       <span class="frame-label" data-i18n="anatomyLabel">Anatomy</span>
@@ -588,10 +593,14 @@
   var DYN = {
     en: { here: "{n} here", alone: "Just you", ghostOn: "○ Ghost mode: nobody sees you", ghostOff: "● Visible to others",
           ghostBtnOn: "Become visible again", ghostBtnOff: "Turn on ghost mode", copied: "Copied!",
-          title: "Roomful · Your website, with people in it", me: "ME" },
+          title: "Roomful · Your website, with people in it", me: "ME",
+          tourStart: "▶ Take the guided tour · 4 min", tourContinue: "▶ Continue the tour (step {n} of {total})",
+          tourActive: "Tour in progress…", tourRestart: "Start over" },
     es: { here: "{n} aquí", alone: "Solo tú", ghostOn: "○ Modo fantasma: nadie te ve", ghostOff: "● Visible para los demás",
           ghostBtnOn: "Volver a ser visible", ghostBtnOff: "Activar modo fantasma", copied: "¡Copiado!",
-          title: "Roomful · Tu web, con gente dentro", me: "TÚ" }
+          title: "Roomful · Tu web, con gente dentro", me: "TÚ",
+          tourStart: "▶ Haz el tour guiado · 4 min", tourContinue: "▶ Continuar el tour (paso {n} de {total})",
+          tourActive: "Tour en marcha…", tourRestart: "Empezar de cero" }
   };
   var LANG_KEY = "multicursor:lang";
 
@@ -652,8 +661,99 @@
   applyLang();
   // Published (Vercel): real-time through Ably. Locally: through server.py at /ws.
   var isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  // ---- Guided tour: the grey guide walks you through the whole landing ----
+  // Texts written for each language (not word-for-word). <span class="mc-kb"> only shows
+  // with a mouse/keyboard, <span class="mc-tch"> only on touch screens.
+  var TOUR = [
+    { target: ".hero h1", wave: true,
+      say: { en: "Hi! Let me show you around 👋", es: "¡Hola! Te enseño esto 👋" },
+      title: { en: "Welcome to the room", es: "Bienvenido a la sala" },
+      text: {
+        en: "This isn't just any page: <b>it's a room</b>. Everyone who has it open right now is here with you, and you see their cursors move live, each with their own name and color. I'm your guide, in grey so you won't mistake me for anyone else. I move on by myself, but you can go <b>back</b>, <b>pause</b> or <b>close</b> the tour whenever you like<span class=\"mc-kb\"> (also with <kbd>←</kbd> <kbd>→</kbd> and <kbd>Esc</kbd>)</span>.",
+        es: "Esta no es una página cualquiera: <b>es una sala</b>. Todos los que la tienen abierta ahora mismo están aquí contigo, y ves sus cursores moverse en directo, cada uno con su nombre y su color. Yo soy tu guía, en gris para que no me confundas con nadie. Avanzo sola, pero puedes ir <b>atrás</b>, <b>pausar</b> o <b>cerrar</b> el tour cuando quieras<span class=\"mc-kb\"> (también con <kbd>←</kbd> <kbd>→</kbd> y <kbd>Esc</kbd>)</span>."
+      } },
+    { target: ".mc-presence",
+      say: { en: "This is the pill 👇", es: "Esta es la píldora 👇" },
+      title: { en: "The pill: your door to the room", es: "La píldora: tu puerta a la sala" },
+      text: {
+        en: "Bottom right, always at hand. It has four parts: <b>the faces</b> (who's here), <b>💬 chat</b>, <b>🙂 reactions</b> and, at the end, <b>your own face</b>, which opens your profile. At the top of the page there's an enlarged replica with each part numbered. Let's go through them one by one.",
+        es: "Abajo a la derecha, siempre a mano. Tiene cuatro partes: <b>las caras</b> (quién hay), <b>💬 chat</b>, <b>🙂 reacciones</b> y, al final, <b>tu propia cara</b>, que abre tu perfil. Arriba del todo tienes una réplica en grande con cada parte numerada. Vamos a verlas una a una."
+      } },
+    { target: "#people .mock",
+      say: { en: "Here's who's around", es: "Aquí ves quién hay" },
+      title: { en: "1 · People", es: "1 · Personas" },
+      text: {
+        en: "The faces and the number on the pill tell you how full the room is. Click them and a panel like this one opens: how many of you are on this page, how many on the whole site and today's peak. Below, everyone with their status: <b>Active</b>, <b>Typing…</b> or <b>Away</b> (when they've been still for a while or switched tabs). Bots carry a <b>BOT</b> label.",
+        es: "Las caras y el número de la píldora te dicen cómo de llena está la sala. Púlsalas y se abre un panel como este: cuántos estáis en esta página, cuántos en toda la web y el pico de hoy. Debajo, cada persona con su estado: <b>Activo</b>, <b>Escribiendo…</b> o <b>Ausente</b> (si lleva un rato quieta o ha cambiado de pestaña). Los bots llevan la etiqueta <b>BOT</b>."
+      } },
+    { target: "#people .mock-list",
+      say: { en: "You can follow anyone", es: "Puedes seguir a cualquiera" },
+      title: { en: "Follow someone", es: "Seguir a alguien" },
+      text: {
+        en: "Next to each person there's a <b>Follow</b> button. Click it and your page moves along with theirs, so you see what they see while they browse. A frame in their color surrounds your screen so you always know you're following someone. To let go, click the banner at the top<span class=\"mc-kb\">, turn the mouse wheel or press <kbd>Esc</kbd></span><span class=\"mc-tch\"> or swipe to scroll</span>.",
+        es: "Junto a cada persona hay un botón <b>Seguir</b>. Al pulsarlo, tu página se mueve con la suya y ves lo mismo que ella mientras navega. Un marco de su color rodea tu pantalla para que siempre sepas que estás siguiendo a alguien. Para soltarla, pulsa el aviso de arriba<span class=\"mc-kb\">, gira la rueda del ratón o pulsa <kbd>Esc</kbd></span><span class=\"mc-tch\"> o desliza para hacer scroll</span>."
+      } },
+    { target: "#chat .scene",
+      say: { en: "This is how we talk here!", es: "¡Así se habla aquí!" },
+      title: { en: "2 · Chat next to your cursor", es: "2 · Chat junto al cursor" },
+      text: {
+        en: "<span class=\"mc-kb\">Press <kbd>/</kbd> or click</span><span class=\"mc-tch\">Tap</span> the speech bubble 💬 on the pill and type: your message appears next to your cursor and everyone sees it <b>letter by letter</b>, like this bubble of mine. The box grows with what you write, up to four lines. <span class=\"mc-kb\"><kbd>Enter</kbd> leaves it on screen for a few seconds and <kbd>Esc</kbd> clears it.</span><span class=\"mc-tch\">Send it with your keyboard's send key and it fades after a few seconds.</span>",
+        es: "<span class=\"mc-kb\">Pulsa <kbd>/</kbd> o el</span><span class=\"mc-tch\">Toca el</span> bocadillo 💬 de la píldora y escribe: tu mensaje aparece junto a tu cursor y todos lo ven <b>letra a letra</b>, como esta burbuja mía. La caja crece con lo que escribes, hasta cuatro líneas. <span class=\"mc-kb\"><kbd>Enter</kbd> lo deja unos segundos a la vista y <kbd>Esc</kbd> lo borra.</span><span class=\"mc-tch\">Envíalo con la tecla de enviar del teclado y desaparecerá a los pocos segundos.</span>"
+      } },
+    { target: "#reactions .emoji-grid",
+      say: { en: "Go on, react 🎉", es: "Venga, reacciona 🎉" },
+      title: { en: "3 · Reactions", es: "3 · Reacciones" },
+      text: {
+        en: "<span class=\"mc-kb\">Press <kbd>E</kbd> wherever your cursor is, or click the smiley 🙂 on the pill,</span><span class=\"mc-tch\">Tap the smiley 🙂 on the pill</span> and pick an emoji: it floats up from your cursor and the whole room sees it. <span class=\"mc-kb\">With the picker open, the number keys <kbd>1</kbd>–<kbd>8</kbd> pick one straight away. </span>These emojis here work too: try any of them.",
+        es: "<span class=\"mc-kb\">Pulsa <kbd>E</kbd> donde tengas el cursor, o la carita 🙂 de la píldora,</span><span class=\"mc-tch\">Toca la carita 🙂 de la píldora</span> y elige un emoji: sale flotando desde tu cursor y lo ve toda la sala. <span class=\"mc-kb\">Con el selector abierto, las teclas <kbd>1</kbd>–<kbd>8</kbd> eligen uno directamente. </span>Estos emojis de aquí también funcionan: prueba cualquiera."
+      } },
+    { target: ".wave-demo", wave: true,
+      say: { en: "Like this! 👋", es: "¡Así! 👋" },
+      title: { en: "Wave hello", es: "Saludar" },
+      text: {
+        en: "<span class=\"mc-kb\">Shake your cursor quickly from side to side, like I just did, and a 👋 floats up for the whole room. It takes a clear back-and-forth so it doesn't go off by accident, and there's at most one every couple of seconds.</span><span class=\"mc-tch\">With a mouse, shaking the cursor quickly from side to side, like I just did, sends a 👋 to the whole room. On a touch screen, use the reactions instead.</span> The regulars wave too, now and then, when they arrive.",
+        es: "<span class=\"mc-kb\">Agita el cursor rápido de lado a lado, como acabo de hacer yo, y sale un 👋 flotando para toda la sala. Hace falta un vaivén claro para que no salte sin querer, y como mucho sale uno cada par de segundos.</span><span class=\"mc-tch\">Con ratón, agitar el cursor rápido de lado a lado, como acabo de hacer yo, manda un 👋 a toda la sala. En pantalla táctil, usa las reacciones.</span> Los habituales también saludan a veces al llegar."
+      } },
+    { target: "#profile .duo > .card:first-child",
+      say: { en: "This is how they see you", es: "Así te ven los demás" },
+      title: { en: "4 · Your profile", es: "4 · Tu perfil" },
+      text: {
+        en: "Your face, at the right end of the pill, opens your profile. There you choose your <b>name</b>, <b>color</b> and <b>photo</b> (it's cropped and shrunk in your browser), or hit 🎲 for a random name and color. <b>It saves on its own</b> as soon as you change anything, no button, and we'll remember you next time you visit from this browser. <span class=\"mc-kb\">Look at your cursor: it wears your color and your name, just as the others see it.</span>",
+        es: "Tu cara, al final de la píldora, abre tu perfil. Ahí eliges tu <b>nombre</b>, tu <b>color</b> y tu <b>foto</b> (se recorta y se reduce en tu navegador), o pulsas 🎲 para un nombre y un color al azar. <b>Se guarda solo</b> en cuanto cambias algo, sin botón, y te recordamos la próxima vez que entres desde este navegador. <span class=\"mc-kb\">Fíjate en tu cursor: lleva tu color y tu nombre, tal y como lo ven los demás.</span>"
+      } },
+    { target: "#profile .duo > .card:last-child",
+      say: { en: "Rather go unnoticed?", es: "¿Prefieres pasar desapercibido?" },
+      title: { en: "Ghost mode", es: "Modo fantasma" },
+      text: {
+        en: "Your profile also has the <b>Ghost mode</b> switch. Turn it on and you stop seeing everyone else's cursors, and you disconnect completely: nobody sees you, not even in the list. The pill shrinks to “Cursors hidden · <b>Show</b>” so you can come back whenever you want, and your choice is remembered for next time.",
+        es: "En tu perfil también está el interruptor <b>Modo fantasma</b>. Al activarlo dejas de ver los cursores de los demás y te desconectas del todo: nadie te ve, ni siquiera en la lista. La píldora se queda en «Cursores ocultos · <b>Mostrar</b>» para que vuelvas cuando quieras, y tu elección se recuerda para la próxima vez."
+      } },
+    { target: ".trio > .frame:first-child",
+      say: { en: "Everything shows here", es: "Aquí todo se nota" },
+      title: { en: "Clicks and selection", es: "Clics y selección" },
+      text: {
+        en: "Even without touching the pill, the room notices: every <b>click</b> leaves a ripple in your color on everyone else's screen, and the <b>text you select</b> shows up highlighted in your color for them, even if their screen is a different size. Try clicking inside this box.",
+        es: "Aunque no toques la píldora, la sala se entera: cada <b>clic</b> deja una onda de tu color en la pantalla de los demás, y el <b>texto que seleccionas</b> les aparece resaltado con tu color, aunque su pantalla sea de otro tamaño. Prueba a hacer clic dentro de este recuadro."
+      } },
+    { target: ".bots",
+      say: { en: "You'll never be alone", es: "Nunca estarás solo" },
+      title: { en: "Idle and bots", es: "Reposo y bots" },
+      text: {
+        en: "If you don't move for 30 seconds, your cursor fades, dozes off (zzz) and the list shows you as <b>Away</b>. And if you walk into an empty room, a few regulars wander around the page, look at things and wave. They wear a <b>BOT</b> label so nobody mistakes them for people. When real people arrive most of them leave, but one always stays. Each visitor sees their own, and during this tour they step aside so they don't get in the way.",
+        es: "Si pasas 30 segundos sin moverte, tu cursor se atenúa, se echa una siesta (zzz) y en la lista sales como <b>Ausente</b>. Y si entras en una sala vacía, unos habituales se pasean por la página, curiosean y saludan. Llevan la etiqueta <b>BOT</b> para que nadie los confunda con personas. Cuando llega gente de verdad casi todos se van, pero uno se queda siempre. Cada visitante ve los suyos, y durante este tour se apartan para no estorbar."
+      } },
+    { target: "#integrate pre", wave: true,
+      say: { en: "That's all, see you! 👋", es: "¡Eso es todo, hasta luego! 👋" },
+      title: { en: "Want it on your website?", es: "¿Lo quieres en tu web?" },
+      text: {
+        en: "It takes two lines: the <code>roomful.js</code> script and <code>Roomful.init()</code>. It runs on your own server (<code>server.py</code>) or serverless on Vercel with Ably, and everything can be configured: language, bots, chat, reactions, even a tour like this one. The details are in the README on GitHub. You can replay the tour anytime from the button at the very top.",
+        es: "Son dos líneas: el script <code>roomful.js</code> y <code>Roomful.init()</code>. Funciona en tu propio servidor (<code>server.py</code>) o sin servidor en Vercel con Ably, y todo se puede configurar: idioma, bots, chat, reacciones, incluso un tour como este. Los detalles están en el README de GitHub. Puedes repetir el tour cuando quieras desde el botón de arriba del todo."
+      } }
+  ];
+
   var mc = window.mc = Roomful.init({
     lang: lang,
+    tour: { steps: TOUR, name: { en: "Capybara", es: "Capibara" } },
     ably: isLocal ? null : { authUrl: "/api/ably-token" },
     bots: 2,
     botTargets: "h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, pre",
@@ -692,6 +792,22 @@
   syncMe();
   setInterval(syncMe, 500);
 
+  // Hero tour button: start, continue where you left it, or start over
+  var tourKey = "";
+  function syncTour() {
+    var s = mc.tour, key = lang + s.active + s.saved;
+    if (key === tourKey) return;
+    tourKey = key;
+    var b = $("[data-tour]"), r = $("[data-tour-restart]");
+    var resume = !s.active && s.saved > 0;
+    b.textContent = s.active ? d("tourActive") : resume ? d("tourContinue", { n: s.saved + 1, total: s.total }) : d("tourStart");
+    b.disabled = s.active;
+    r.textContent = d("tourRestart");
+    r.hidden = !resume;
+  }
+  syncTour();
+  setInterval(syncTour, 300);
+
   // Language switch: the page and the pill change together, and the choice is remembered
   function setLang(l) {
     if (l === lang) return;
@@ -706,8 +822,10 @@
 
   // Landing buttons → the real pill
   document.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-open],[data-react],[data-copy],[data-lang]");
+    var b = e.target.closest("[data-open],[data-react],[data-copy],[data-lang],[data-tour],[data-tour-restart]");
     if (!b) return;
+    if (b.hasAttribute("data-tour")) { mc.startTour(); syncTour(); return; }
+    if (b.hasAttribute("data-tour-restart")) { mc.startTour(0); syncTour(); return; }
     if (b.hasAttribute("data-lang")) return setLang(b.getAttribute("data-lang"));
     if (b.hasAttribute("data-react")) return mc.react(b.getAttribute("data-react"));
     if (b.hasAttribute("data-copy")) {
