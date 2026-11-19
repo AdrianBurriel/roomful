@@ -614,12 +614,12 @@
     en: { here: "{n} here", alone: "Just you", ghostOn: "○ Ghost mode: nobody sees you", ghostOff: "● Visible to others",
           ghostBtnOn: "Become visible again", ghostBtnOff: "Turn on ghost mode", copied: "Copied!",
           title: "Roomful · Your website, with people in it", me: "ME",
-          tourStart: "▶ Take the guided tour · 4 min", tourContinue: "▶ Continue the tour (step {n} of {total})",
+          tourStart: "▶ Take the guided tour · 5 min", tourContinue: "▶ Continue the tour (step {n} of {total})",
           tourActive: "Tour in progress…", tourRestart: "Start over" },
     es: { here: "{n} aquí", alone: "Solo tú", ghostOn: "○ Modo fantasma: nadie te ve", ghostOff: "● Visible para los demás",
           ghostBtnOn: "Volver a ser visible", ghostBtnOff: "Activar modo fantasma", copied: "¡Copiado!",
           title: "Roomful · Tu web, con gente dentro", me: "TÚ",
-          tourStart: "▶ Haz el tour guiado · 4 min", tourContinue: "▶ Continuar el tour (paso {n} de {total})",
+          tourStart: "▶ Haz el tour guiado · 5 min", tourContinue: "▶ Continuar el tour (paso {n} de {total})",
           tourActive: "Tour en marcha…", tourRestart: "Empezar de cero" }
   };
   var LANG_KEY = "multicursor:lang";
@@ -773,8 +773,8 @@
       say: { en: "That's all, see you! 👋", es: "¡Eso es todo, hasta luego! 👋" },
       title: { en: "Want it on your website?", es: "¿Lo quieres en tu web?" },
       text: {
-        en: "It takes two lines: the <code>roomful.js</code> script and <code>Roomful.init()</code>. It runs on your own server (<code>server.py</code>) or serverless on Vercel with Ably, and everything can be configured: language, bots, chat, reactions, even a tour like this one. The details are in the README on GitHub. You can replay the tour anytime from the button at the very top.",
-        es: "Son dos líneas: el script <code>roomful.js</code> y <code>Roomful.init()</code>. Funciona en tu propio servidor (<code>server.py</code>) o sin servidor en Vercel con Ably, y todo se puede configurar: idioma, bots, chat, reacciones, incluso un tour como este. Los detalles están en el README de GitHub. Puedes repetir el tour cuando quieras desde el botón de arriba del todo."
+        en: "It takes two lines: the <code>roomful.js</code> script and <code>Roomful.init()</code>. It runs on your own server (<code>server.py</code>) or serverless on Vercel with Ably, and everything can be configured: language, bots, chat, reactions, even a tour like this one. The board is one more script, <code>roomful-board.js</code>, and keeps the drawings on your server or in Upstash Redis. The details are in the README on GitHub. You can replay the tour anytime from the button at the very top.",
+        es: "Son dos líneas: el script <code>roomful.js</code> y <code>Roomful.init()</code>. Funciona en tu propio servidor (<code>server.py</code>) o sin servidor en Vercel con Ably, y todo se puede configurar: idioma, bots, chat, reacciones, incluso un tour como este. La pizarra es un script más, <code>roomful-board.js</code>, y guarda los dibujos en tu servidor o en Upstash Redis. Los detalles están en el README de GitHub. Puedes repetir el tour cuando quieras desde el botón de arriba del todo."
       } }
   ];
 
@@ -786,9 +786,9 @@
     botTargets: "h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, .board-host, pre",
     botPhrases: {
       en: ["Hi 👋", "What does the eye do?", "Press E, you'll see", "Love this typography",
-        "Follow me 🏃", "This feels so Figma", "Testing the chat…", "Capybaras rule 🦫", "How many of us are there?"],
+        "Follow me 🏃", "This feels so Figma", "Testing the chat…", "Capybaras rule 🦫", "How many of us are there?", "Shall we draw something on the board? ✏️"],
       es: ["Hola 👋", "¿Qué hace el ojo?", "Pulsa la E, ya verás", "Me encanta esta tipografía",
-        "¿Me sigues? 🏃", "Esto es muy Figma", "Probando el chat…", "Capibaras al poder 🦫", "¿Cuántos somos?"]
+        "¿Me sigues? 🏃", "Esto es muy Figma", "Probando el chat…", "Capibaras al poder 🦫", "¿Cuántos somos?", "¿Dibujamos algo en la pizarra? ✏️"]
     },
     onStats: paintStats
   });

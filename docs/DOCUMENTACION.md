@@ -46,7 +46,9 @@ Son dos piezas:
 - **`public/roomful.js`** (cliente): un único script sin dependencias. Inyecta sus propios estilos (todas las clases empiezan por `mc-`), envía tu posición y tu estado, y dibuja los cursores de los demás y la píldora.
 - **`server.py`** (servidor): un relay WebSocket escrito solo con la librería estándar de Python. No tiene lógica de negocio. Agrupa a los clientes por sala, valida lo que recibe, guarda el último estado de cada uno para quien llegue después y lo reenvía al resto. También puede servir ficheros estáticos.
 
-No hay base de datos. Todo vive en la memoria del servidor y en el navegador de cada visitante.
+- **`public/roomful-board.js`** (complemento opcional): la pizarra compartida. Habla con `/api/board` en `server.py` o en Vercel ([§8.14](#814-pizarra-compartida)).
+
+No hay base de datos. Todo vive en la memoria del servidor y en el navegador de cada visitante, salvo la pizarra compartida, que se guarda en un archivo (`server.py`) o en Upstash Redis (Vercel).
 
 ## 2. Requisitos
 
@@ -68,8 +70,9 @@ python3 server.py                 # → http://localhost:8080
 - Otro puerto: `PORT=3000 python3 server.py`.
 - Para pararlo, pulsa `Ctrl+C`.
 - Comprobar que está vivo: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
+- La pizarra compartida se guarda en `board.json`, junto a `server.py` (git lo ignora). Bórralo para empezar con la pizarra vacía.
 
-La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, arranca con 2 bots tiene una pizarra compartida y un tour guiado de 13 pasos (se ofrece en la primera visita y siempre está disponible desde el botón de arriba). Está en **inglés por defecto** y tiene un selector **EN | ES** en la barra superior (también vale `?lang=es` en la URL); la elección se recuerda.
+La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, arranca con 2 bots, tiene una pizarra compartida y un tour guiado de 13 pasos (se ofrece en la primera visita y siempre está disponible desde el botón de arriba). Está en **inglés por defecto** y tiene un selector **EN | ES** en la barra superior (también vale `?lang=es` en la URL); la elección se recuerda.
 
 ## 4. Integrarlo en un proyecto
 
@@ -558,7 +561,8 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 - **Validación estricta** de cada campo ([§9.4](#94-validación-de-campos)): las fotos solo pueden ser imágenes rasterizadas pequeñas, los "emojis" no pueden ser texto y los colores solo pueden ser hexadecimales.
 - **Sin HTML de usuarios:** nombres, mensajes y emojis se insertan como texto (`textContent`), nunca como HTML.
 - **Lo que ven los demás:** nombre, color, foto, posición del cursor, mensajes de chat, clics, reacciones y qué texto seleccionas, siempre dentro de la misma sala. El panel de perfil avisa de que la foto la verán quienes estén en la página.
-- **Lo que no se guarda:** el servidor no escribe nada en disco; todo está en memoria y desaparece al desconectar o reiniciar.
+- **Lo que se guarda:** solo la pizarra compartida: sus dibujos (color, trazos, texto; sin nombres) y, para la tinta diaria, cuánto ha gastado ese día cada id de navegador y cada red (en Vercel la IP se guarda como hash, y estos contadores caducan a los dos días; en `server.py` solo están en memoria). Todo lo demás está en memoria y desaparece al desconectar o reiniciar.
+- **La pizarra no tiene moderación:** cualquiera puede dibujar o escribir cualquier cosa, y se queda hasta que se borra por ser lo más antiguo. El texto de la pizarra se pinta en el lienzo, nunca se inserta como HTML.
 - **Modo fantasma:** desconecta del todo.
 - **Id de navegador:** es aleatorio y no está ligado a ningún dato personal.
 
@@ -572,6 +576,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 | Selección | Máx. 120 rectángulos por persona |
 | Nombre / chat / foto | 32 caracteres / 140 caracteres / 14 000 caracteres |
 | Emojis / bots | 9 / 12 como máximo |
+| Pizarra compartida | 5.000 de tinta por navegador y día (25.000 por IP); 60.000 de tinta o 300 dibujos en la pizarra; 600 puntos por trazo, 60 caracteres por texto; se consulta al haber cambios y una vez por minuto mientras se ve |
 
 **Escalado:** el servidor es **un solo proceso** con todo en memoria. Con varias instancias, cada una tendría su propia lista de personas y no se verían entre ellas. Si en algún momento hace falta escalar más allá de una máquina, hay que añadir un canal compartido entre instancias (por ejemplo Redis pub/sub) o portar el relay a un servicio pensado para ello (Durable Objects, PartyKit). Para una web normal, un proceso con los límites por defecto (100 por sala, 5000 en total) sobra.
 
@@ -582,6 +587,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 - `aria-keyshortcuts` en los botones con atajo.
 - Con `prefers-reduced-motion`: sin bots, sin ondas de clic, reacciones más cortas y "zzz" estáticas.
 - Modo oscuro automático (`prefers-color-scheme`).
+- Pizarra compartida: las herramientas son botones con `aria-pressed` y tooltips, la tinta y los mensajes se anuncian (`aria-live`) y el lienzo tiene etiqueta. Dibujar requiere ratón, lápiz o dedo; el texto se puede teclear tras pulsar sobre la pizarra.
 
 ## 15. Personalización avanzada
 
@@ -614,6 +620,8 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 | Los bots no aparecen | Ya hay suficiente gente real (`botsRetireAt`), el visitante tiene *reducir movimiento* activado o `bots` es 0. |
 | La selección de otro no se resalta | El DOM de su página no coincide con el tuyo (contenido personalizado o dinámico). Es esperado. |
 | "No se ha podido usar esa imagen" | Formato no soportado por el navegador (p. ej. HEIC en algunos) o imagen dañada. Prueba con JPG o PNG. |
+| La pizarra dice "no disponible" | En Vercel, Upstash Redis no está conectado al proyecto (Storage → Upstash → Connect, y vuelve a desplegar). Con `server.py`, `BOARD_FILE` vale `""`. |
+| Ya no puedo dibujar | Has gastado la tinta de hoy: la barra indica cuándo se recarga (00:00 UTC). |
 | `address already in use` al arrancar | Ya hay algo en ese puerto: `lsof -i :8080` para verlo, o usa `PORT=3000`. |
 | Paneles duplicados en React | Falta `return () => mc.destroy()` en el `useEffect`. |
 

@@ -46,7 +46,9 @@ There are two pieces:
 - **`public/roomful.js`** (client): a single script with no dependencies. It injects its own styles (every class starts with `mc-`), sends your position and state, and draws other people's cursors and the pill.
 - **`server.py`** (server): a WebSocket relay written with the Python standard library only. It has no business logic: it groups clients by room, validates what it receives, keeps everyone's latest state for late joiners and forwards it to the rest. It can also serve static files.
 
-There is no database. Everything lives in the server's memory and in each visitor's browser.
+- **`public/roomful-board.js`** (optional add-on): the shared board. It talks to `/api/board` on `server.py` or on Vercel ([§8.14](#814-shared-board)).
+
+There is no database. Everything lives in the server's memory and in each visitor's browser, except the shared board, which is saved to a file (`server.py`) or to Upstash Redis (Vercel).
 
 ## 2. Requirements
 
@@ -68,8 +70,9 @@ python3 server.py                 # → http://localhost:8080
 - Another port: `PORT=3000 python3 server.py`.
 - Stop it with `Ctrl+C`.
 - Health check: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
+- The shared board is saved in `board.json` next to `server.py` (ignored by git). Delete it to start with an empty board.
 
-The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, starts with 2 bots has a shared board and a 13-step guided tour (offered on the first visit, always available from the button at the top). It is **in English by default** and has an **EN | ES** switch in the top bar (`?lang=es` in the URL also works); the choice is remembered.
+The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, starts with 2 bots, has a shared board and a 13-step guided tour (offered on the first visit, always available from the button at the top). It is **in English by default** and has an **EN | ES** switch in the top bar (`?lang=es` in the URL also works); the choice is remembered.
 
 ## 4. Adding it to a project
 
@@ -558,7 +561,8 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 - **Strict validation** of every field ([§9.4](#94-field-validation)): photos can only be small raster images, "emojis" can't be text and colors can only be hex.
 - **No HTML from users:** names, messages and emojis are inserted as text (`textContent`), never as HTML.
 - **What others see:** name, color, photo, cursor position, chat messages, clicks, reactions and which text you select, always within the same room. The profile panel warns that people on the page will see the photo.
-- **What's not stored:** the server writes nothing to disk; everything is in memory and disappears on disconnect or restart.
+- **What's stored:** only the shared board: its drawings (color, lines, text; no names) and, for the daily ink, how much each browser id and each network has used that day (on Vercel the IP is kept as a hash, and these counts expire after two days; in `server.py` they're only in memory). Everything else is in memory and disappears on disconnect or restart.
+- **The board isn't moderated:** anyone can draw or write anything, and it stays until it's erased for being the oldest. Board text is drawn on the canvas, never inserted as HTML.
 - **Ghost mode:** disconnects completely.
 - **Browser id:** random and not tied to any personal data.
 
@@ -572,6 +576,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 | Selection | Max. 120 rectangles per person |
 | Name / chat / photo | 32 characters / 140 characters / 14,000 characters |
 | Emojis / bots | 9 / 12 at most |
+| Shared board | 5,000 ink per browser and day (25,000 per IP); 60,000 ink or 300 drawings on the board; 600 points per stroke, 60 characters per text; fetched on changes and once a minute while visible |
 
 **Scaling:** the server is **a single process** with everything in memory. With several instances, each one would have its own list of people and they wouldn't see each other. If you ever need to scale beyond one machine, add a shared channel between instances (e.g. Redis pub/sub) or port the relay to a service built for it (Durable Objects, PartyKit). For a regular website, one process with the default limits (100 per room, 5000 in total) is plenty.
 
@@ -582,6 +587,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 - `aria-keyshortcuts` on buttons that have a shortcut.
 - With `prefers-reduced-motion`: no bots, no click ripples, shorter reactions and static "zzz".
 - Automatic dark mode (`prefers-color-scheme`).
+- Shared board: the tools are buttons with `aria-pressed` and tooltips, the ink and messages are announced (`aria-live`), and the canvas has a label. Drawing needs a mouse, pen or finger; text can be typed once you've clicked on the board.
 - The interface language is configurable (`lang`), and the demo updates `<html lang>` when it changes.
 
 ## 15. Advanced customization
@@ -615,6 +621,8 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 | Bots don't show up | There are enough real people (`botsRetireAt`), the visitor has *reduce motion* enabled, or `bots` is 0. |
 | Someone's selection isn't highlighted | Their page DOM differs from yours (personalized or dynamic content). Expected. |
 | "Couldn't use that image" | The browser doesn't support the format (e.g. HEIC in some) or the image is damaged. Try JPG or PNG. |
+| The board says "not available" | On Vercel, Upstash Redis isn't connected to the project (Storage → Upstash → Connect, then redeploy). With `server.py`, `BOARD_FILE` is set to `""`. |
+| I can't draw anymore | You've used today's ink: the bar shows when it refills (00:00 UTC). |
 | `address already in use` on start | Something already uses that port: `lsof -i :8080` to see it, or use `PORT=3000`. |
 | Duplicate panels in React | Missing `return () => mc.destroy()` in the `useEffect`. |
 
