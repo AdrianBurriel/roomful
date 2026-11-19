@@ -69,7 +69,7 @@ python3 server.py                 # → http://localhost:8080
 - Para pararlo, pulsa `Ctrl+C`.
 - Comprobar que está vivo: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
 
-La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, y arranca con 2 bots. Está en **inglés por defecto** y tiene un selector **EN | ES** en la barra superior (también vale `?lang=es` en la URL); la elección se recuerda.
+La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, arranca con 2 bots y tiene un tour guiado de 12 pasos (se ofrece en la primera visita y siempre está disponible desde el botón de arriba). Está en **inglés por defecto** y tiene un selector **EN | ES** en la barra superior (también vale `?lang=es` en la URL); la elección se recuerda.
 
 ## 4. Integrarlo en un proyecto
 
@@ -587,7 +587,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 roomful/
 ├── public/
 │   ├── roomful.js     # La integración (cliente)
-│   └── index.html         # Landing de demo que explica la píldora (EN/ES)
+│   └── index.html         # Landing de demo que explica la píldora, con tour guiado (EN/ES)
 ├── server.py              # Relay WebSocket + estáticos + /health
 ├── Dockerfile             # Imagen de despliegue
 ├── docs/

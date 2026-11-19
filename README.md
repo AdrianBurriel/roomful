@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇪🇸 [Español](README.es.md)
 
-**Turn any website into a room full of people.** Every page becomes a room: visitors see each other's cursors in real time, Figma multiplayer style, each one with a fun name ("Zen Capybara", "Ninja Axolotl"…). From a pill in the corner, their door to the room, they can see who's in, chat next to their cursor, react with emojis, follow someone and choose how they show up.
+**Turn any website into a room full of people.** Every page becomes a room: visitors see each other's cursors in real time, Figma multiplayer style, each one with a fun name ("Zen Capybara", "Ninja Axolotl"…). From a pill in the corner, their door to the room, they can see who's in, chat next to their cursor, react with emojis, wave, follow someone and choose how they show up. A grey guide can walk newcomers through it all.
 
 🔴 **Live demo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app). Open it in two different browsers (or on your phone and your computer) and watch your cursors meet. Tabs of the same browser count as you, so they don't show each other.
 
@@ -27,7 +27,7 @@ python3 server.py            # → http://localhost:8080
 
 Open `http://localhost:8080` and, to see yourself from the outside, also open it **in another browser or on another device on your network** (`http://<your-local-ip>:8080`). Tabs of the same browser count as the same person.
 
-The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty. It's in English by default, with an **EN | ES** switch in the top bar.
+The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty (labelled **BOT**; one always stays). A **guided tour** of 12 steps is offered on the first visit and is always available from the button at the top. It's in English by default, with an **EN | ES** switch in the top bar.
 
 ## What's included
 
@@ -36,7 +36,7 @@ The demo is a landing page that explains every part of the pill, with demos that
 | 🖱️ **Live cursors** | Smoothed movement, name and photo on the label, one room per page. Yours looks the same: an arrow in your color with your name |
 | 👥 **People** | Who's here, their status (active, typing, away) and live stats |
 | 🧭 **Follow** | Your page moves along with someone else's so you see what they see |
-| 💬 **Chat** | Messages that appear next to your cursor, letter by letter (`/`) |
+| 💬 **Chat** | Messages that appear next to your cursor, letter by letter (`/`); the box grows with the text, up to 4 lines |
 | 🎉 **Reactions** | Emojis that float up from your cursor (`E`) |
 | 👋 **Wave** | Shake your cursor quickly from side to side and you wave at the room |
 | ✨ **Clicks and selection** | Others see your clicks as ripples and the text you select |
@@ -45,7 +45,7 @@ The demo is a landing page that explains every part of the pill, with demos that
 | 😴 **Idle** | Cursors that stop moving fade out with animated "zzz" |
 | 📱 **Phones and tablets** | Your finger is your cursor; chat and reactions from the pill's buttons |
 | 🤖 **Optional bots** | Companion visitors, labelled **BOT**. When real people arrive they step out, but one always stays |
-| 🧭 **Guided tour** | A grey guide flies to each part of the page and explains it, step by step, moving on by itself (`tour`) |
+| 🗺️ **Guided tour** | A grey guide flies to each part of the page and explains it, step by step, moving on by itself (`tour`) |
 | 🌍 **Languages** | English (default) and Spanish; add your own with `strings` |
 | ♿ **Accessible** | Keyboard friendly, ARIA labels, dark mode and reduced motion |
 
@@ -61,11 +61,13 @@ The demo is a landing page that explains every part of the pill, with demos that
 | Part | What it does | Shortcut |
 |---|---|---|
 | **People** | List of who's here, with their status, the numbers (on this page, on the whole site, today's peak) and a **Follow** button | — |
-| **Chat** | Write next to your cursor; `Enter` keeps it for a few seconds, `Esc` clears it | `/` |
+| **Chat** | Write next to your cursor (up to 4 lines); `Enter` keeps it for a few seconds, `Esc` clears it | `/` |
 | **Reactions** | Emojis that float up from your cursor | `E` |
-| **Your profile** | Name, color, photo, 🎲 random and the **ghost mode** switch | — |
+| **Your profile** | Name, color, photo and 🎲 random, saved on their own as you change them (no Save button), plus the **ghost mode** switch | — |
 
-On a computer every button shows a tooltip with its shortcut; on phones and tablets you use the 💬 and 🙂 buttons instead. The first visit brings a welcome hint.
+On a computer every button shows a tooltip with its shortcut; on phones and tablets you use the 💬 and 🙂 buttons instead. The first visit brings a welcome hint that also offers the guided tour (if the site has one).
+
+Without touching the pill: shake your cursor quickly from side to side to wave 👋 at the room.
 
 ## Adding it to another project
 
@@ -107,7 +109,7 @@ In **React / Next.js**, call it inside a `useEffect` in the root layout and retu
 | `onboarding` | `true` | Welcome hint on the first visit |
 | `tour` | — | Guided tour: `{ steps: [...] }`, offered on the first visit |
 
-Every option (26 of them) is in the [documentation](docs/DOCUMENTATION.md#5-roomfulinit-options).
+Every option (30 of them) is in the [documentation](docs/DOCUMENTATION.md#5-roomfulinit-options).
 
 ### API
 
@@ -121,7 +123,7 @@ mc.setGhost(true);
 mc.setRoom("/another-room");
 mc.follow(id); mc.unfollow();
 mc.startTour(); mc.stopTour();                           // guided tour (continues where it was left)
-mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang;
+mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang; mc.tour;
 mc.destroy();
 ```
 
@@ -163,7 +165,8 @@ Every push to `main` redeploys automatically. The landing uses Ably when publish
 - **No authentication:** anyone who can open the page can join its room (with `server.py`, anyone with the WebSocket URL). Not suitable for private rooms as is.
 - **`server.py` is a single process with everything in memory:** it can't be spread across instances without adding a shared channel (e.g. Redis), and stats are lost on restart.
 - **The profile is per browser:** another browser or device starts from scratch.
-- **Bots are local:** each visitor sees their own (and at least one always stays, unless `botsMin: 0`).
+- **Bots are local:** each visitor sees their own (and at least one always stays, unless `botsMin: 0`). The tour guide is local too.
+- **Your own colored pointer** and the **wave** need a mouse; on touch screens your finger is the cursor and you wave with the reactions.
 - **With Ably,** "today's peak" is the highest number each visitor has seen, not a server-wide record, and every message counts towards your Ably plan.
 - **Shared selection** requires everyone to have the same content on the page.
 - **No automated tests:** checks have been done by hand and with test WebSocket clients.
@@ -171,8 +174,8 @@ Every push to `main` redeploys automatically. The landing uses Ably when publish
 ## Structure
 
 ```
-public/roomful.js   The integration (client)
-public/index.html       Demo landing page explaining the pill (EN/ES)
+public/roomful.js       The integration (client)
+public/index.html       Demo landing page explaining the pill, with a 12-step guided tour (EN/ES)
 server.py               WebSocket relay + static files + /health
 Dockerfile              Deployment image
 api/ably-token.js       Vercel function that issues Ably tokens

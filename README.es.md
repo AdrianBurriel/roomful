@@ -2,7 +2,7 @@
 
 🇬🇧 [English](README.md) · 🇪🇸 **Español**
 
-**Convierte cualquier web en una sala llena de gente.** Cada página es una sala: los visitantes ven los cursores de los demás en tiempo real, al estilo multijugador de Figma, cada uno con un nombre divertido ("Capibara Zen", "Ajolote Ninja"…). Desde una píldora en la esquina, su puerta a la sala, pueden ver quién hay, chatear junto al cursor, reaccionar con emojis, seguir a otra persona y elegir cómo aparecen.
+**Convierte cualquier web en una sala llena de gente.** Cada página es una sala: los visitantes ven los cursores de los demás en tiempo real, al estilo multijugador de Figma, cada uno con un nombre divertido ("Capibara Zen", "Ajolote Ninja"…). Desde una píldora en la esquina, su puerta a la sala, pueden ver quién hay, chatear junto al cursor, reaccionar con emojis, saludar, seguir a otra persona y elegir cómo aparecen. Una guía gris puede enseñárselo todo a quien llega por primera vez.
 
 🔴 **Demo en directo:** [roomful-sand.vercel.app](https://roomful-sand.vercel.app/?lang=es). Ábrela en dos navegadores distintos (o en el móvil y el ordenador) y mira cómo se encuentran vuestros cursores. Las pestañas del mismo navegador cuentan como tú, así que no se ven entre sí.
 
@@ -27,7 +27,7 @@ python3 server.py            # → http://localhost:8080
 
 Abre `http://localhost:8080` y, para verte desde fuera, ábrelo también **en otro navegador o en otro dispositivo de tu red** (`http://<tu-ip-local>:8080`). Las pestañas del mismo navegador se reconocen como la misma persona.
 
-La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía. Está en inglés por defecto, con un selector **EN | ES** en la barra superior.
+La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía (marcados como **BOT**; uno se queda siempre). Un **tour guiado** de 12 pasos se ofrece en la primera visita y está siempre disponible desde el botón de arriba. Está en inglés por defecto, con un selector **EN | ES** en la barra superior.
 
 ## Qué incluye
 
@@ -36,7 +36,7 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 | 🖱️ **Cursores en vivo** | Movimiento suavizado, nombre y foto en la etiqueta, una sala por página. El tuyo se ve igual: una flecha de tu color con tu nombre |
 | 👥 **Personas** | Quién está, su estado (activo, escribiendo, ausente) y estadísticas en directo |
 | 🧭 **Seguir** | Tu página se mueve con la de otra persona para ver lo mismo que ella |
-| 💬 **Chat** | Mensajes que aparecen junto a tu cursor, letra a letra (`/`) |
+| 💬 **Chat** | Mensajes que aparecen junto a tu cursor, letra a letra (`/`); la caja crece con el texto, hasta 4 líneas |
 | 🎉 **Reacciones** | Emojis que flotan desde tu cursor (`E`) |
 | 👋 **Saludo** | Agita el cursor rápido de lado a lado y saludas a la sala |
 | ✨ **Clics y selección** | Los demás ven tus clics como ondas y el texto que seleccionas |
@@ -45,7 +45,7 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 | 😴 **Reposo** | Los cursores quietos se atenúan con unas "zzz" animadas |
 | 📱 **Móvil y tablet** | Tu dedo es tu cursor; chat y reacciones desde los botones de la píldora |
 | 🤖 **Bots opcionales** | Visitantes de compañía, marcados con la etiqueta **BOT**. Se retiran cuando llega gente real, pero siempre se queda uno |
-| 🧭 **Tour guiado** | Una guía gris vuela a cada parte de la página y la explica paso a paso, avanzando sola (`tour`) |
+| 🗺️ **Tour guiado** | Una guía gris vuela a cada parte de la página y la explica paso a paso, avanzando sola (`tour`) |
 | 🌍 **Idiomas** | Inglés (por defecto) y español; añade los tuyos con `strings` |
 | ♿ **Accesible** | Manejable con teclado, etiquetas ARIA, modo oscuro y reducir movimiento |
 
@@ -61,11 +61,13 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 | Parte | Qué hace | Atajo |
 |---|---|---|
 | **Personas** | Lista de quién está, con su estado, las cifras (en esta página, en la web, pico de hoy) y un botón **Seguir** | — |
-| **Chat** | Escribir junto a tu cursor; `Enter` lo deja unos segundos, `Esc` lo borra | `/` |
+| **Chat** | Escribir junto a tu cursor (hasta 4 líneas); `Enter` lo deja unos segundos, `Esc` lo borra | `/` |
 | **Reacciones** | Emojis que flotan desde tu cursor | `E` |
-| **Tu perfil** | Nombre, color, foto, 🎲 al azar y el interruptor de **modo fantasma** | — |
+| **Tu perfil** | Nombre, color, foto y 🎲 al azar, que se guardan solos al cambiarlos (sin botón Guardar), y el interruptor de **modo fantasma** | — |
 
-En el ordenador cada botón muestra un tooltip con su atajo; en móvil y tablet se usan los botones 💬 y 🙂. La primera visita trae un aviso de bienvenida.
+En el ordenador cada botón muestra un tooltip con su atajo; en móvil y tablet se usan los botones 💬 y 🙂. La primera visita trae un aviso de bienvenida que además ofrece el tour guiado (si la web tiene uno).
+
+Sin tocar la píldora: agita el cursor rápido de lado a lado para saludar 👋 a la sala.
 
 ## Integrarlo en otro proyecto
 
@@ -107,7 +109,7 @@ En **React / Next.js**, llámalo dentro de un `useEffect` en el layout raíz y d
 | `onboarding` | `true` | Aviso de bienvenida en la primera visita |
 | `tour` | — | Tour guiado: `{ steps: [...] }`, ofrecido en la primera visita |
 
-Todas las opciones (26) están en la [documentación](docs/DOCUMENTACION.md#5-opciones-de-roomfulinit).
+Todas las opciones (30) están en la [documentación](docs/DOCUMENTACION.md#5-opciones-de-roomfulinit).
 
 ### API
 
@@ -121,7 +123,7 @@ mc.setGhost(true);
 mc.setRoom("/otra-sala");
 mc.follow(id); mc.unfollow();
 mc.startTour(); mc.stopTour();                           // tour guiado (sigue donde se dejó)
-mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang;
+mc.me; mc.peers; mc.room; mc.ghost; mc.stats; mc.lang; mc.tour;
 mc.destroy();
 ```
 
@@ -163,7 +165,8 @@ Cada push a `main` se despliega solo. La landing usa Ably cuando está publicada
 - **Sin autenticación:** cualquiera que pueda abrir la página entra en su sala (con `server.py`, cualquiera con la URL del WebSocket). No sirve para salas privadas tal cual.
 - **`server.py` es un solo proceso con todo en memoria:** no se puede repartir entre varias instancias sin añadir un canal compartido (p. ej. Redis), y las estadísticas se pierden al reiniciar.
 - **El perfil es por navegador:** en otro navegador o dispositivo se empieza de cero.
-- **Los bots son locales:** cada visitante ve los suyos (y siempre se queda al menos uno, salvo con `botsMin: 0`).
+- **Los bots son locales:** cada visitante ve los suyos (y siempre se queda al menos uno, salvo con `botsMin: 0`). La guía del tour también es local.
+- **Tu puntero de color** y el **saludo** necesitan ratón; en pantallas táctiles tu dedo es el cursor y se saluda con las reacciones.
 - **Con Ably,** el "pico de hoy" es el máximo que ha visto cada visitante, no un récord del servidor, y cada mensaje cuenta en tu plan de Ably.
 - **La selección compartida** requiere que todos tengan el mismo contenido en la página.
 - **Sin tests automáticos:** las comprobaciones se han hecho a mano y con clientes WebSocket de prueba.
@@ -171,8 +174,8 @@ Cada push a `main` se despliega solo. La landing usa Ably cuando está publicada
 ## Estructura
 
 ```
-public/roomful.js   La integración (cliente)
-public/index.html       Landing de demo que explica la píldora (EN/ES)
+public/roomful.js       La integración (cliente)
+public/index.html       Landing de demo que explica la píldora, con un tour guiado de 12 pasos (EN/ES)
 server.py               Relay WebSocket + estáticos + /health
 Dockerfile              Imagen de despliegue
 api/ably-token.js       Función de Vercel que entrega tokens de Ably

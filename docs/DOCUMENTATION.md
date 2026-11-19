@@ -69,7 +69,7 @@ python3 server.py                 # → http://localhost:8080
 - Stop it with `Ctrl+C`.
 - Health check: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
 
-The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, and starts with 2 bots. It is **in English by default** and has an **EN | ES** switch in the top bar (`?lang=es` in the URL also works); the choice is remembered.
+The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, starts with 2 bots and has a 12-step guided tour (offered on the first visit, always available from the button at the top). It is **in English by default** and has an **EN | ES** switch in the top bar (`?lang=es` in the URL also works); the choice is remembered.
 
 ## 4. Adding it to a project
 
@@ -588,7 +588,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 roomful/
 ├── public/
 │   ├── roomful.js     # The integration (client)
-│   └── index.html         # Demo landing page explaining the pill (EN/ES)
+│   └── index.html         # Demo landing page explaining the pill, with a guided tour (EN/ES)
 ├── server.py              # WebSocket relay + static files + /health
 ├── Dockerfile             # Deployment image
 ├── docs/
