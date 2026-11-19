@@ -14,7 +14,7 @@
  * Returns { setLang(l), refresh(), destroy() }.
  *
  * Everyone draws in their profile color (there's no color picker) and has a
- * daily amount of ink, spent as you draw (thick pen: double) or write (per
+ * amount of ink that refills every 3 hours (a live countdown shows when), spent as you draw (thick pen: double) or write (per
  * letter). Hovering a drawing shows who made it. Drawings stay on the board; when it's full, the oldest
  * ones are erased first, so there's always something there. The server
  * (api/board.js on Vercel or server.py) checks the ink and keeps the board.
@@ -30,8 +30,9 @@
       label: "Shared board", pen: "Pen", thick: "Marker", text: "Text",
       penTip: "Thin pen", thickTip: "Thick marker (uses double ink)", textTip: "Write text: click on the board",
       by: "✏️ {name}", someone: "✏️ Someone",
-      ink: "Ink", inkLeft: "{p}% of today's ink left", refill: "Refills in {t}", refillSoon: "Refills in a moment",
-      noInk: "You're out of ink for today. It refills in {t}.",
+      ink: "Ink", inkLeft: "{p}% of your ink left", refill: "Refills in {t}", refillSoon: "Refills in a moment",
+      refillTip: "Your ink refills completely every 3 hours",
+      noInk: "You're out of ink for now. It refills in {t}.",
       notEnough: "Not enough ink for that. You have {p}% left.",
       full: "Board {p}% full · the oldest drawings fade and get erased first",
       textPlaceholder: "Write and press Enter", textCost: "{c} ink",
@@ -42,8 +43,9 @@
       label: "Pizarra compartida", pen: "Lápiz", thick: "Rotulador", text: "Texto",
       penTip: "Lápiz fino", thickTip: "Rotulador grueso (gasta el doble de tinta)", textTip: "Escribir texto: pulsa sobre la pizarra",
       by: "✏️ {name}", someone: "✏️ Alguien",
-      ink: "Tinta", inkLeft: "Te queda un {p}% de la tinta de hoy", refill: "Se recarga en {t}", refillSoon: "Se recarga enseguida",
-      noInk: "Se te ha acabado la tinta de hoy. Se recarga en {t}.",
+      ink: "Tinta", inkLeft: "Te queda un {p}% de tu tinta", refill: "Se recarga en {t}", refillSoon: "Se recarga enseguida",
+      refillTip: "Tu tinta se recarga entera cada 3 horas",
+      noInk: "Se te ha acabado la tinta por ahora. Se recarga en {t}.",
       notEnough: "No te llega la tinta para eso. Te queda un {p}%.",
       full: "Pizarra llena al {p}% · lo más antiguo se atenúa y se borra primero",
       textPlaceholder: "Escribe y pulsa Enter", textCost: "{c} de tinta",
@@ -65,6 +67,7 @@
     ".rb-meter{flex:1;height:8px;border-radius:8px;background:var(--rb-hover);overflow:hidden;min-width:90px}",
     ".rb-meter i{display:block;height:100%;border-radius:8px;transition:width .3s,background .3s}",
     ".rb-ink small{font-size:12px;opacity:.7;white-space:nowrap}",
+    ".rb-ink .rb-reset{font-variant-numeric:tabular-nums;padding-left:8px;border-left:1px solid var(--rb-line)}",
     ".rb-stage{position:relative;aspect-ratio:16/10;border-radius:14px;overflow:hidden;border:1px solid var(--rb-line);",
     "  background:var(--rb-paper);background-image:radial-gradient(var(--rb-dotc) 1px,transparent 1.2px);background-size:24px 24px}",
     ".rb-stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}",
@@ -143,6 +146,7 @@
     var meter = el("div", "rb-meter", inkBox);
     var meterFill = el("i", "", meter);
     var inkPct = el("small", "", inkBox);
+    var resetTxt = el("small", "rb-reset", inkBox);   // live countdown to the next refill
 
     var stage = el("div", "rb-stage", box);
     var canvas = el("canvas", "", stage);
@@ -171,6 +175,7 @@
         x[0].querySelector("span").textContent = t(x[1]); x[0].title = t(x[2]);
       });
       inkLabel.textContent = t("ink");
+      resetTxt.title = t("refillTip");
       emptyMsg.textContent = t(state.offline ? "offline" : "empty");
       if (input) input.placeholder = t("textPlaceholder");
       paintInk(); paintFull();
@@ -190,6 +195,13 @@
       if (text) msgTimer = setTimeout(function () { msg.textContent = ""; }, bad ? 6000 : 2500);
     }
 
+    // "Refills in 2:14:05", ticking every second
+    function paintClock() {
+      if (!state.ink) { resetTxt.textContent = ""; return; }
+      var s = Math.max(0, Math.ceil((state.ink.resetAt - Date.now()) / 1000));
+      var hms = Math.floor(s / 3600) + ":" + ("0" + Math.floor(s % 3600 / 60)).slice(-2) + ":" + ("0" + s % 60).slice(-2);
+      resetTxt.textContent = "↻ " + t("refill", { t: hms });
+    }
     function untilReset() {
       if (!state.ink) return "";
       var ms = state.ink.resetAt - Date.now();
@@ -200,12 +212,13 @@
     }
     function leftNow() { return state.ink ? Math.max(0, state.ink.left - inkPreview) : 0; }
     function paintInk() {
-      if (!state.ink) { inkPct.textContent = ""; meterFill.style.width = "0"; return; }
+      if (!state.ink) { inkPct.textContent = ""; resetTxt.textContent = ""; meterFill.style.width = "0"; return; }
       var p = Math.round(leftNow() / state.ink.max * 100);
       meterFill.style.width = p + "%";
       meterFill.style.background = p > 25 ? myColor() : "#E5484D";
       inkPct.textContent = p + "%";
       meter.title = t("inkLeft", { p: p }) + " · " + t("refill", { t: untilReset() });
+      paintClock();
     }
     function paintFull() {
       var p = Math.min(100, Math.round(state.total / state.cap * 100));
@@ -482,10 +495,10 @@
     if (ro) ro.observe(stage); else global.addEventListener("resize", resize);
     var lastColor = myColor();
     var colorTimer = setInterval(function () { if (lastColor !== myColor()) { lastColor = myColor(); paintInk(); } }, 1000);
-    var clockTimer = setInterval(function () {               // new day: the ink refills
-      if (state.ink && Date.now() > state.ink.resetAt) refresh();
-      paintInk();
-    }, 30000);
+    var clockTimer = setInterval(function () {               // the countdown, and the refill when it hits zero
+      if (state.ink && Date.now() >= state.ink.resetAt) { state.ink.resetAt += 60000; refresh(); }
+      paintClock();
+    }, 1000);
 
     canvas.addEventListener("pointerdown", onDown);
     canvas.addEventListener("pointermove", function (e) { if (drawing) onMove(e); else hover(e); });

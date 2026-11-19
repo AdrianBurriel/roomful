@@ -391,7 +391,7 @@ board.setLang("en"); board.refresh(); board.destroy();
 
 - **Herramientas:** lápiz (fino) y rotulador (grueso, el doble de tinta), siempre con el color de tu perfil (a propósito no hay selector de color: tu color es tu firma), y **texto** (pulsa, escribe hasta 60 caracteres, `Enter`). Cada dibujo se envía al terminarlo.
 - **Quién lo dibujó:** cada dibujo se guarda con el nombre de Roomful de su autor (`mc.me.name` en ese momento). Al pasar el ratón por encima se ve ese nombre en una etiqueta del color del dibujo, encima del puntero (la etiqueta de tu propio cursor va debajo). Los dibujos guardados sin nombre muestran "Alguien". En pantallas táctiles no hay "pasar por encima", así que no se muestra.
-- **Tinta:** 5.000 unidades por navegador y día; un trazo cuesta su longitud en unidades de la pizarra (que mide 1600 × 1000), el rotulador el doble y el texto 40 por carácter. Una barra muestra lo que queda y cuándo se recarga (00:00 UTC). Si se acaba a mitad de trazo, el trazo termina ahí. Quien la controla es el servidor: por id de navegador, y 25.000 por IP para que una red compartida no abuse.
+- **Tinta:** 5.000 unidades por navegador, que se recargan enteras **cada 3 horas** (a las 00:00, 03:00, 06:00… UTC; `INK_PERIOD_H` en `api/board.js`, `INK_PERIOD` en `server.py`); un trazo cuesta su longitud en unidades de la pizarra (que mide 1600 × 1000), el rotulador el doble y el texto 40 por carácter. Una barra muestra lo que queda y, al lado, una **cuenta atrás en directo** hasta la próxima recarga (`↻ Se recarga en 2:14:05`, se actualiza cada segundo); al llegar a cero, la pizarra pide la tinta nueva sola. Si se acaba a mitad de trazo, el trazo termina ahí. Quien la controla es el servidor: por id de navegador, y 25.000 por IP y periodo para que una red compartida no abuse.
 - **Capacidad:** cuando la tinta de la pizarra pasa de 60.000 (o hay más de 300 dibujos), se borran los más antiguos hasta que quepa; el más nuevo se queda siempre. Los más antiguos se atenúan un poco cuando la pizarra está llena a tres cuartos, para que se vea qué está a punto de irse.
 - **En directo:** al guardarse un dibujo, `mc.signal("board")` avisa a la sala y la pizarra de los demás pide los cambios. También los pide al aparecer en pantalla, al volver a la pestaña y cada minuto mientras se ve. El dibujo en sí aparece cuando está terminado.
 - **Guardado:** `server.py` la guarda en `BOARD_FILE` (JSON); en Vercel, `api/board.js` la guarda en Upstash Redis con un script atómico. Los dos aplican las mismas reglas (constantes al principio de cada archivo).
@@ -562,7 +562,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 - **Validación estricta** de cada campo ([§9.4](#94-validación-de-campos)): las fotos solo pueden ser imágenes rasterizadas pequeñas, los "emojis" no pueden ser texto y los colores solo pueden ser hexadecimales.
 - **Sin HTML de usuarios:** nombres, mensajes y emojis se insertan como texto (`textContent`), nunca como HTML.
 - **Lo que ven los demás:** nombre, color, foto, posición del cursor, mensajes de chat, clics, reacciones y qué texto seleccionas, siempre dentro de la misma sala. El panel de perfil avisa de que la foto la verán quienes estén en la página.
-- **Lo que se guarda:** solo la pizarra compartida: sus dibujos (color, trazos, texto y el nombre de Roomful de su autor, que ve cualquiera que pase por encima) y, para la tinta diaria, cuánto ha gastado ese día cada id de navegador y cada red (en Vercel la IP se guarda como hash, y estos contadores caducan a los dos días; en `server.py` solo están en memoria). Todo lo demás está en memoria y desaparece al desconectar o reiniciar.
+- **Lo que se guarda:** solo la pizarra compartida: sus dibujos (color, trazos, texto y el nombre de Roomful de su autor, que ve cualquiera que pase por encima) y, para la tinta, cuánto ha gastado cada id de navegador y cada red en el periodo de 3 horas actual (en Vercel la IP se guarda como hash, y estos contadores caducan a los dos periodos; en `server.py` solo están en memoria). Todo lo demás está en memoria y desaparece al desconectar o reiniciar.
 - **La pizarra no tiene moderación:** cualquiera puede dibujar o escribir cualquier cosa, y se queda hasta que se borra por ser lo más antiguo. El texto de la pizarra se pinta en el lienzo, nunca se inserta como HTML.
 - **Modo fantasma:** desconecta del todo.
 - **Id de navegador:** es aleatorio y no está ligado a ningún dato personal.
@@ -577,7 +577,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 | Selección | Máx. 120 rectángulos por persona |
 | Nombre / chat / foto | 32 caracteres / 140 caracteres / 14 000 caracteres |
 | Emojis / bots | 9 / 12 como máximo |
-| Pizarra compartida | 5.000 de tinta por navegador y día (25.000 por IP); 60.000 de tinta o 300 dibujos en la pizarra; 600 puntos por trazo, 60 caracteres por texto; se consulta al haber cambios y una vez por minuto mientras se ve |
+| Pizarra compartida | 5.000 de tinta por navegador cada 3 horas (25.000 por IP); 60.000 de tinta o 300 dibujos en la pizarra; 600 puntos por trazo, 60 caracteres por texto; se consulta al haber cambios y una vez por minuto mientras se ve |
 
 **Escalado:** el servidor es **un solo proceso** con todo en memoria. Con varias instancias, cada una tendría su propia lista de personas y no se verían entre ellas. Si en algún momento hace falta escalar más allá de una máquina, hay que añadir un canal compartido entre instancias (por ejemplo Redis pub/sub) o portar el relay a un servicio pensado para ello (Durable Objects, PartyKit). Para una web normal, un proceso con los límites por defecto (100 por sala, 5000 en total) sobra.
 
@@ -622,7 +622,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 | La selección de otro no se resalta | El DOM de su página no coincide con el tuyo (contenido personalizado o dinámico). Es esperado. |
 | "No se ha podido usar esa imagen" | Formato no soportado por el navegador (p. ej. HEIC en algunos) o imagen dañada. Prueba con JPG o PNG. |
 | La pizarra dice "no disponible" | En Vercel, Upstash Redis no está conectado al proyecto (Storage → Upstash → Connect, y vuelve a desplegar). Con `server.py`, `BOARD_FILE` vale `""`. |
-| Ya no puedo dibujar | Has gastado la tinta de hoy: la barra indica cuándo se recarga (00:00 UTC). |
+| Ya no puedo dibujar | Has gastado tu tinta: la cuenta atrás junto a la barra indica cuándo se recarga (cada 3 horas). |
 | `address already in use` al arrancar | Ya hay algo en ese puerto: `lsof -i :8080` para verlo, o usa `PORT=3000`. |
 | Paneles duplicados en React | Falta `return () => mc.destroy()` en el `useEffect`. |
 

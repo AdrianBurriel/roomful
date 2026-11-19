@@ -391,7 +391,7 @@ board.setLang("en"); board.refresh(); board.destroy();
 
 - **Tools:** pen (thin) and marker (thick, double ink), always in your profile color (there's deliberately no color picker: your color is your signature), plus **text** (click, type up to 60 characters, `Enter`). Each drawing is sent when you finish it.
 - **Who drew it:** each drawing is saved with its author's Roomful name (`mc.me.name` at that moment). Hovering a drawing with the mouse shows that name in a tag of the drawing's color, above the pointer (your own cursor's tag sits below it). Drawings saved without a name show "Someone". On touch screens there's no hover, so it isn't shown.
-- **Ink:** 5,000 units per browser and day; a stroke costs its length in board units (the board is 1600 × 1000), the marker double, text 40 per character. A bar shows what's left and when it refills (00:00 UTC). If you run out mid-stroke, the stroke ends there. The server is the one that checks it: per browser id, and 25,000 per IP so a shared network can't be abused.
+- **Ink:** 5,000 units per browser, refilled completely **every 3 hours** (at 00:00, 03:00, 06:00… UTC; `INK_PERIOD_H` in `api/board.js`, `INK_PERIOD` in `server.py`); a stroke costs its length in board units (the board is 1600 × 1000), the marker double, text 40 per character. A bar shows what's left, and next to it a **live countdown** to the next refill (`↻ Refills in 2:14:05`, updated every second); when it reaches zero the board fetches the new ink by itself. If you run out mid-stroke, the stroke ends there. The server is the one that checks it: per browser id, and 25,000 per IP and period so a shared network can't be abused.
 - **Capacity:** when the ink on the board goes over 60,000 (or there are more than 300 drawings), the oldest are erased until it fits; the newest always stays. The oldest ones fade a little once the board is three-quarters full, so you can tell what's about to go.
 - **Live:** when a drawing is saved, `mc.signal("board")` tells the room and everyone else's board fetches the changes. It also fetches when it comes into view, when the tab comes back, and every minute while visible. The drawing itself only appears once finished.
 - **Storage:** `server.py` keeps it in `BOARD_FILE` (JSON); on Vercel, `api/board.js` keeps it in Upstash Redis with an atomic script. Both apply the same rules (constants at the top of each file).
@@ -562,7 +562,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 - **Strict validation** of every field ([§9.4](#94-field-validation)): photos can only be small raster images, "emojis" can't be text and colors can only be hex.
 - **No HTML from users:** names, messages and emojis are inserted as text (`textContent`), never as HTML.
 - **What others see:** name, color, photo, cursor position, chat messages, clicks, reactions and which text you select, always within the same room. The profile panel warns that people on the page will see the photo.
-- **What's stored:** only the shared board: its drawings (color, lines, text and the author's Roomful name, which anyone hovering the drawing can see) and, for the daily ink, how much each browser id and each network has used that day (on Vercel the IP is kept as a hash, and these counts expire after two days; in `server.py` they're only in memory). Everything else is in memory and disappears on disconnect or restart.
+- **What's stored:** only the shared board: its drawings (color, lines, text and the author's Roomful name, which anyone hovering the drawing can see) and, for the ink, how much each browser id and each network has used in the current 3-hour period (on Vercel the IP is kept as a hash, and these counts expire after two periods; in `server.py` they're only in memory). Everything else is in memory and disappears on disconnect or restart.
 - **The board isn't moderated:** anyone can draw or write anything, and it stays until it's erased for being the oldest. Board text is drawn on the canvas, never inserted as HTML.
 - **Ghost mode:** disconnects completely.
 - **Browser id:** random and not tied to any personal data.
@@ -577,7 +577,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 | Selection | Max. 120 rectangles per person |
 | Name / chat / photo | 32 characters / 140 characters / 14,000 characters |
 | Emojis / bots | 9 / 12 at most |
-| Shared board | 5,000 ink per browser and day (25,000 per IP); 60,000 ink or 300 drawings on the board; 600 points per stroke, 60 characters per text; fetched on changes and once a minute while visible |
+| Shared board | 5,000 ink per browser every 3 hours (25,000 per IP); 60,000 ink or 300 drawings on the board; 600 points per stroke, 60 characters per text; fetched on changes and once a minute while visible |
 
 **Scaling:** the server is **a single process** with everything in memory. With several instances, each one would have its own list of people and they wouldn't see each other. If you ever need to scale beyond one machine, add a shared channel between instances (e.g. Redis pub/sub) or port the relay to a service built for it (Durable Objects, PartyKit). For a regular website, one process with the default limits (100 per room, 5000 in total) is plenty.
 
@@ -623,7 +623,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 | Someone's selection isn't highlighted | Their page DOM differs from yours (personalized or dynamic content). Expected. |
 | "Couldn't use that image" | The browser doesn't support the format (e.g. HEIC in some) or the image is damaged. Try JPG or PNG. |
 | The board says "not available" | On Vercel, Upstash Redis isn't connected to the project (Storage → Upstash → Connect, then redeploy). With `server.py`, `BOARD_FILE` is set to `""`. |
-| I can't draw anymore | You've used today's ink: the bar shows when it refills (00:00 UTC). |
+| I can't draw anymore | You've used your ink: the countdown next to the bar shows when it refills (every 3 hours). |
 | `address already in use` on start | Something already uses that port: `lsof -i :8080` to see it, or use `PORT=3000`. |
 | Duplicate panels in React | Missing `return () => mc.destroy()` in the `useEffect`. |
 

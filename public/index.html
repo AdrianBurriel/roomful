@@ -452,7 +452,7 @@
       <span class="frame-label" data-i18n="boardLabel">05 — Board</span>
       <div class="kicker"><span class="num">✎</span> <span data-i18n="boardKicker">Leave your mark</span></div>
       <h2 class="h2" data-i18n="boardTitle">A wall for <em>everyone</em> in the room.</h2>
-      <p class="lede" data-i18n="boardLede">Draw or write whatever you like: it stays here for whoever comes next. You get some ink every day, so make it count. When the board fills up, the oldest drawings fade and get erased first, so there's always something to see. Hover over a drawing to see who made it.</p>
+      <p class="lede" data-i18n="boardLede">Draw or write whatever you like: it stays here for whoever comes next. Your ink refills every 3 hours, so make it count. When the board fills up, the oldest drawings fade and get erased first, so there's always something to see. Hover over a drawing to see who made it.</p>
       <div class="board-host" data-board data-mc-target></div>
     </div>
   </div>
@@ -589,7 +589,7 @@
     s4Btn: "Editar mi perfil", ghostTitle: "Modo <em>fantasma</em>",
     boardSize: "Pizarra · 16:10", boardLabel: "05 — Pizarra", boardKicker: "Deja tu huella",
     boardTitle: "Un muro para <em>todos</em> los de la sala.",
-    boardLede: "Dibuja o escribe lo que quieras: se queda aquí para quien venga después. Cada día tienes algo de tinta, así que aprovéchala. Cuando la pizarra se llena, los dibujos más antiguos se atenúan y se borran primero, así que siempre hay algo que ver. Pasa por encima de un dibujo para ver quién lo hizo.",
+    boardLede: "Dibuja o escribe lo que quieras: se queda aquí para quien venga después. Tu tinta se recarga cada 3 horas, así que aprovéchala. Cuando la pizarra se llena, los dibujos más antiguos se atenúan y se borran primero, así que siempre hay algo que ver. Pasa por encima de un dibujo para ver quién lo hizo.",
     ghostText: "Pasa por la sala sin que te vean: desaparecen los cursores de los demás y dejas de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.",
     extrasKicker: "Lo que pasa sin tocar la píldora", extrasTitle: "Y la sala se entera, <em>sin que hagas nada</em>…",
     clicksLabel: "Clics", clicksTitle: "Tus clics se <em>notan</em>",
@@ -755,8 +755,8 @@
       say: { en: "Leave your mark ✏️", es: "Deja tu huella ✏️" },
       title: { en: "5 · The shared board", es: "5 · La pizarra compartida" },
       text: {
-        en: "Draw or write whatever you like and it <b>stays here</b> for everyone who comes after you. Pick the <b>pen</b>, the <b>marker</b> (thicker, uses double ink) or <b>text</b><span class=\"mc-kb\">: click on the board, type and press <kbd>Enter</kbd></span><span class=\"mc-tch\">: tap the board and type</span>. You always draw in your profile color.<span class=\"mc-kb\"> Hover over any drawing to see who made it.</span> Everyone gets a daily amount of <b>ink</b>, shown by the bar; it refills every day. When the board fills up, the oldest drawings fade and get erased first, so there's always something on it.",
-        es: "Dibuja o escribe lo que quieras y <b>se queda aquí</b> para todos los que vengan después. Elige el <b>lápiz</b>, el <b>rotulador</b> (más grueso, gasta el doble) o el <b>texto</b><span class=\"mc-kb\">: pulsa sobre la pizarra, escribe y pulsa <kbd>Enter</kbd></span><span class=\"mc-tch\">: toca la pizarra y escribe</span>. Dibujas siempre con el color de tu perfil.<span class=\"mc-kb\"> Pasa el ratón por encima de un dibujo para ver quién lo hizo.</span> Cada persona tiene una cantidad de <b>tinta</b> al día, que ves en la barra, y se recarga cada día. Cuando la pizarra se llena, los dibujos más antiguos se atenúan y se borran primero, así que siempre hay algo."
+        en: "Draw or write whatever you like and it <b>stays here</b> for everyone who comes after you. Pick the <b>pen</b>, the <b>marker</b> (thicker, uses double ink) or <b>text</b><span class=\"mc-kb\">: click on the board, type and press <kbd>Enter</kbd></span><span class=\"mc-tch\">: tap the board and type</span>. You always draw in your profile color.<span class=\"mc-kb\"> Hover over any drawing to see who made it.</span> Everyone has some <b>ink</b>, shown by the bar, and it refills completely <b>every 3 hours</b>: the countdown next to it tells you exactly when. When the board fills up, the oldest drawings fade and get erased first, so there's always something on it.",
+        es: "Dibuja o escribe lo que quieras y <b>se queda aquí</b> para todos los que vengan después. Elige el <b>lápiz</b>, el <b>rotulador</b> (más grueso, gasta el doble) o el <b>texto</b><span class=\"mc-kb\">: pulsa sobre la pizarra, escribe y pulsa <kbd>Enter</kbd></span><span class=\"mc-tch\">: toca la pizarra y escribe</span>. Dibujas siempre con el color de tu perfil.<span class=\"mc-kb\"> Pasa el ratón por encima de un dibujo para ver quién lo hizo.</span> Cada persona tiene una cantidad de <b>tinta</b>, que ves en la barra, y se recarga entera <b>cada 3 horas</b>: la cuenta atrás de al lado te dice exactamente cuándo. Cuando la pizarra se llena, los dibujos más antiguos se atenúan y se borran primero, así que siempre hay algo."
       } },
     { target: ".trio > .frame:first-child",
       say: { en: "Everything shows here", es: "Aquí todo se nota" },
@@ -796,7 +796,7 @@
     onStats: paintStats
   });
 
-  // The shared board (roomful-board.js): drawings stored on the server, ink per day
+  // The shared board (roomful-board.js): drawings stored on the server, ink refills every 3 hours
   var board = RoomfulBoard.mount($("[data-board]"), { mc: mc, lang: lang });
 
 

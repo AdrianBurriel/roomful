@@ -18,7 +18,7 @@ Environment variables:
   BOARD_FILE       Where the shared board is saved; "" to disable (./board.json)
 
 The shared board (GET/POST /api/board) follows the same rules as
-api/board.js on Vercel: daily ink per browser and per IP, and the oldest
+api/board.js on Vercel: ink per browser and per IP that refills every 3 hours, and the oldest
 drawings are erased when the board is full (the newest always stays).
 """
 import asyncio
@@ -132,13 +132,14 @@ def room_stats(room):
 # ------------------------------------------------------------ Shared board --
 # Same rules and limits as api/board.js (keep both in sync).
 BOARD_W, BOARD_H = 1600, 1000
-INK_PER_DAY, INK_PER_IP = 5000, 25000
+INK_PERIOD = 3 * 3600      # the ink refills every 3 hours (at 00, 03, 06… UTC)
+INK_PER_PERIOD, INK_PER_IP = 5000, 25000
 BOARD_CAPACITY, BOARD_MAX_ITEMS = 60000, 300
 MAX_POINTS, MAX_TEXT, WIDTHS, TEXT_COST = 600, 60, (3, 9), 40
 CTRL_RE = re.compile(r"[\x00-\x1f\x7f]")
 
 board = {"rev": 0, "items": [], "costs": []}
-ink_used = {}              # (day, "u"|"i", key) -> ink spent that day (in memory)
+ink_used = {}              # (period, "u"|"i", key) -> ink spent in that period (in memory)
 
 
 def board_load():
@@ -187,21 +188,21 @@ def clean_item(raw):
     return None
 
 
-def utc_day():
-    return time.strftime("%Y-%m-%d", time.gmtime())
+def ink_period():
+    return int(time.time() // INK_PERIOD)
 
 
 def ink_info(used):
     now = time.time()
-    return {"left": max(0, INK_PER_DAY - used), "max": INK_PER_DAY, "resetAt": int((now // 86400 + 1) * 86400 * 1000)}
+    return {"left": max(0, INK_PER_PERIOD - used), "max": INK_PER_PERIOD, "resetAt": int((now // INK_PERIOD + 1) * INK_PERIOD * 1000)}
 
 
 def board_add(uid, ip, item, cost):
-    d = utc_day()
+    d = ink_period()
     for k in [k for k in ink_used if k[0] != d]:
         del ink_used[k]
     used_u, used_i = ink_used.get((d, "u", uid), 0), ink_used.get((d, "i", ip), 0)
-    if used_u + cost > INK_PER_DAY or used_i + cost > INK_PER_IP:
+    if used_u + cost > INK_PER_PERIOD or used_i + cost > INK_PER_IP:
         return None, used_u
     ink_used[(d, "u", uid)], ink_used[(d, "i", ip)] = used_u + cost, used_i + cost
     board["rev"] += 1
@@ -225,7 +226,7 @@ def http_json(writer, code, obj):
 async def board_http(reader, writer, method, headers, query):
     if not BOARD_FILE:
         return http_json(writer, 404, {"error": "disabled"})
-    d = utc_day()
+    d = ink_period()
     if method == "GET":
         q = parse_qs(query)
         uid = q.get("uid", [""])[0]

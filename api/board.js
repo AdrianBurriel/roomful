@@ -6,8 +6,8 @@
 //   POST /api/board  { uid, item }
 //        → 200 { rev, ink, ... }   429 { error: "no-ink", ink }   400 / 403 / 503
 //
-// Every visitor has a daily amount of ink (per browser id, and a looser cap per
-// IP). When the ink on the board goes over its capacity, the oldest drawings are
+// Every visitor has an amount of ink that refills every 3 hours (per browser id,
+// and a looser cap per IP). When the ink on the board goes over its capacity, the oldest drawings are
 // erased until it fits again; the newest one always stays. The same rules live
 // in server.py, for running without Vercel. Keep both in sync.
 //
@@ -19,8 +19,9 @@ import crypto from "node:crypto";
 
 export const BOARD = {
   W: 1600, H: 1000,          // board coordinates (the canvas scales them)
-  INK_PER_DAY: 5000,         // per browser: ~3 long strokes or ~10 short ones
-  INK_PER_IP: 25000,         // per IP and day (people sharing a network)
+  INK_PERIOD_H: 3,           // the ink refills every 3 hours (at 00, 03, 06… UTC)
+  INK_PER_PERIOD: 5000,      // per browser: ~3 long strokes or ~10 short ones
+  INK_PER_IP: 25000,         // per IP and period (people sharing a network)
   CAPACITY: 60000,           // ink on the board before the oldest gets erased
   MAX_ITEMS: 300,
   MAX_POINTS: 600,
@@ -62,10 +63,11 @@ export function cleanItem(raw) {
   return null;
 }
 
-function day() { return new Date().toISOString().slice(0, 10); }
-function resetAt() { const d = new Date(); d.setUTCHours(24, 0, 0, 0); return d.getTime(); }
+const PERIOD_MS = BOARD.INK_PERIOD_H * 3600 * 1000;
+function period() { return Math.floor(Date.now() / PERIOD_MS); }       // the current ink period
+function resetAt() { return (period() + 1) * PERIOD_MS; }
 function ink(used) {
-  return { left: Math.max(0, BOARD.INK_PER_DAY - used), max: BOARD.INK_PER_DAY, resetAt: resetAt() };
+  return { left: Math.max(0, BOARD.INK_PER_PERIOD - used), max: BOARD.INK_PER_PERIOD, resetAt: resetAt() };
 }
 
 function redisEnv() {
@@ -123,7 +125,7 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   const env = redisEnv();
   if (!env) return res.status(503).json({ error: "storage", detail: "Connect Upstash Redis to this project" });
-  const d = day();
+  const d = period();
 
   try {
     if (req.method === "GET") {
@@ -149,7 +151,7 @@ export default async function handler(req, res) {
       const [result] = await pipeline(env, [[
         "EVAL", ADD, "6", K.items, K.costs, K.total, K.rev, keyU, keyI,
         JSON.stringify(clean.item), String(clean.cost), String(BOARD.CAPACITY), String(BOARD.MAX_ITEMS),
-        String(BOARD.INK_PER_DAY), String(BOARD.INK_PER_IP), String(2 * 86400),
+        String(BOARD.INK_PER_PERIOD), String(BOARD.INK_PER_IP), String(2 * PERIOD_MS / 1000),
       ]]);
       if (result[0] === -1) return res.status(429).json({ error: "no-ink", ink: ink(+result[1] || 0) });
       return res.status(200).json({ rev: result[0], cost: clean.cost, ink: ink(+result[1]) });

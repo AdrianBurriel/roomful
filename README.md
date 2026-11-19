@@ -45,7 +45,7 @@ The demo is a landing page that explains every part of the pill, with demos that
 | 😴 **Idle** | Cursors that stop moving fade out with animated "zzz" |
 | 📱 **Phones and tablets** | Your finger is your cursor; chat and reactions from the pill's buttons |
 | 🤖 **Optional bots** | Companion visitors, labelled **BOT**. When real people arrive they step out, but one always stays |
-| ✏️ **Shared board** | Draw and write, in your color, on a board that stays for whoever comes next (hover a drawing to see who made it); daily ink per person, and the oldest drawings are erased when it's full (`roomful-board.js`) |
+| ✏️ **Shared board** | Draw and write, in your color, on a board that stays for whoever comes next (hover a drawing to see who made it); ink per person that refills every 3 hours, and the oldest drawings are erased when it's full (`roomful-board.js`) |
 | 🗺️ **Guided tour** | A grey guide flies to each part of the page and explains it, step by step, moving on by itself (`tour`) |
 | 🌍 **Languages** | English (default) and Spanish; add your own with `strings` |
 | ♿ **Accessible** | Keyboard friendly, ARIA labels, dark mode and reduced motion |
@@ -140,7 +140,7 @@ mc.destroy();
 </script>
 ```
 
-- **Ink:** each person gets 5,000 units a day (about 3 long strokes or 10 short ones; the marker uses double, text 40 per letter). It refills every day at 00:00 UTC. The server checks it per browser, with a looser cap per network.
+- **Ink:** each person gets 5,000 units (about 3 long strokes or 10 short ones; the marker uses double, text 40 per letter), and it **refills completely every 3 hours** (at 00:00, 03:00, 06:00… UTC). A live countdown next to the ink bar shows when (`↻ Refills in 2:14:05`). The server checks it per browser, with a looser cap per network.
 - **Always something there:** when the ink on the board goes over 60,000, the oldest drawings are erased first (they fade a little beforehand). The newest one always stays.
 - **Who drew it:** each drawing keeps its author's Roomful name; hover over it to see it. Drawings made before names were saved show "Someone".
 - **Live:** when someone finishes a drawing, everyone else's board updates straight away.
@@ -197,7 +197,7 @@ Every push to `main` redeploys automatically. The landing uses Ably when publish
 
 ```
 public/roomful.js       The integration (client)
-public/roomful-board.js The shared board (draw and write, daily ink)
+public/roomful-board.js The shared board (draw and write, ink that refills every 3 hours)
 public/index.html       Demo landing page explaining the pill, with a shared board and a 13-step guided tour (EN/ES)
 server.py               WebSocket relay + shared board + static files + /health
 Dockerfile              Deployment image
