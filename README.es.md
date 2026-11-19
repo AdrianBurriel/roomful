@@ -45,7 +45,7 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 | 😴 **Reposo** | Los cursores quietos se atenúan con unas "zzz" animadas |
 | 📱 **Móvil y tablet** | Tu dedo es tu cursor; chat y reacciones desde los botones de la píldora |
 | 🤖 **Bots opcionales** | Visitantes de compañía, marcados con la etiqueta **BOT**. Se retiran cuando llega gente real, pero siempre se queda uno |
-| ✏️ **Pizarra compartida** | Dibuja y escribe en una pizarra que se queda para quien venga después; tinta diaria por persona, y lo más antiguo se borra cuando se llena (`roomful-board.js`) |
+| ✏️ **Pizarra compartida** | Dibuja y escribe, con tu color, en una pizarra que se queda para quien venga después (pasa por encima de un dibujo para ver quién lo hizo); tinta diaria por persona, y lo más antiguo se borra cuando se llena (`roomful-board.js`) |
 | 🗺️ **Tour guiado** | Una guía gris vuela a cada parte de la página y la explica paso a paso, avanzando sola (`tour`) |
 | 🌍 **Idiomas** | Inglés (por defecto) y español; añade los tuyos con `strings` |
 | ♿ **Accesible** | Manejable con teclado, etiquetas ARIA, modo oscuro y reducir movimiento |
@@ -130,7 +130,7 @@ mc.destroy();
 
 ### Pizarra compartida
 
-`roomful-board.js` añade una pizarra donde todos pueden dibujar (lápiz o rotulador grueso) y escribir, cada uno con su color. Los dibujos se guardan en el servidor y se quedan para quien venga después.
+`roomful-board.js` añade una pizarra donde todos pueden dibujar (lápiz o rotulador grueso) y escribir. Cada uno dibuja con el color de su perfil (no hay selector de color). Los dibujos se guardan en el servidor y se quedan para quien venga después, y al pasar por encima de uno se ve quién lo hizo.
 
 ```html
 <div id="board"></div>
@@ -142,6 +142,7 @@ mc.destroy();
 
 - **Tinta:** cada persona tiene 5.000 unidades al día (unos 3 trazos largos o 10 cortos; el rotulador gasta el doble y el texto 40 por letra). Se recarga cada día a las 00:00 UTC. El servidor la controla por navegador, con un límite más amplio por red.
 - **Siempre hay algo:** cuando la tinta de la pizarra pasa de 60.000, se borran primero los dibujos más antiguos (antes se atenúan un poco). El más nuevo se queda siempre.
+- **Quién lo dibujó:** cada dibujo guarda el nombre de Roomful de su autor; pasa por encima para verlo. Los dibujos hechos antes de guardar nombres muestran "Alguien".
 - **En directo:** cuando alguien termina un dibujo, la pizarra de los demás se actualiza al momento.
 - **Guardado:** con `server.py`, en un archivo (`BOARD_FILE`); en Vercel, en Upstash Redis (ver [Desplegar en Vercel](#desplegar-en-vercel)).
 

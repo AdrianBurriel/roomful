@@ -13,8 +13,9 @@
  * strings ({ en: {…}, es: {…} } overrides).
  * Returns { setLang(l), refresh(), destroy() }.
  *
- * Everyone has a daily amount of ink, spent as you draw (thick pen: double) or
- * write (per letter). Drawings stay on the board; when it's full, the oldest
+ * Everyone draws in their profile color (there's no color picker) and has a
+ * daily amount of ink, spent as you draw (thick pen: double) or write (per
+ * letter). Hovering a drawing shows who made it. Drawings stay on the board; when it's full, the oldest
  * ones are erased first, so there's always something there. The server
  * (api/board.js on Vercel or server.py) checks the ink and keeps the board.
  */
@@ -28,7 +29,7 @@
     en: {
       label: "Shared board", pen: "Pen", thick: "Marker", text: "Text",
       penTip: "Thin pen", thickTip: "Thick marker (uses double ink)", textTip: "Write text: click on the board",
-      yourColor: "Your color (change it in your profile)",
+      by: "✏️ {name}", someone: "✏️ Someone",
       ink: "Ink", inkLeft: "{p}% of today's ink left", refill: "Refills in {t}", refillSoon: "Refills in a moment",
       noInk: "You're out of ink for today. It refills in {t}.",
       notEnough: "Not enough ink for that. You have {p}% left.",
@@ -40,7 +41,7 @@
     es: {
       label: "Pizarra compartida", pen: "Lápiz", thick: "Rotulador", text: "Texto",
       penTip: "Lápiz fino", thickTip: "Rotulador grueso (gasta el doble de tinta)", textTip: "Escribir texto: pulsa sobre la pizarra",
-      yourColor: "Tu color (cámbialo en tu perfil)",
+      by: "✏️ {name}", someone: "✏️ Alguien",
       ink: "Tinta", inkLeft: "Te queda un {p}% de la tinta de hoy", refill: "Se recarga en {t}", refillSoon: "Se recarga enseguida",
       noInk: "Se te ha acabado la tinta de hoy. Se recarga en {t}.",
       notEnough: "No te llega la tinta para eso. Te queda un {p}%.",
@@ -60,7 +61,6 @@
     ".rb-tool:hover{background:var(--rb-hover)}",
     ".rb-tool[aria-pressed=true]{background:var(--rb-ink);color:var(--rb-bg);border-color:var(--rb-ink)}",
     ".rb-tool:focus-visible{outline:2px solid #0D99FF;outline-offset:2px}",
-    ".rb-dot{width:18px;height:18px;border-radius:50%;box-shadow:0 0 0 2px var(--rb-bg),0 0 0 3px var(--rb-line);flex:none}",
     ".rb-ink{display:flex;align-items:center;gap:8px;margin-left:auto;min-width:200px}",
     ".rb-meter{flex:1;height:8px;border-radius:8px;background:var(--rb-hover);overflow:hidden;min-width:90px}",
     ".rb-meter i{display:block;height:100%;border-radius:8px;transition:width .3s,background .3s}",
@@ -71,6 +71,11 @@
     ".rb-stage.rb-texting canvas{cursor:text}",
     ".rb-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;opacity:.55;pointer-events:none;font-size:15px}",
     ".rb-empty[hidden]{display:none}",
+    /* who drew it: a name tag like the ones on the cursors */
+    ".rb-who{position:absolute;left:0;top:0;z-index:3;pointer-events:none;font:500 12px/1.2 " + FONT + ";padding:4px 8px;",
+    "  border-radius:12px 12px 12px 3px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.18);max-width:220px;",
+    "  overflow:hidden;text-overflow:ellipsis}",
+    ".rb-who[hidden]{display:none}",
     ".rb-input{position:absolute;transform:translateY(-50%);min-width:160px;max-width:70%;font:600 16px/1.2 " + FONT + ";",
     "  padding:6px 9px;border-radius:8px;border:2px solid;background:var(--rb-bg);outline:none;z-index:2}",
     ".rb-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px;opacity:.7}",
@@ -112,6 +117,11 @@
       return s;
     }
     function myColor() { return (mc && mc.me && mc.me.color) || "#0D99FF"; }
+    function myName() { return ((mc && mc.me && mc.me.name) || "").slice(0, 32); }
+    function textOn(hex) {
+      var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+      return (0.299 * r + 0.587 * g + 0.114 * b) > 170 ? "#1E1E1E" : "#FFFFFF";
+    }
 
     if (!document.getElementById("rb-style")) {
       var st = el("style"); st.id = "rb-style"; st.textContent = CSS; document.head.appendChild(st);
@@ -128,7 +138,6 @@
     var bPen = tool("pen", svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'));
     var bThick = tool("thick", svg('<path d="M9 11l-6 6v3h3l6-6"/><path d="M22 4l-8 8-4-4 8-8z" transform="translate(0 2)"/>'));
     var bText = tool("text", svg('<path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/>'));
-    var dot = el("span", "rb-dot", bar);
     var inkBox = el("div", "rb-ink", bar);
     var inkLabel = el("small", "", inkBox);
     var meter = el("div", "rb-meter", inkBox);
@@ -140,6 +149,8 @@
     canvas.setAttribute("role", "img");
     var ctx = canvas.getContext("2d");
     var emptyMsg = el("div", "rb-empty", stage);
+    var who = el("div", "rb-who", stage);
+    who.hidden = true;
     var foot = el("div", "rb-foot", box);
     var msg = el("span", "rb-msg", foot);
     msg.setAttribute("aria-live", "polite");
@@ -159,7 +170,6 @@
       [[bPen, "pen", "penTip"], [bThick, "thick", "thickTip"], [bText, "text", "textTip"]].forEach(function (x) {
         x[0].querySelector("span").textContent = t(x[1]); x[0].title = t(x[2]);
       });
-      dot.title = t("yourColor");
       inkLabel.textContent = t("ink");
       emptyMsg.textContent = t(state.offline ? "offline" : "empty");
       if (input) input.placeholder = t("textPlaceholder");
@@ -190,7 +200,6 @@
     }
     function leftNow() { return state.ink ? Math.max(0, state.ink.left - inkPreview) : 0; }
     function paintInk() {
-      dot.style.background = myColor();
       if (!state.ink) { inkPct.textContent = ""; meterFill.style.width = "0"; return; }
       var p = Math.round(leftNow() / state.ink.max * 100);
       meterFill.style.width = p + "%";
@@ -279,7 +288,8 @@
       e.preventDefault();
       canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
       var pt = toBoard(e);
-      drawing = { k: "s", c: myColor(), w: mode === "thick" ? WIDTHS[1] : WIDTHS[0], p: [pt[0], pt[1]] };
+      drawing = { k: "s", c: myColor(), n: myName(), w: mode === "thick" ? WIDTHS[1] : WIDTHS[0], p: [pt[0], pt[1]] };
+      hideWho();
       inkPreview = 20;
       paintInk(); render();
     }
@@ -309,6 +319,59 @@
       inkPreview = 0;
       save(item, strokeCost(item.p, item.w));
     }
+
+    // ---- who drew it: hovering a drawing shows its author ----
+    function boxOf(it) {
+      if (it.k === "t") {
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.font = "600 " + TEXT_SIZE + "px " + FONT;
+        var w = ctx.measureText(it.t).width;
+        ctx.restore();
+        return [it.x, it.y - TEXT_SIZE * 0.6, it.x + w, it.y + TEXT_SIZE * 0.6];
+      }
+      var b = [Infinity, Infinity, -Infinity, -Infinity], p = it.p;
+      for (var i = 0; i < p.length; i += 2) {
+        b[0] = Math.min(b[0], p[i]); b[1] = Math.min(b[1], p[i + 1]);
+        b[2] = Math.max(b[2], p[i]); b[3] = Math.max(b[3], p[i + 1]);
+      }
+      return b;
+    }
+    function segDist(px, py, ax, ay, bx, by) {
+      var dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy;
+      var k = l ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l)) : 0;
+      return Math.hypot(px - ax - k * dx, py - ay - k * dy);
+    }
+    // The newest drawing under the pointer (with some slack: lines are thin)
+    function itemAt(x, y) {
+      var slack = 10 * W / Math.max(200, canvas.getBoundingClientRect().width);   // ~10 px on screen
+      for (var i = state.items.length - 1; i >= 0; i--) {
+        var it = state.items[i], b = it._box, pad = slack + (it.w || 0) / 2;
+        if (!b || x < b[0] - pad || x > b[2] + pad || y < b[1] - pad || y > b[3] + pad) continue;
+        if (it.k === "t") return it;
+        var p = it.p;
+        for (var j = 2; j < p.length; j += 2) if (segDist(x, y, p[j - 2], p[j - 1], p[j], p[j + 1]) <= pad) return it;
+        if (p.length === 2 && Math.hypot(x - p[0], y - p[1]) <= pad) return it;
+      }
+      return null;
+    }
+    var hovered = null;
+    function hover(e) {
+      if (drawing || input || e.pointerType === "touch") return hideWho();
+      var pt = toBoard(e), it = itemAt(pt[0], pt[1]);
+      if (!it) return hideWho();
+      if (it !== hovered) {
+        hovered = it;
+        who.textContent = it.n ? t("by", { name: it.n }) : t("someone");
+        who.style.background = it.c; who.style.color = textOn(it.c);
+      }
+      // Above the pointer: below it sits your own cursor's name tag
+      var r = stage.getBoundingClientRect();
+      who.hidden = false;
+      var x = e.clientX - r.left + 8, y = e.clientY - r.top - who.offsetHeight - 10;
+      if (y < 4) y = e.clientY - r.top + 34;                     // no room above: well below your tag
+      who.style.transform = "translate(" + Math.max(4, Math.min(x, r.width - who.offsetWidth - 6)) + "px," + y + "px)";
+    }
+    function hideWho() { hovered = null; who.hidden = true; }
 
     // ---- text ----
     function openInput(pt) {
@@ -348,7 +411,7 @@
       var cost = textCost(text);
       if (cost > state.ink.left) { say(t("notEnough", { p: Math.round(state.ink.left / state.ink.max * 100) }), true); return; }
       var x = Math.min(pt[0], W - 10);
-      save({ k: "t", c: myColor(), x: x, y: pt[1], t: text }, cost);
+      save({ k: "t", c: myColor(), n: myName(), x: x, y: pt[1], t: text }, cost);
     }
 
     // ---- server ----
@@ -389,6 +452,7 @@
           if (j.items) {
             state.items = j.items.map(function (it) {
               it._cost = it.k === "s" ? strokeCost(it.p, it.w) : textCost(it.t || "");
+              it._box = boxOf(it);
               return it;
             });
           }
@@ -416,14 +480,16 @@
     document.addEventListener("visibilitychange", onVis);
     var ro = global.ResizeObserver ? new ResizeObserver(resize) : null;
     if (ro) ro.observe(stage); else global.addEventListener("resize", resize);
-    var colorTimer = setInterval(function () { if (dot.style.background !== myColor()) paintInk(); }, 1000);
+    var lastColor = myColor();
+    var colorTimer = setInterval(function () { if (lastColor !== myColor()) { lastColor = myColor(); paintInk(); } }, 1000);
     var clockTimer = setInterval(function () {               // new day: the ink refills
       if (state.ink && Date.now() > state.ink.resetAt) refresh();
       paintInk();
     }, 30000);
 
     canvas.addEventListener("pointerdown", onDown);
-    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointermove", function (e) { if (drawing) onMove(e); else hover(e); });
+    canvas.addEventListener("pointerleave", hideWho);
     canvas.addEventListener("pointerup", finish);
     canvas.addEventListener("pointercancel", finish);
 

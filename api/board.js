@@ -38,6 +38,8 @@ const K = { items: "board:items", costs: "board:costs", total: "board:total", re
 export function cleanItem(raw) {
   if (!raw || typeof raw !== "object" || !COLOR_RE.test(raw.c || "")) return null;
   const c = raw.c.toUpperCase();
+  // Who drew it (shown on hover): the visitor's Roomful name, optional
+  const n = typeof raw.n === "string" ? raw.n.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 32) : "";
   if (raw.k === "s") {
     const p = raw.p, w = raw.w;
     if (!BOARD.WIDTHS.includes(w) || !Array.isArray(p) || p.length < 4 || p.length > BOARD.MAX_POINTS * 2 || p.length % 2) return null;
@@ -48,14 +50,14 @@ export function cleanItem(raw) {
       if (i >= 2 && i % 2) len += Math.hypot(p[i - 1] - p[i - 3], v - p[i - 2]);
     }
     const cost = Math.max(20, Math.round(len * (w === BOARD.WIDTHS[1] ? 2 : 1)));
-    return { item: { k: "s", c, w, p }, cost };
+    return { item: { k: "s", c, ...(n ? { n } : {}), w, p }, cost };
   }
   if (raw.k === "t") {
     const t = typeof raw.t === "string" ? raw.t.replace(/[\u0000-\u001f\u007f]/g, "").trim() : "";
     const { x, y } = raw;
     if (!t || t.length > BOARD.MAX_TEXT || !Number.isInteger(x) || !Number.isInteger(y) ||
         x < 0 || x > BOARD.W || y < 0 || y > BOARD.H) return null;
-    return { item: { k: "t", c, x, y, t }, cost: [...t].length * BOARD.TEXT_COST };
+    return { item: { k: "t", c, ...(n ? { n } : {}), x, y, t }, cost: [...t].length * BOARD.TEXT_COST };
   }
   return null;
 }

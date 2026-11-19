@@ -45,7 +45,7 @@ The demo is a landing page that explains every part of the pill, with demos that
 | 😴 **Idle** | Cursors that stop moving fade out with animated "zzz" |
 | 📱 **Phones and tablets** | Your finger is your cursor; chat and reactions from the pill's buttons |
 | 🤖 **Optional bots** | Companion visitors, labelled **BOT**. When real people arrive they step out, but one always stays |
-| ✏️ **Shared board** | Draw and write on a board that stays for whoever comes next; daily ink per person, and the oldest drawings are erased when it's full (`roomful-board.js`) |
+| ✏️ **Shared board** | Draw and write, in your color, on a board that stays for whoever comes next (hover a drawing to see who made it); daily ink per person, and the oldest drawings are erased when it's full (`roomful-board.js`) |
 | 🗺️ **Guided tour** | A grey guide flies to each part of the page and explains it, step by step, moving on by itself (`tour`) |
 | 🌍 **Languages** | English (default) and Spanish; add your own with `strings` |
 | ♿ **Accessible** | Keyboard friendly, ARIA labels, dark mode and reduced motion |
@@ -130,7 +130,7 @@ mc.destroy();
 
 ### Shared board
 
-`roomful-board.js` adds a board where everyone can draw (pen or thick marker) and write, in their own color. Drawings are stored on the server and stay for whoever comes next.
+`roomful-board.js` adds a board where everyone can draw (pen or thick marker) and write. Everyone draws in their profile color (there's no color picker). Drawings are stored on the server and stay for whoever comes next, and hovering one shows who made it.
 
 ```html
 <div id="board"></div>
@@ -142,6 +142,7 @@ mc.destroy();
 
 - **Ink:** each person gets 5,000 units a day (about 3 long strokes or 10 short ones; the marker uses double, text 40 per letter). It refills every day at 00:00 UTC. The server checks it per browser, with a looser cap per network.
 - **Always something there:** when the ink on the board goes over 60,000, the oldest drawings are erased first (they fade a little beforehand). The newest one always stays.
+- **Who drew it:** each drawing keeps its author's Roomful name; hover over it to see it. Drawings made before names were saved show "Someone".
 - **Live:** when someone finishes a drawing, everyone else's board updates straight away.
 - **Storage:** with `server.py`, in a file (`BOARD_FILE`); on Vercel, in Upstash Redis (see [Deploy on Vercel](#deploy-on-vercel)).
 

@@ -389,7 +389,8 @@ const board = RoomfulBoard.mount(document.querySelector("#board"), {
 board.setLang("en"); board.refresh(); board.destroy();
 ```
 
-- **Herramientas:** lápiz (fino) y rotulador (grueso, el doble de tinta), siempre con el color de tu perfil, y **texto** (pulsa, escribe hasta 60 caracteres, `Enter`). Cada dibujo se envía al terminarlo.
+- **Herramientas:** lápiz (fino) y rotulador (grueso, el doble de tinta), siempre con el color de tu perfil (a propósito no hay selector de color: tu color es tu firma), y **texto** (pulsa, escribe hasta 60 caracteres, `Enter`). Cada dibujo se envía al terminarlo.
+- **Quién lo dibujó:** cada dibujo se guarda con el nombre de Roomful de su autor (`mc.me.name` en ese momento). Al pasar el ratón por encima se ve ese nombre en una etiqueta del color del dibujo, encima del puntero (la etiqueta de tu propio cursor va debajo). Los dibujos guardados sin nombre muestran "Alguien". En pantallas táctiles no hay "pasar por encima", así que no se muestra.
 - **Tinta:** 5.000 unidades por navegador y día; un trazo cuesta su longitud en unidades de la pizarra (que mide 1600 × 1000), el rotulador el doble y el texto 40 por carácter. Una barra muestra lo que queda y cuándo se recarga (00:00 UTC). Si se acaba a mitad de trazo, el trazo termina ahí. Quien la controla es el servidor: por id de navegador, y 25.000 por IP para que una red compartida no abuse.
 - **Capacidad:** cuando la tinta de la pizarra pasa de 60.000 (o hay más de 300 dibujos), se borran los más antiguos hasta que quepa; el más nuevo se queda siempre. Los más antiguos se atenúan un poco cuando la pizarra está llena a tres cuartos, para que se vea qué está a punto de irse.
 - **En directo:** al guardarse un dibujo, `mc.signal("board")` avisa a la sala y la pizarra de los demás pide los cambios. También los pide al aparecer en pantalla, al volver a la pestaña y cada minuto mientras se ve. El dibujo en sí aparece cuando está terminado.
@@ -402,7 +403,7 @@ board.setLang("en"); board.refresh(); board.destroy();
 | `GET /api/board?uid=<id>&rev=<n>` | `{ rev, total, cap, ink: { left, max, resetAt }, items? }`; `items` solo si la pizarra cambió desde `rev`. |
 | `POST /api/board` `{ uid, item }` | `200 { rev, cost, ink }`; `429 { error: "no-ink", ink }`; `400` no válido; `403` origen no permitido; `503` sin almacenamiento. |
 
-`item` es `{ k: "s", c: "#RRGGBB", w: 3 | 9, p: [x0, y0, x1, y1, …] }` (de 2 a 600 puntos enteros) o `{ k: "t", c, x, y, t: "texto" }`.
+`item` es `{ k: "s", c: "#RRGGBB", n?: "autor", w: 3 | 9, p: [x0, y0, x1, y1, …] }` (de 2 a 600 puntos enteros) o `{ k: "t", c, n?, x, y, t: "texto" }`. `n` es el nombre del autor (hasta 32 caracteres, sin caracteres de control); el servidor añade `id`.
 
 ## 9. El servidor
 
@@ -561,7 +562,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 - **Validación estricta** de cada campo ([§9.4](#94-validación-de-campos)): las fotos solo pueden ser imágenes rasterizadas pequeñas, los "emojis" no pueden ser texto y los colores solo pueden ser hexadecimales.
 - **Sin HTML de usuarios:** nombres, mensajes y emojis se insertan como texto (`textContent`), nunca como HTML.
 - **Lo que ven los demás:** nombre, color, foto, posición del cursor, mensajes de chat, clics, reacciones y qué texto seleccionas, siempre dentro de la misma sala. El panel de perfil avisa de que la foto la verán quienes estén en la página.
-- **Lo que se guarda:** solo la pizarra compartida: sus dibujos (color, trazos, texto; sin nombres) y, para la tinta diaria, cuánto ha gastado ese día cada id de navegador y cada red (en Vercel la IP se guarda como hash, y estos contadores caducan a los dos días; en `server.py` solo están en memoria). Todo lo demás está en memoria y desaparece al desconectar o reiniciar.
+- **Lo que se guarda:** solo la pizarra compartida: sus dibujos (color, trazos, texto y el nombre de Roomful de su autor, que ve cualquiera que pase por encima) y, para la tinta diaria, cuánto ha gastado ese día cada id de navegador y cada red (en Vercel la IP se guarda como hash, y estos contadores caducan a los dos días; en `server.py` solo están en memoria). Todo lo demás está en memoria y desaparece al desconectar o reiniciar.
 - **La pizarra no tiene moderación:** cualquiera puede dibujar o escribir cualquier cosa, y se queda hasta que se borra por ser lo más antiguo. El texto de la pizarra se pinta en el lienzo, nunca se inserta como HTML.
 - **Modo fantasma:** desconecta del todo.
 - **Id de navegador:** es aleatorio y no está ligado a ningún dato personal.

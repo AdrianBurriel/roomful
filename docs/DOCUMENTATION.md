@@ -389,7 +389,8 @@ const board = RoomfulBoard.mount(document.querySelector("#board"), {
 board.setLang("en"); board.refresh(); board.destroy();
 ```
 
-- **Tools:** pen (thin) and marker (thick, double ink), always in your profile color, plus **text** (click, type up to 60 characters, `Enter`). Each drawing is sent when you finish it.
+- **Tools:** pen (thin) and marker (thick, double ink), always in your profile color (there's deliberately no color picker: your color is your signature), plus **text** (click, type up to 60 characters, `Enter`). Each drawing is sent when you finish it.
+- **Who drew it:** each drawing is saved with its author's Roomful name (`mc.me.name` at that moment). Hovering a drawing with the mouse shows that name in a tag of the drawing's color, above the pointer (your own cursor's tag sits below it). Drawings saved without a name show "Someone". On touch screens there's no hover, so it isn't shown.
 - **Ink:** 5,000 units per browser and day; a stroke costs its length in board units (the board is 1600 × 1000), the marker double, text 40 per character. A bar shows what's left and when it refills (00:00 UTC). If you run out mid-stroke, the stroke ends there. The server is the one that checks it: per browser id, and 25,000 per IP so a shared network can't be abused.
 - **Capacity:** when the ink on the board goes over 60,000 (or there are more than 300 drawings), the oldest are erased until it fits; the newest always stays. The oldest ones fade a little once the board is three-quarters full, so you can tell what's about to go.
 - **Live:** when a drawing is saved, `mc.signal("board")` tells the room and everyone else's board fetches the changes. It also fetches when it comes into view, when the tab comes back, and every minute while visible. The drawing itself only appears once finished.
@@ -402,7 +403,7 @@ board.setLang("en"); board.refresh(); board.destroy();
 | `GET /api/board?uid=<id>&rev=<n>` | `{ rev, total, cap, ink: { left, max, resetAt }, items? }`; `items` only if the board changed since `rev`. |
 | `POST /api/board` `{ uid, item }` | `200 { rev, cost, ink }`; `429 { error: "no-ink", ink }`; `400` invalid; `403` origin not allowed; `503` no storage. |
 
-`item` is `{ k: "s", c: "#RRGGBB", w: 3 | 9, p: [x0, y0, x1, y1, …] }` (2–600 integer points) or `{ k: "t", c, x, y, t: "text" }`.
+`item` is `{ k: "s", c: "#RRGGBB", n?: "author", w: 3 | 9, p: [x0, y0, x1, y1, …] }` (2–600 integer points) or `{ k: "t", c, n?, x, y, t: "text" }`. `n` is the author's name (up to 32 characters, control characters removed); the server adds `id`.
 
 ## 9. The server
 
@@ -561,7 +562,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 - **Strict validation** of every field ([§9.4](#94-field-validation)): photos can only be small raster images, "emojis" can't be text and colors can only be hex.
 - **No HTML from users:** names, messages and emojis are inserted as text (`textContent`), never as HTML.
 - **What others see:** name, color, photo, cursor position, chat messages, clicks, reactions and which text you select, always within the same room. The profile panel warns that people on the page will see the photo.
-- **What's stored:** only the shared board: its drawings (color, lines, text; no names) and, for the daily ink, how much each browser id and each network has used that day (on Vercel the IP is kept as a hash, and these counts expire after two days; in `server.py` they're only in memory). Everything else is in memory and disappears on disconnect or restart.
+- **What's stored:** only the shared board: its drawings (color, lines, text and the author's Roomful name, which anyone hovering the drawing can see) and, for the daily ink, how much each browser id and each network has used that day (on Vercel the IP is kept as a hash, and these counts expire after two days; in `server.py` they're only in memory). Everything else is in memory and disappears on disconnect or restart.
 - **The board isn't moderated:** anyone can draw or write anything, and it stays until it's erased for being the oldest. Board text is drawn on the canvas, never inserted as HTML.
 - **Ghost mode:** disconnects completely.
 - **Browser id:** random and not tied to any personal data.

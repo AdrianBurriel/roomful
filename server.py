@@ -168,6 +168,8 @@ def clean_item(raw):
     if not isinstance(raw, dict) or not isinstance(raw.get("c"), str) or not COLOR_RE.match(raw["c"]):
         return None
     c = raw["c"].upper()
+    n = CTRL_RE.sub("", raw["n"]).strip()[:32] if isinstance(raw.get("n"), str) else ""  # author, shown on hover
+    who = {"n": n} if n else {}
     if raw.get("k") == "s":
         p, w = raw.get("p"), raw.get("w")
         if w not in WIDTHS or not isinstance(p, list) or not 4 <= len(p) <= MAX_POINTS * 2 or len(p) % 2:
@@ -175,13 +177,13 @@ def clean_item(raw):
         if not all(_is_int(v, 0, BOARD_H if i % 2 else BOARD_W) for i, v in enumerate(p)):
             return None
         length = sum(math.hypot(p[i] - p[i - 2], p[i + 1] - p[i - 1]) for i in range(2, len(p), 2))
-        return {"k": "s", "c": c, "w": w, "p": p}, max(20, round(length * (2 if w == WIDTHS[1] else 1)))
+        return {"k": "s", "c": c, **who, "w": w, "p": p}, max(20, round(length * (2 if w == WIDTHS[1] else 1)))
     if raw.get("k") == "t":
         t = CTRL_RE.sub("", raw.get("t") if isinstance(raw.get("t"), str) else "").strip()
         x, y = raw.get("x"), raw.get("y")
         if not t or len(t) > MAX_TEXT or not _is_int(x, 0, BOARD_W) or not _is_int(y, 0, BOARD_H):
             return None
-        return {"k": "t", "c": c, "x": x, "y": y, "t": t}, len(t) * TEXT_COST
+        return {"k": "t", "c": c, **who, "x": x, "y": y, "t": t}, len(t) * TEXT_COST
     return None
 
 
