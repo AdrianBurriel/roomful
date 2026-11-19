@@ -33,7 +33,10 @@ export const BOARD = {
 
 const UID_RE = /^[a-z0-9]{8,32}$/;
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
-const K = { items: "board:items", costs: "board:costs", total: "board:total", rev: "board:rev" };
+// Keys live under a version prefix: bumping it starts an empty board (and fresh ink)
+// without touching the database. v2: from when drawings carry their author's name.
+const NS = "board:v2:";
+const K = { items: NS + "items", costs: NS + "costs", total: NS + "total", rev: NS + "rev" };
 
 // Validates a drawing and returns { item, cost }, or null.
 export function cleanItem(raw) {
@@ -131,7 +134,7 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       const uid = String(req.query.uid || "");
       const [rev, total, used] = await pipeline(env, [
-        ["GET", K.rev], ["GET", K.total], ["GET", UID_RE.test(uid) ? `board:ink:${d}:${uid}` : "board:none"],
+        ["GET", K.rev], ["GET", K.total], ["GET", UID_RE.test(uid) ? `${NS}ink:${d}:${uid}` : NS + "none"],
       ]);
       const out = { rev: +rev || 0, total: +total || 0, cap: BOARD.CAPACITY, ink: ink(+used || 0) };
       if (String(out.rev) !== String(req.query.rev)) {
@@ -147,7 +150,7 @@ export default async function handler(req, res) {
       const uid = String(body.uid || "");
       const clean = UID_RE.test(uid) && cleanItem(body.item);
       if (!clean) return res.status(400).json({ error: "invalid" });
-      const keyU = `board:ink:${d}:${uid}`, keyI = `board:inkip:${d}:${ipKey(req)}`;
+      const keyU = `${NS}ink:${d}:${uid}`, keyI = `${NS}inkip:${d}:${ipKey(req)}`;
       const [result] = await pipeline(env, [[
         "EVAL", ADD, "6", K.items, K.costs, K.total, K.rev, keyU, keyI,
         JSON.stringify(clean.item), String(clean.cost), String(BOARD.CAPACITY), String(BOARD.MAX_ITEMS),

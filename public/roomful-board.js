@@ -33,6 +33,7 @@
       ink: "Ink", inkLeft: "{p}% of your ink left", refill: "Refills in {t}", refillSoon: "Refills in a moment",
       refillTip: "Your ink refills completely every 3 hours",
       noInk: "You're out of ink for now. It refills in {t}.",
+      outTitle: "You've used up your ink", outText: "You can draw again at {at}.", outOk: "OK",
       notEnough: "Not enough ink for that. You have {p}% left.",
       full: "Board {p}% full · the oldest drawings fade and get erased first",
       textPlaceholder: "Write and press Enter", textCost: "{c} ink",
@@ -46,6 +47,7 @@
       ink: "Tinta", inkLeft: "Te queda un {p}% de tu tinta", refill: "Se recarga en {t}", refillSoon: "Se recarga enseguida",
       refillTip: "Tu tinta se recarga entera cada 3 horas",
       noInk: "Se te ha acabado la tinta por ahora. Se recarga en {t}.",
+      outTitle: "Has gastado toda tu tinta", outText: "Podrás volver a dibujar a las {at}.", outOk: "Vale",
       notEnough: "No te llega la tinta para eso. Te queda un {p}%.",
       full: "Pizarra llena al {p}% · lo más antiguo se atenúa y se borra primero",
       textPlaceholder: "Escribe y pulsa Enter", textCost: "{c} de tinta",
@@ -79,6 +81,18 @@
     "  border-radius:12px 12px 12px 3px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.18);max-width:220px;",
     "  overflow:hidden;text-overflow:ellipsis}",
     ".rb-who[hidden]{display:none}",
+    /* out of ink: a card over the board with a live countdown */
+    ".rb-out{position:absolute;inset:0;z-index:4;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.35);",
+    "  animation:rb-in .2s ease-out}",
+    ".rb-out[hidden]{display:none}",
+    ".rb-out>div{background:var(--rb-bg);color:var(--rb-ink);border-radius:16px;padding:20px 22px;max-width:360px;text-align:center;",
+    "  box-shadow:0 12px 36px rgba(0,0,0,.3);border:1px solid var(--rb-line)}",
+    ".rb-out b{display:block;font-size:17px;margin-bottom:6px}",
+    ".rb-out p{margin:0 0 14px;font-weight:400;opacity:.8;line-height:1.45}",
+    ".rb-out .rb-big{display:block;font:700 30px/1 " + FONT + ";font-variant-numeric:tabular-nums;margin:4px 0 12px;letter-spacing:-.02em}",
+    ".rb-out button{all:unset;cursor:pointer;padding:8px 16px;border-radius:999px;font-weight:600;background:var(--rb-ink);color:var(--rb-bg)}",
+    ".rb-out button:focus-visible{outline:2px solid #0D99FF;outline-offset:2px}",
+    "@keyframes rb-in{from{opacity:0}}",
     ".rb-input{position:absolute;transform:translateY(-50%);min-width:160px;max-width:70%;font:600 16px/1.2 " + FONT + ";",
     "  padding:6px 9px;border-radius:8px;border:2px solid;background:var(--rb-bg);outline:none;z-index:2}",
     ".rb-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px;opacity:.7}",
@@ -154,6 +168,16 @@
     var ctx = canvas.getContext("2d");
     var emptyMsg = el("div", "rb-empty", stage);
     var who = el("div", "rb-who", stage);
+    var out = el("div", "rb-out", stage);
+    out.hidden = true;
+    out.setAttribute("role", "alertdialog");
+    var outCard = el("div", "", out);
+    var outTitle = el("b", "", outCard), outBig = el("span", "rb-big", outCard), outText = el("p", "", outCard);
+    var outOk = el("button", "", outCard);
+    outOk.type = "button";
+    outOk.addEventListener("click", function () { hideOut(); });
+    out.addEventListener("pointerdown", function (e) { if (e.target === out) hideOut(); });
+    var outTimer = null;
     who.hidden = true;
     var foot = el("div", "rb-foot", box);
     var msg = el("span", "rb-msg", foot);
@@ -187,6 +211,30 @@
       stage.classList.toggle("rb-texting", id === "text");
       if (id !== "text") closeInput();
     }
+
+    // "You've used up your ink · 1:10:04 · you can draw again at 16:00"
+    function hms() {
+      var s = state.ink ? Math.max(0, Math.ceil((state.ink.resetAt - Date.now()) / 1000)) : 0;
+      return Math.floor(s / 3600) + ":" + ("0" + Math.floor(s % 3600 / 60)).slice(-2) + ":" + ("0" + s % 60).slice(-2);
+    }
+    function showOut() {
+      if (!state.ink) return;
+      hideWho(); closeInput(); drawing = null; inkPreview = 0; render();
+      var at = new Date(state.ink.resetAt);
+      var atTxt; try { atTxt = at.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" }); } catch (e) { atTxt = at.getHours() + ":" + ("0" + at.getMinutes()).slice(-2); }
+      outTitle.textContent = "🖋️ " + t("outTitle");
+      outBig.textContent = hms();
+      outText.textContent = t("outText", { at: atTxt });
+      outOk.textContent = t("outOk");
+      out.setAttribute("aria-label", t("outTitle"));
+      out.hidden = false;
+      say("");
+      clearTimeout(outTimer);
+      outTimer = setTimeout(hideOut, 8000);
+      outOk.focus({ preventScroll: true });
+    }
+    function hideOut() { clearTimeout(outTimer); out.hidden = true; }
+    function outOfInk() { return !state.ink || state.ink.left < 20; }
 
     function say(text, bad) {
       clearTimeout(msgTimer);
@@ -297,7 +345,7 @@
       if (destroyed || state.offline || (e.button !== undefined && e.button !== 0)) return;
       if (mode === "text") { e.preventDefault(); openInput(toBoard(e)); return; }
       if (!state.ink) return;
-      if (state.ink.left < 20) { say(t("noInk", { t: untilReset() }), true); return; }
+      if (state.ink.left < 20) { showOut(); return; }
       e.preventDefault();
       canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
       var pt = toBoard(e);
@@ -317,7 +365,7 @@
         p.push(pt[0], pt[1]);
         var cost = strokeCost(p, drawing.w);
         if (cost > state.ink.left || p.length >= MAX_POINTS * 2) {   // out of ink (or too long): the stroke ends here
-          if (cost > state.ink.left) { p.length -= 2; say(t("noInk", { t: untilReset() }), true); }
+          if (cost > state.ink.left) { p.length -= 2; finish(); return showOut(); }
           return finish();
         }
         inkPreview = cost;
@@ -389,7 +437,7 @@
     // ---- text ----
     function openInput(pt) {
       closeInput();
-      if (!state.ink || state.ink.left < TEXT_COST) { say(t("noInk", { t: untilReset() }), true); return; }
+      if (!state.ink || state.ink.left < TEXT_COST) { showOut(); return; }
       input = el("input", "rb-input", stage);
       input.maxLength = MAX_TEXT;
       input.placeholder = t("textPlaceholder");
@@ -440,7 +488,7 @@
           pending.splice(pending.indexOf(item), 1);
           if (res.j && res.j.ink) state.ink = res.j.ink;
           if (res.ok) { say(""); if (mc && mc.signal) mc.signal("board"); return refresh(); }
-          if (res.status === 429) say(t("noInk", { t: untilReset() }), true);
+          if (res.status === 429) showOut();
           else say(t("error"), true);
           paintInk(); render();
           return refresh();
@@ -498,6 +546,7 @@
     var clockTimer = setInterval(function () {               // the countdown, and the refill when it hits zero
       if (state.ink && Date.now() >= state.ink.resetAt) { state.ink.resetAt += 60000; refresh(); }
       paintClock();
+      if (!out.hidden) { outBig.textContent = hms(); if (!outOfInk()) hideOut(); }
     }, 1000);
 
     canvas.addEventListener("pointerdown", onDown);

@@ -140,7 +140,7 @@ mc.destroy();
 </script>
 ```
 
-- **Tinta:** cada persona tiene 5.000 unidades (unos 3 trazos largos o 10 cortos; el rotulador gasta el doble y el texto 40 por letra), y **se recarga entera cada 3 horas** (a las 00:00, 03:00, 06:00… UTC). Una cuenta atrás en directo junto a la barra de tinta dice cuándo (`↻ Se recarga en 2:14:05`). El servidor la controla por navegador, con un límite más amplio por red.
+- **Tinta:** cada persona tiene 5.000 unidades (unos 3 trazos largos o 10 cortos; el rotulador gasta el doble y el texto 40 por letra), y **se recarga entera cada 3 horas** (a las 00:00, 03:00, 06:00… UTC). Una cuenta atrás en directo junto a la barra de tinta dice cuándo (`↻ Se recarga en 2:14:05`), y si intentas dibujar sin tinta, una tarjeta te avisa de que la has gastado y de cuándo podrás volver a dibujar. El servidor la controla por navegador, con un límite más amplio por red.
 - **Siempre hay algo:** cuando la tinta de la pizarra pasa de 60.000, se borran primero los dibujos más antiguos (antes se atenúan un poco). El más nuevo se queda siempre.
 - **Quién lo dibujó:** cada dibujo guarda el nombre de Roomful de su autor; pasa por encima para verlo. Los dibujos hechos antes de guardar nombres muestran "Alguien".
 - **En directo:** cuando alguien termina un dibujo, la pizarra de los demás se actualiza al momento.

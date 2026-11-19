@@ -140,7 +140,7 @@ mc.destroy();
 </script>
 ```
 
-- **Ink:** each person gets 5,000 units (about 3 long strokes or 10 short ones; the marker uses double, text 40 per letter), and it **refills completely every 3 hours** (at 00:00, 03:00, 06:00… UTC). A live countdown next to the ink bar shows when (`↻ Refills in 2:14:05`). The server checks it per browser, with a looser cap per network.
+- **Ink:** each person gets 5,000 units (about 3 long strokes or 10 short ones; the marker uses double, text 40 per letter), and it **refills completely every 3 hours** (at 00:00, 03:00, 06:00… UTC). A live countdown next to the ink bar shows when (`↻ Refills in 2:14:05`), and if you try to draw with no ink left, a card tells you you've used it up and when you can draw again. The server checks it per browser, with a looser cap per network.
 - **Always something there:** when the ink on the board goes over 60,000, the oldest drawings are erased first (they fade a little beforehand). The newest one always stays.
 - **Who drew it:** each drawing keeps its author's Roomful name; hover over it to see it. Drawings made before names were saved show "Someone".
 - **Live:** when someone finishes a drawing, everyone else's board updates straight away.

@@ -391,10 +391,10 @@ board.setLang("en"); board.refresh(); board.destroy();
 
 - **Tools:** pen (thin) and marker (thick, double ink), always in your profile color (there's deliberately no color picker: your color is your signature), plus **text** (click, type up to 60 characters, `Enter`). Each drawing is sent when you finish it.
 - **Who drew it:** each drawing is saved with its author's Roomful name (`mc.me.name` at that moment). Hovering a drawing with the mouse shows that name in a tag of the drawing's color, above the pointer (your own cursor's tag sits below it). Drawings saved without a name show "Someone". On touch screens there's no hover, so it isn't shown.
-- **Ink:** 5,000 units per browser, refilled completely **every 3 hours** (at 00:00, 03:00, 06:00… UTC; `INK_PERIOD_H` in `api/board.js`, `INK_PERIOD` in `server.py`); a stroke costs its length in board units (the board is 1600 × 1000), the marker double, text 40 per character. A bar shows what's left, and next to it a **live countdown** to the next refill (`↻ Refills in 2:14:05`, updated every second); when it reaches zero the board fetches the new ink by itself. If you run out mid-stroke, the stroke ends there. The server is the one that checks it: per browser id, and 25,000 per IP and period so a shared network can't be abused.
+- **Ink:** 5,000 units per browser, refilled completely **every 3 hours** (at 00:00, 03:00, 06:00… UTC; `INK_PERIOD_H` in `api/board.js`, `INK_PERIOD` in `server.py`); a stroke costs its length in board units (the board is 1600 × 1000), the marker double, text 40 per character. A bar shows what's left, and next to it a **live countdown** to the next refill (`↻ Refills in 2:14:05`, updated every second); when it reaches zero the board fetches the new ink by itself. If you run out mid-stroke, the stroke ends there. Trying to draw or write with no ink left shows a card over the board, **"You've used up your ink"**, with a live countdown and the local time you can draw again ("You can draw again at 16:00"); it closes with **OK**, by clicking outside it, after 8 seconds, or by itself when the ink refills. The server is the one that checks it: per browser id, and 25,000 per IP and period so a shared network can't be abused.
 - **Capacity:** when the ink on the board goes over 60,000 (or there are more than 300 drawings), the oldest are erased until it fits; the newest always stays. The oldest ones fade a little once the board is three-quarters full, so you can tell what's about to go.
 - **Live:** when a drawing is saved, `mc.signal("board")` tells the room and everyone else's board fetches the changes. It also fetches when it comes into view, when the tab comes back, and every minute while visible. The drawing itself only appears once finished.
-- **Storage:** `server.py` keeps it in `BOARD_FILE` (JSON); on Vercel, `api/board.js` keeps it in Upstash Redis with an atomic script. Both apply the same rules (constants at the top of each file).
+- **Storage:** `server.py` keeps it in `BOARD_FILE` (JSON); on Vercel, `api/board.js` keeps it in Upstash Redis with an atomic script, under keys that start with a version prefix (`board:v2:`). Changing that prefix starts an empty board, with everyone's ink full again, without touching the database (v2 is the board where every drawing has its author's name). Both apply the same rules (constants at the top of each file).
 
 **HTTP API** (same in both):
 
@@ -623,7 +623,8 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 | Someone's selection isn't highlighted | Their page DOM differs from yours (personalized or dynamic content). Expected. |
 | "Couldn't use that image" | The browser doesn't support the format (e.g. HEIC in some) or the image is damaged. Try JPG or PNG. |
 | The board says "not available" | On Vercel, Upstash Redis isn't connected to the project (Storage → Upstash → Connect, then redeploy). With `server.py`, `BOARD_FILE` is set to `""`. |
-| I can't draw anymore | You've used your ink: the countdown next to the bar shows when it refills (every 3 hours). |
+| I can't draw anymore | You've used your ink: the card over the board and the countdown next to the bar show when it refills (every 3 hours). |
+| Hovering a drawing says "Someone" | It was drawn before drawings kept their author's name. New drawings show the name. |
 | `address already in use` on start | Something already uses that port: `lsof -i :8080` to see it, or use `PORT=3000`. |
 | Duplicate panels in React | Missing `return () => mc.destroy()` in the `useEffect`. |
 
