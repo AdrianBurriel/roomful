@@ -202,12 +202,15 @@
   .botchip{display:inline-block;font:500 9px/1 var(--mono);letter-spacing:.06em;padding:3px 4px 2px;border-radius:4px;box-shadow:inset 0 0 0 1px currentColor;opacity:.75;margin-left:7px;vertical-align:2px}
 
   /* 01 · people: the count, set large and live */
-  .count{display:grid;grid-template-columns:5fr 7fr;align-items:end;gap:28px;margin-top:64px;padding-top:40px;border-top:1px solid var(--line)}
-  .count .big{font:400 clamp(160px,22vw,360px)/.78 var(--serif);letter-spacing:-.05em}
-  .count .big i{font-style:italic}
-  .count dl{margin:0 0 18px;display:grid;gap:14px}
-  .count dt{font:400 12px var(--mono);letter-spacing:.04em;color:var(--faint)}
-  .count dd{margin:2px 0 0;font:400 32px/1 var(--serif)}
+  /* Three live figures, one per line, read at a glance; the one that matters most in ink */
+  .count{display:grid;grid-template-columns:5fr 7fr;gap:clamp(40px,6vw,96px);margin-top:64px}
+  .stats{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+  .stat{flex:1;display:flex;align-items:center;gap:24px;padding:20px 0;border-bottom:1px solid var(--line)}
+  .stat b{flex:none;min-width:1.5ch;font:400 clamp(64px,6.4vw,104px)/.85 var(--serif);letter-spacing:-.04em;color:var(--muted);font-variant-numeric:tabular-nums}
+  .stat:first-child b{color:var(--ink)}
+  .stat span{font:400 12px var(--mono);letter-spacing:.04em;color:var(--muted)}
+  .stat b.tick{animation:tick .5s cubic-bezier(.22,1,.36,1)}
+  @keyframes tick{from{opacity:.2;transform:translateY(.12em)}}
   .mock{border:1px solid var(--line-2);border-radius:16px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 40px 80px -30px rgba(0,0,0,.8);overflow:hidden;align-self:stretch}
   .mock-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);font:400 12px var(--mono);color:var(--muted)}
   .live{display:inline-flex;align-items:center;gap:8px}
@@ -451,13 +454,10 @@
       </div>
     </div>
     <div class="count rv">
-      <div>
-        <div class="big" aria-live="polite"><span data-stat="page">1</span></div>
-        <dl>
-          <div><dt data-i18n="mockPeopleHere">people in this room</dt></div>
-          <div><dt data-i18n="cSite">on the whole site</dt><dd data-stat="site">1</dd></div>
-          <div><dt data-i18n="cPeak">today's peak</dt><dd data-stat="peak">1</dd></div>
-        </dl>
+      <div class="stats">
+        <div class="stat" aria-live="polite"><b data-stat="page">1</b><span class="live" data-i18n="cHere">here right now</span></div>
+        <div class="stat"><b data-stat="site">1</b><span data-i18n="cSite">across the whole site</span></div>
+        <div class="stat"><b data-stat="peak">1</b><span data-i18n="cPeak">today's peak</span></div>
       </div>
       <div class="mock" aria-hidden="true">
         <div class="mock-head"><span data-i18n="mockTitle">People · this page</span><span class="live" data-i18n="live">Live</span></div>
@@ -659,7 +659,7 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
     heroLede2: "convierte cualquier web en una sala: ves los cursores de los demás, chateas junto a ellos, reaccionáis y dibujáis en una pizarra compartida. Con dos líneas de código.",
     pillLabel: "La píldora", pillTitle: "Una píldora, <em>cuatro</em> puertas.",
     pillLede: "Vive en la esquina de abajo a la derecha de cada página. Aquí la tienes al doble de tamaño, con cada parte numerada. Todo lo de abajo funciona de verdad: pruébalo.",
-    cSite: "en toda la web", cPeak: "pico de hoy", mockTitle: "Personas · esta página",
+    cHere: "aquí, ahora mismo", cSite: "en toda la web", cPeak: "pico de hoy", mockTitle: "Personas · esta página",
     heroTitle: "Alguien más está <em>leyendo</em> esto.",
     heroLede: "Ahora mismo, todos los que están en esta página están en la sala contigo. Te los presenta una sola pieza: la píldora de abajo a la derecha, tu puerta a la sala. Tiene cuatro partes; aquí te enseñamos cada una, y todas las demos funcionan de verdad.",
     anatomySize: "Píldora · escala 2×", anatomyLabel: "Anatomía", pillReplica: "Réplica ampliada de la píldora",
@@ -672,7 +672,7 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
     s1Lede: "Las caras y el número te dicen cómo de llena está la sala. Púlsalas y verás quién es cada uno, si está activo, escribiendo o se ha ausentado, y un botón para <b>seguirle</b>: irás a donde vaya esa persona.",
     s1Btn: "Ver quién hay en la sala",
     s1Note: "Las cifras salen de la misma fuente que la píldora (<span class=\"mono\">onStats</span>), así que puedes ponerlas donde quieras de tu web.",
-    mockPeopleHere: "personas en esta sala", mockSite: "en toda la web · pico de hoy:", live: "En directo",
+    mockSite: "en toda la web · pico de hoy:", live: "En directo",
     mockYou: "Tú", mockEdit: "Editar", mockActive: "Activo", mockTyping: "Escribiendo…", mockAway: "Ausente",
     mockFollow: "Seguir", mockFollow2: "Seguir", mockFollowing: "Siguiendo",
     botAxolotl: "Ajolote Zen", botAxolotl2: "Ajolote Zen", botTapir: "Tapir Turbo", botTapir2: "Tapir Turbo",
@@ -775,7 +775,11 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
 
   function paintStats(s) {
     ["page", "site", "peak"].forEach(function (k) {
-      $$('[data-stat="' + k + '"]').forEach(function (el) { el.textContent = s[k]; });
+      $$('[data-stat="' + k + '"]').forEach(function (el) {
+        if (el.textContent === String(s[k])) return;
+        el.textContent = s[k];
+        if (el.parentNode.classList.contains("stat")) { el.classList.remove("tick"); void el.offsetWidth; el.classList.add("tick"); }
+      });
     });
     $$('[data-stat="label"]').forEach(function (el) {
       el.textContent = s.page > 1 ? d("here", { n: s.page }) : d("alone");
@@ -887,7 +891,7 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
     tour: { steps: TOUR, name: { en: "Capybara", es: "Capibara" } },
     ably: isLocal ? null : { authUrl: "/api/ably-token" },
     bots: 2,
-    botTargets: ".hero h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, .board-host, pre, .count .big",
+    botTargets: ".hero h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, .board-host, pre, .stat b",
     botPhrases: {
       en: ["Hi 👋", "What does the 👻 do?", "Press E, you'll see", "Love this typography",
         "Follow me 🏃", "This feels so Figma", "Testing the chat…", "Capybaras rule 🦫", "How many of us are there?", "Shall we draw something on the board? ✏️"],

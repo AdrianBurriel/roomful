@@ -98,7 +98,7 @@
         coachShortcuts: "Shortcuts:", coachChat: "<kbd>/</kbd> to write next to your cursor",
         coachReact: "<kbd>E</kbd> to react", and: "and", gotIt: "Got it",
         coachKeys: "Press <kbd>?</kbd> to see them all.", coachKeysTouch: "Tap ⌨ in the pill to write or react.",
-        keys: "Shortcuts", keysTitle: "Keyboard shortcuts", keysPick: "then 1–8 to pick",
+        keys: "Shortcuts", keysTitle: "Keyboard shortcuts", keysPick: "then 1–{n} to pick",
         keysEsc: "Close panels or stop following", keysHelp: "Show these shortcuts",
         keysFoot: "You can also click any of them.", keysFootTouch: "Tap one to use it.",
         following: "Following {name}", stopFollowing: "Stop following ✕",
@@ -147,7 +147,7 @@
         coachShortcuts: "Atajos:", coachChat: "<kbd>/</kbd> para escribir junto a tu cursor",
         coachReact: "<kbd>E</kbd> para reaccionar", and: "y", gotIt: "Entendido",
         coachKeys: "Pulsa <kbd>?</kbd> para verlos todos.", coachKeysTouch: "Toca ⌨ en la píldora para escribir o reaccionar.",
-        keys: "Atajos", keysTitle: "Atajos de teclado", keysPick: "y luego 1–8 para elegir",
+        keys: "Atajos", keysTitle: "Atajos de teclado", keysPick: "y luego 1–{n} para elegir",
         keysEsc: "Cerrar paneles o dejar de seguir", keysHelp: "Ver estos atajos",
         keysFoot: "También puedes pulsarlos aquí.", keysFootTouch: "Toca uno para usarlo.",
         following: "Siguiendo a {name}", stopFollowing: "Dejar de seguir ✕",
@@ -1414,7 +1414,7 @@
         return r;
       }
       if (opts.chat !== false) row("/", t("chatTip"), "", function () { open("chat"); });
-      if (reactions) row("E", t("react"), t("keysPick"), function () { open("reactions"); });
+      if (reactions) row("E", t("react"), t("keysPick", { n: Math.min(9, reactions.length) }), function () { open("reactions"); });
       row("Esc", t("keysEsc"));
       row("?", t("keysHelp"));
       el("p", "mc-foot", pop).textContent = t(isTouchUI() ? "keysFootTouch" : "keysFoot");

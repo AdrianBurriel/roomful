@@ -72,7 +72,7 @@ python3 server.py                 # → http://localhost:8080
 - Health check: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
 - The shared board is saved in `board.json` next to `server.py` (ignored by git). Delete it to start with an empty board.
 
-The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, starts with 2 bots, has a shared board and a 13-step guided tour (offered on the first visit, always available from the button at the top). It opens **in Spanish when the browser's main language is Spanish** (or Catalan, Galician or Basque) and **in English for everyone else**. The **EN | ES** switch in the top bar changes it and the choice is remembered; `?lang=es` / `?lang=en` in the URL wins over both.
+The demo (`public/index.html`) is a landing page that explains the pill, with demos that really work, starts with 2 bots, has a shared board and a 13-step guided tour (offered on the first visit, always available from the button under the headline). The page itself is one dark room on a dot board: the headline types itself first, then everything else arrives; a few dots in the logo's colors liven up the board, dim once the page is in and step aside while you read. Sections, in order: the pill, people, chat, reactions, your profile and ghost mode, what the room notices on its own, the shared board and how to integrate it. The pill and every panel it opens wear the page's own glass style (see [§15](#15-advanced-customization)). It opens **in Spanish when the browser's main language is Spanish** (or Catalan, Galician or Basque) and **in English for everyone else**. The **EN | ES** switch in the top bar changes it and the choice is remembered; `?lang=es` / `?lang=en` in the URL wins over both.
 
 ## 4. Adding it to a project
 
@@ -594,7 +594,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 
 ## 15. Advanced customization
 
-- **Styles:** every class starts with `mc-` (`.mc-presence`, `.mc-pop`, `.mc-cursor`, `.mc-tag`…). Override them from your CSS with higher specificity. The cursor layer uses `z-index: 2147483000` and the pill sits above it.
+- **Styles:** every class starts with `mc-` (`.mc-presence`, `.mc-pop`, `.mc-cursor`, `.mc-tag`…). Override them from your CSS with higher specificity. The cursor layer uses `z-index: 2147483000` and the pill sits above it. The landing is a full example: with `html .mc-presence`, `html .mc-pop`, `html .mc-picker`, `html .mc-coach`, `html .mc-tour` and `html .mc-tooltip` it gives the pill and everything it opens its own dark glass, fonts and colors, whatever the visitor's OS theme.
 - **Constants** at the top of `roomful.js`:
 
 | Constant | Value | What it controls |
