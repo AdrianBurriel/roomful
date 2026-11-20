@@ -27,7 +27,7 @@ python3 server.py            # → http://localhost:8080
 
 Abre `http://localhost:8080` y, para verte desde fuera, ábrelo también **en otro navegador o en otro dispositivo de tu red** (`http://<tu-ip-local>:8080`). Las pestañas del mismo navegador se reconocen como la misma persona.
 
-La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía (marcados como **BOT**; uno se queda siempre). Tiene una **pizarra compartida** para dibujar y un **tour guiado** de 13 pasos que se ofrece en la primera visita y está siempre disponible desde el botón de arriba. Se abre **en español si tu navegador está en español** (o en catalán, gallego o euskera) y en inglés en los demás casos, con un selector **EN | ES** en la barra superior que se recuerda.
+La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía (marcados como **BOT**; uno se queda siempre). Tiene una **pizarra compartida** para dibujar y un **tour guiado** de 13 pasos que se ofrece en la primera visita y está siempre disponible desde el botón bajo el titular. La propia página es una sala oscura sobre un tablero de puntos: primero se escribe el titular y después llega todo lo demás; unos pocos puntos con los colores del logo dan vida al tablero, se atenúan cuando la página ha cargado y se apartan mientras lees. Secciones, en orden: la píldora, las personas, el chat, las reacciones, tu perfil y el modo fantasma, lo que la sala nota sola, la pizarra compartida y cómo integrarlo. La píldora y todos sus paneles llevan el estilo de cristal de la página (ver *Estilos* en la documentación). Se abre **en español si tu navegador está en español** (o en catalán, gallego o euskera) y en inglés en los demás casos, con un selector **EN | ES** en la barra superior que se recuerda.
 
 ## Qué incluye
 
@@ -43,7 +43,7 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 | 🙂 **Perfil** | Nombre, color y foto propios, que se guardan solos al cambiarlos y se recuerdan entre visitas |
 | 👻 **Modo fantasma** | Deja de ver cursores y de compartir el tuyo |
 | 😴 **Reposo** | Los cursores quietos se atenúan con unas "zzz" animadas |
-| 📱 **Móvil y tablet** | Tu dedo es tu cursor; chat y reacciones desde los botones de la píldora |
+| 📱 **Móvil y tablet** | Tu dedo es tu cursor; chat y reacciones desde el panel de atajos de la píldora |
 | 🤖 **Bots opcionales** | Visitantes de compañía, marcados con la etiqueta **BOT**. Se retiran cuando llega gente real, pero siempre se queda uno |
 | ✏️ **Pizarra compartida** | Dibuja y escribe, con tu color, en una pizarra que se queda para quien venga después (pasa por encima de un dibujo para ver quién lo hizo); tinta por persona que se recarga cada 3 horas, y lo más antiguo se borra cuando se llena (`roomful-board.js`) |
 | 🗺️ **Tour guiado** | Una guía gris vuela a cada parte de la página y la explica paso a paso, avanzando sola (`tour`) |
@@ -54,19 +54,19 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 
 ```
  ┌──────────────────────────────────────────┐
- │ (◐◐◐) 4 aquí │  💬   😊  │  (Tú) ▾        │
+ │ (◐◐◐) 4 aquí │  ⌨   👻  │  (Tú)           │
  └──────────────────────────────────────────┘
-    Personas      Chat Reacc.  Tu perfil
+    Personas    Atajos Fantasma  Tu perfil
 ```
 
 | Parte | Qué hace | Atajo |
 |---|---|---|
 | **Personas** | Lista de quién está, con su estado, las cifras (en esta página, en la web, pico de hoy) y un botón **Seguir** | — |
-| **Chat** | Escribir junto a tu cursor (hasta 4 líneas); `Enter` lo deja unos segundos, `Esc` lo borra | `/` |
-| **Reacciones** | Emojis que flotan desde tu cursor | `E` |
+| **Atajos** | Todas las teclas de Roomful: `/` chat junto a tu cursor (hasta 4 líneas; `Enter` lo deja unos segundos, `Esc` lo borra), `E` reacciones que flotan desde tu cursor (`1`–`9` para elegir), `Esc` y `?`. Cada fila es también un botón, así que en pantallas táctiles se chatea y se reacciona desde aquí | `?` |
+| **Modo fantasma** | Un clic para dejar de ver cursores y de compartir el tuyo; la píldora se queda en "Cursores ocultos · Mostrar" | — |
 | **Tu perfil** | Nombre, color, foto y 🎲 al azar, que se guardan solos al cambiarlos (sin botón Guardar), y el interruptor de **modo fantasma** | — |
 
-En el ordenador cada botón muestra un tooltip con su atajo; en móvil y tablet se usan los botones 💬 y 🙂. La primera visita trae un aviso de bienvenida que además ofrece el tour guiado (si la web tiene uno).
+En el ordenador cada botón muestra un tooltip con su atajo; en móvil y tablet se toca ⌨ y se elige "Escribir" o "Reaccionar". La primera visita trae un aviso de bienvenida que además ofrece el tour guiado (si la web tiene uno).
 
 Sin tocar la píldora: agita el cursor rápido de lado a lado para saludar 👋 a la sala.
 
@@ -115,7 +115,7 @@ Todas las opciones (30) están en la [documentación](docs/DOCUMENTACION.md#5-op
 ### API
 
 ```js
-mc.open("people" | "profile" | "chat" | "reactions");  // abrir una parte de la píldora
+mc.open("people" | "profile" | "keys" | "chat" | "reactions");  // abrir una parte de la píldora
 mc.close();
 mc.setLang("en");                                        // cambiar de idioma al momento
 mc.react("🎉");

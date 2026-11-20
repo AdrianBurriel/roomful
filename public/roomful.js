@@ -19,7 +19,7 @@
  *   name        Fixed user name; disables profile editing  (random: "Zen Capybara")
  *   color       Hex color #RRGGBB                   (random from the palette)
  *   avatar      Initial photo (PNG/JPEG/WebP data URL, ≤ 14,000 chars)
- *   presence    The pill: people · chat · reactions · your profile   (true)
+ *   presence    The pill: people · shortcuts · ghost · your profile  (true)
  *   onboarding  Welcome hint the first time someone visits           (true)
  *   toggle      "Ghost mode" switch in your profile                  (true)
  *   chat        Cursor chat (button and "/" key)                     (true)
@@ -57,7 +57,7 @@
  *               first-visit hint offers the tour. Progress is remembered.
  *
  * Returns { me, peers, room, ghost, stats, lang, setRoom(), setGhost(), setIdentity(),
- *           setLang(), open("people"|"profile"|"chat"|"reactions"), close(),
+ *           setLang(), open("people"|"profile"|"keys"|"chat"|"reactions"), close(),
  *           react(emoji), follow(id), unfollow(), startTour(step?), stopTour(),
  *           uid, on("board", fn) → off(), signal("board"),
  *           tour → { active, step, total, saved }, destroy() }.
@@ -97,7 +97,10 @@
         coachBody: "Down here you can see who else is looking. Click the faces to see who they are and follow them.",
         coachShortcuts: "Shortcuts:", coachChat: "<kbd>/</kbd> to write next to your cursor",
         coachReact: "<kbd>E</kbd> to react", and: "and", gotIt: "Got it",
-        coachButtons: "In the pill:", coachChatTouch: "💬 to write", coachReactTouch: "🙂 to react",
+        coachKeys: "Press <kbd>?</kbd> to see them all.", coachKeysTouch: "Tap ⌨ in the pill to write or react.",
+        keys: "Shortcuts", keysTitle: "Keyboard shortcuts", keysPick: "then 1–{n} to pick",
+        keysEsc: "Close panels or stop following", keysHelp: "Show these shortcuts",
+        keysFoot: "You can also click any of them.", keysFootTouch: "Tap one to use it.",
         following: "Following {name}", stopFollowing: "Stop following ✕",
         stopFollowingName: "Stop following {name}", followName: "Follow {name}",
         you: "You", typing: "Typing…", away: "Away", active: "Active",
@@ -143,7 +146,10 @@
         coachBody: "Abajo ves quién más está mirando. Pulsa sobre las caras para ver quiénes son y seguirles.",
         coachShortcuts: "Atajos:", coachChat: "<kbd>/</kbd> para escribir junto a tu cursor",
         coachReact: "<kbd>E</kbd> para reaccionar", and: "y", gotIt: "Entendido",
-        coachButtons: "En la píldora:", coachChatTouch: "💬 para escribir", coachReactTouch: "🙂 para reaccionar",
+        coachKeys: "Pulsa <kbd>?</kbd> para verlos todos.", coachKeysTouch: "Toca ⌨ en la píldora para escribir o reaccionar.",
+        keys: "Atajos", keysTitle: "Atajos de teclado", keysPick: "y luego 1–{n} para elegir",
+        keysEsc: "Cerrar paneles o dejar de seguir", keysHelp: "Ver estos atajos",
+        keysFoot: "También puedes pulsarlos aquí.", keysFootTouch: "Toca uno para usarlo.",
         following: "Siguiendo a {name}", stopFollowing: "Dejar de seguir ✕",
         stopFollowingName: "Dejar de seguir a {name}", followName: "Seguir a {name}",
         you: "Tú", typing: "Escribiendo…", away: "Ausente", active: "Activo",
@@ -321,11 +327,15 @@
     ".mc-stack>:first-child{margin-left:0}",
     ".mc-avatar.mc-more{background:#EDEDED;color:#333}",
     ".mc-icon{width:36px;height:36px}",
+    ".mc-keys{list-style:none;margin:0;padding:6px}",
+    ".mc-key{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px}",
+    "button.mc-key{cursor:pointer}button.mc-key:hover{background:rgba(0,0,0,.05)}",
+    "button.mc-key:focus-visible{outline:2px solid #0D99FF;outline-offset:-2px}",
+    ".mc-key kbd{min-width:30px;text-align:center;box-sizing:border-box;flex:none}",
+    ".mc-key span{font-weight:500}.mc-key small{display:block;font-size:12px;font-weight:400;opacity:.6;margin-top:1px}",
     ".mc-sep{width:1px;height:20px;background:rgba(0,0,0,.1);margin:0 4px;flex:none}",
-    ".mc-me-btn{height:36px;padding:0 6px 0 4px;gap:3px}",
+    ".mc-me-btn{width:36px;height:36px}",
     ".mc-me-btn .mc-avatar{margin:0;border:0;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}",
-    ".mc-chev{opacity:.45;transition:transform .15s}",
-    ".mc-me-btn[aria-expanded=true] .mc-chev{transform:rotate(180deg)}",
     ".mc-ghost-bar{display:none;align-items:center;gap:8px;padding:0 0 0 10px;white-space:nowrap}",
     ".mc-presence.mc-ghost>*{display:none}",
     ".mc-presence.mc-ghost>.mc-ghost-bar{display:flex}",
@@ -338,7 +348,7 @@
     ".mc-tooltip.mc-on{opacity:1;transform:none}",
     ".mc-tooltip kbd{font:600 11px/1 ui-monospace,Menlo,monospace;background:rgba(255,255,255,.18);border-radius:4px;padding:2px 5px;margin-left:8px}",
     "@media (hover:none){.mc-tooltip{display:none}}",
-    ".mc-pop kbd,.mc-coach kbd,.mc-tour kbd{font:600 11px/1 ui-monospace,Menlo,monospace;border:1px solid rgba(0,0,0,.18);border-bottom-width:2px;",
+    ".mc-pop kbd,.mc-coach kbd,.mc-tour kbd{font:600 11px/1.4 ui-monospace,Menlo,monospace;border:1px solid rgba(0,0,0,.18);border-bottom-width:2px;",
     "  border-radius:5px;padding:1px 5px;margin:0 1px}",
     /* panels */
     ".mc-pop{position:fixed;right:16px;bottom:68px;z-index:2147483003;border-radius:16px;width:300px;max-width:calc(100vw - 32px);",
@@ -468,7 +478,7 @@
     "  .mc-pill-btn:hover,.mc-primary:hover,.mc-act.mc-on:hover{background:#e6e6e6}",
     "  .mc-act,.mc-outline,.mc-pop input{border-color:rgba(255,255,255,.2)}",
     "  .mc-head,.mc-foot{border-color:rgba(255,255,255,.08)}.mc-divider{background:rgba(255,255,255,.08)}",
-    "  .mc-person:hover{background:rgba(255,255,255,.05)}.mc-switch{background:rgba(255,255,255,.2)}",
+    "  .mc-person:hover,button.mc-key:hover{background:rgba(255,255,255,.05)}.mc-switch{background:rgba(255,255,255,.2)}",
     "  .mc-swatch[aria-pressed=true]{box-shadow:0 0 0 2px #1f1f1f,0 0 0 4px currentColor}",
     "  .mc-pop kbd,.mc-coach kbd,.mc-tour kbd{border-color:rgba(255,255,255,.25)}",
     "  .mc-tour-bar{background:rgba(255,255,255,.12)}.mc-tour-bar i{background:#A1A1AA}",
@@ -479,10 +489,9 @@
     return '<svg width="' + (size || 18) + '" height="' + (size || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
       ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
   }
-  var ICON_CHAT = icon('<path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.5-5.2A8.5 8.5 0 1 1 21 12z"/>');
-  var ICON_SMILE = icon('<circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01"/>');
+  var ICON_KEYS = icon('<rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12.5h.01M18 12.5h.01M10 12.5h4M8 16h8"/>');
+  var ICON_GHOST = icon('<path d="M12 2.5a7.5 7.5 0 0 0-7.5 7.5v11.5l2.8-2.4 2.4 2.4L12 19.1l2.3 2.4 2.4-2.4 2.8 2.4V10A7.5 7.5 0 0 0 12 2.5z"/><path d="M9.5 10h.01M14.5 10h.01"/>');
   var ICON_PEOPLE = icon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>', 16);
-  var ICON_CHEV = '<svg class="mc-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>';
   var ICON_EYE_OFF = icon('<path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.6 3.5M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2l20 20"/>', 16);
 
   function cursorSVG(color) {
@@ -836,28 +845,22 @@
     followLabel.type = "button";
     followLabel.addEventListener("click", function () { unfollow(); });
 
-    // The pill: [People] | [Chat] [React] | [Your profile]
+    // The pill: [People] | [Shortcuts] [Ghost mode] | [Your profile]
     // Every button says what it does (tooltip + shortcut) and opens a self-explanatory panel.
-    var presence = null, peopleBtn = null, chatBtn = null, reactBtn = null, meBtn = null;
+    // Chat and reactions live in the shortcuts panel: a key away, or a tap on touch screens.
+    var presence = null, peopleBtn = null, keysBtn = null, ghostBtn = null, meBtn = null;
     var ghostText = null, showBtn = null, tooltip = null, coach = null, coachTimer = null;
     var lastInput = "mouse", lastTouchAt = -1e9, touchStart = null, chatDocked = false;
     if (opts.presence !== false) {
       presence = el("div", "mc-presence", document.body);
       presence.setAttribute("role", "toolbar");
       peopleBtn = pillButton("mc-btn mc-people", "", function () { togglePop("people"); });
-      if (opts.chat !== false || reactions) el("span", "mc-sep", presence);
-      if (opts.chat !== false) {
-        chatBtn = pillButton("mc-btn mc-icon mc-chat-btn", "/", function () {
-          closePop(); closePicker(); openChat();
-        }, ICON_CHAT);
-      }
-      if (reactions) {
-        reactBtn = pillButton("mc-btn mc-icon mc-react-btn", "E", function () {
-          if (picker) return closePicker();
-          var r = presence.getBoundingClientRect();
-          openPicker(r.right, r.top - 8, true);
-        }, ICON_SMILE);
-      }
+      if (opts.chat !== false || reactions) {
+        el("span", "mc-sep", presence);
+        keysBtn = pillButton("mc-btn mc-icon mc-keys-btn", "?", function () { togglePop("keys"); }, ICON_KEYS);
+      } else el("span", "mc-sep", presence);
+      // One click to vanish; the pill then shrinks to "Cursors hidden · Show"
+      ghostBtn = pillButton("mc-btn mc-icon mc-ghost-btn", "", function () { closePop(); closePicker(); setGhost(true); }, ICON_GHOST);
       el("span", "mc-sep", presence);
       meBtn = pillButton("mc-btn mc-me-btn", "", function () { togglePop("profile"); });
       var ghostBar = el("div", "mc-ghost-bar", presence);
@@ -876,8 +879,8 @@
       input.setAttribute("aria-label", t("chatLabel"));
       if (!presence) return;
       presence.setAttribute("aria-label", t("toolbar"));
-      if (chatBtn) setTip(chatBtn, t("chatTip"));
-      if (reactBtn) setTip(reactBtn, t("react"));
+      if (keysBtn) setTip(keysBtn, t("keys"));
+      setTip(ghostBtn, t("ghost"), t("ghost") + ". " + t("ghostHelp"));
       ghostText.textContent = t("hidden");
       showBtn.textContent = t("show");
     }
@@ -911,7 +914,7 @@
     function setExpanded() {
       if (peopleBtn) peopleBtn.setAttribute("aria-expanded", String(!!openPop && openPop.kind === "people"));
       if (meBtn) meBtn.setAttribute("aria-expanded", String(!!openPop && openPop.kind === "profile"));
-      if (reactBtn) reactBtn.setAttribute("aria-expanded", String(!!picker));
+      if (keysBtn) keysBtn.setAttribute("aria-expanded", String(!!openPop && openPop.kind === "keys"));
     }
 
     // First-visit hint: what this is and how to use it (shown once)
@@ -923,10 +926,10 @@
       el("b", "", coach).textContent = t("coachTitle");
       var tips = [];
       var touchUI = isTouchUI();
-      if (opts.chat !== false) tips.push(t(touchUI ? "coachChatTouch" : "coachChat"));
-      if (reactions) tips.push(t(touchUI ? "coachReactTouch" : "coachReact"));
-      el("p", "", coach).innerHTML = t("coachBody") +
-        (tips.length ? " " + t(touchUI ? "coachButtons" : "coachShortcuts") + " " + tips.join(" " + t("and") + " ") + "." : "");
+      if (!touchUI && opts.chat !== false) tips.push(t("coachChat"));
+      if (!touchUI && reactions) tips.push(t("coachReact"));
+      el("p", "", coach).innerHTML = t("coachBody") + (!keysBtn ? "" : touchUI ? " " + t("coachKeysTouch") :
+        " " + t("coachShortcuts") + " " + tips.join(" " + t("and") + " ") + ". " + t("coachKeys"));
       var row = el("div", "mc-row", coach);
       if (tourSteps && opts.tour.offer !== false) {
         var go = el("button", "mc-btn mc-pill-btn", row);
@@ -1389,7 +1392,33 @@
       closePop(); closePicker(); hideTip(); dismissCoach();
       if (kind === "people" && !ghost) openPeople();
       else if (kind === "profile") openProfile();
+      else if (kind === "keys") openKeys();
       setExpanded();
+    }
+
+    // The shortcuts panel: every key Roomful listens to. Each action row also works
+    // as a button, so touch screens (no keyboard) can still write and react.
+    function openKeys() {
+      var pop = el("div", "mc-pop", document.body);
+      pop.setAttribute("role", "dialog");
+      pop.setAttribute("aria-label", t("keysTitle"));
+      el("h4", "", el("div", "mc-head", pop)).textContent = t("keysTitle");
+      pop.querySelector("h4").style.margin = "0";
+      var list = el("div", "mc-keys", pop);
+      function row(key, label, sub, action) {
+        var r = el(action ? "button" : "div", "mc-key", list);
+        if (action) { r.type = "button"; r.addEventListener("click", function () { closePop(); action(); }); }
+        el("kbd", "", r).textContent = key;
+        var tx = el("span", "", r); tx.textContent = label;
+        if (sub) el("small", "", tx).textContent = sub;
+        return r;
+      }
+      if (opts.chat !== false) row("/", t("chatTip"), "", function () { open("chat"); });
+      if (reactions) row("E", t("react"), t("keysPick", { n: Math.min(9, reactions.length) }), function () { open("reactions"); });
+      row("Esc", t("keysEsc"));
+      row("?", t("keysHelp"));
+      el("p", "mc-foot", pop).textContent = t(isTouchUI() ? "keysFootTouch" : "keysFoot");
+      openPop = { kind: "keys", el: pop };
     }
 
     function currentStats() {
@@ -2096,13 +2125,12 @@
         }
       }
 
-      // "Your profile" button: your face + chevron
+      // "Your profile" button: just your face
       var mk = lang + me.name + me.color + (me.avatar ? me.avatar.length : "");
       if (meBtn._key !== mk) {
         meBtn._key = mk;
         meBtn.innerHTML = "";
         face("", me, meBtn);
-        meBtn.insertAdjacentHTML("beforeend", ICON_CHEV);
         setTip(meBtn, t("profileOf", { name: me.name }), t("profileLabel", { name: me.name }));
       }
       setExpanded();
@@ -2239,7 +2267,7 @@
     function onDown(e) {
       var target = e.target;
       if (openPop && !openPop.el.contains(target) && !(presence && presence.contains(target)) && !followBox.contains(target)) closePop();
-      if (picker && !picker.contains(target) && !(reactBtn && reactBtn.contains(target))) closePicker();
+      if (picker && !picker.contains(target) && !(keysBtn && keysBtn.contains(target))) closePicker();
       if (e.button !== 0 || ghost || (target.closest && target.closest(UI))) return;
       var now = performance.now();
       if (now - lastClick < 120) return;
@@ -2259,7 +2287,11 @@
         e.preventDefault(); var emo = reactions[+e.key - 1]; closePicker(); react(emo); return;
       }
       if (ghost || isTyping(e.target)) return;
-      if (e.key === "/" && opts.chat !== false) { e.preventDefault(); openChat(); }
+      if (e.key === "?" && keysBtn) {
+        e.preventDefault(); togglePop("keys");
+        if (openPop && openPop.kind === "keys") { var k = openPop.el.querySelector("button"); if (k) k.focus(); }
+      }
+      else if (e.key === "/" && opts.chat !== false) { e.preventDefault(); openChat(); }
       else if ((e.key === "e" || e.key === "E") && reactions) {
         e.preventDefault();
         if (picker) closePicker();
@@ -2315,7 +2347,7 @@
         if (ghost) setGhost(false);
         var r = presence ? presence.getBoundingClientRect() : null;
         if (r) openPicker(r.right, r.top - 8, true); else openPicker(innerWidth / 2, innerHeight / 2, false);
-      } else if (what === "people" || what === "profile") {
+      } else if (what === "people" || what === "profile" || what === "keys") {
         if (what === "people" && ghost) setGhost(false);
         if (!(openPop && openPop.kind === what)) togglePop(what);
       }

@@ -27,7 +27,7 @@ python3 server.py            # → http://localhost:8080
 
 Open `http://localhost:8080` and, to see yourself from the outside, also open it **in another browser or on another device on your network** (`http://<your-local-ip>:8080`). Tabs of the same browser count as the same person.
 
-The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty (labelled **BOT**; one always stays). It has a **shared board** to draw on, and a **guided tour** of 13 steps that's offered on the first visit and always available from the button at the top. It opens **in Spanish if your browser is in Spanish** (or Catalan, Galician or Basque) and in English otherwise, with an **EN | ES** switch in the top bar that's remembered.
+The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty (labelled **BOT**; one always stays). It has a **shared board** to draw on, and a **guided tour** of 13 steps that's offered on the first visit and always available from the button under the headline. The page itself is one dark room on a dot board: the headline types itself first, then everything else arrives; a few dots in the logo's colors liven up the board, dim once the page is in and step aside while you read. Sections, in order: the pill, people, chat, reactions, your profile and ghost mode, what the room notices on its own, the shared board and how to integrate it. The pill and every panel it opens wear the page's own glass style (see *Styles* in the docs). It opens **in Spanish if your browser is in Spanish** (or Catalan, Galician or Basque) and in English otherwise, with an **EN | ES** switch in the top bar that's remembered.
 
 ## What's included
 
@@ -43,7 +43,7 @@ The demo is a landing page that explains every part of the pill, with demos that
 | 🙂 **Profile** | Your own name, color and photo, saved as you change them and remembered between visits |
 | 👻 **Ghost mode** | Stop seeing cursors and stop sharing yours |
 | 😴 **Idle** | Cursors that stop moving fade out with animated "zzz" |
-| 📱 **Phones and tablets** | Your finger is your cursor; chat and reactions from the pill's buttons |
+| 📱 **Phones and tablets** | Your finger is your cursor; chat and reactions from the pill's shortcuts panel |
 | 🤖 **Optional bots** | Companion visitors, labelled **BOT**. When real people arrive they step out, but one always stays |
 | ✏️ **Shared board** | Draw and write, in your color, on a board that stays for whoever comes next (hover a drawing to see who made it); ink per person that refills every 3 hours, and the oldest drawings are erased when it's full (`roomful-board.js`) |
 | 🗺️ **Guided tour** | A grey guide flies to each part of the page and explains it, step by step, moving on by itself (`tour`) |
@@ -54,19 +54,19 @@ The demo is a landing page that explains every part of the pill, with demos that
 
 ```
  ┌──────────────────────────────────────────┐
- │ (◐◐◐) 4 here │  💬   😊  │  (You) ▾       │
+ │ (◐◐◐) 4 here │  ⌨   👻  │  (You)          │
  └──────────────────────────────────────────┘
-    People        Chat React  Your profile
+    People     Shortcuts Ghost  Your profile
 ```
 
 | Part | What it does | Shortcut |
 |---|---|---|
 | **People** | List of who's here, with their status, the numbers (on this page, on the whole site, today's peak) and a **Follow** button | — |
-| **Chat** | Write next to your cursor (up to 4 lines); `Enter` keeps it for a few seconds, `Esc` clears it | `/` |
-| **Reactions** | Emojis that float up from your cursor | `E` |
+| **Shortcuts** | Every key Roomful listens to: `/` chat next to your cursor (up to 4 lines; `Enter` keeps it for a few seconds, `Esc` clears it), `E` reactions that float up from your cursor (`1`–`9` to pick), `Esc` and `?`. Each row is also a button, so touch screens can chat and react from here | `?` |
+| **Ghost mode** | One click to stop seeing cursors and stop sharing yours; the pill shrinks to "Cursors hidden · Show" | — |
 | **Your profile** | Name, color, photo and 🎲 random, saved on their own as you change them (no Save button), plus the **ghost mode** switch | — |
 
-On a computer every button shows a tooltip with its shortcut; on phones and tablets you use the 💬 and 🙂 buttons instead. The first visit brings a welcome hint that also offers the guided tour (if the site has one).
+On a computer every button shows a tooltip with its shortcut; on phones and tablets you tap ⌨ and pick "Write" or "React". The first visit brings a welcome hint that also offers the guided tour (if the site has one).
 
 Without touching the pill: shake your cursor quickly from side to side to wave 👋 at the room.
 
@@ -115,7 +115,7 @@ Every option (30 of them) is in the [documentation](docs/DOCUMENTATION.md#5-room
 ### API
 
 ```js
-mc.open("people" | "profile" | "chat" | "reactions");  // open a part of the pill
+mc.open("people" | "profile" | "keys" | "chat" | "reactions");  // open a part of the pill
 mc.close();
 mc.setLang("es");                                        // switch language on the fly
 mc.react("🎉");
