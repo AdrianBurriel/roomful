@@ -72,7 +72,7 @@ python3 server.py                 # → http://localhost:8080
 - Comprobar que está vivo: `curl http://localhost:8080/health` → `{"ok": true, "clients": 0, "rooms": 0}`.
 - La pizarra compartida se guarda en `board.json`, junto a `server.py` (git lo ignora). Bórralo para empezar con la pizarra vacía.
 
-La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, arranca con 2 bots, tiene una pizarra compartida y un tour guiado de 13 pasos (se ofrece en la primera visita y siempre está disponible desde el botón de arriba). Se abre **en español cuando el idioma principal del navegador es el español** (o catalán, gallego o euskera) y **en inglés para todos los demás**. El selector **EN | ES** de la barra superior lo cambia y la elección se recuerda; `?lang=es` / `?lang=en` en la URL manda sobre ambos.
+La demo (`public/index.html`) es una landing que explica la píldora, con demos que funcionan de verdad, arranca con 2 bots, tiene una pizarra compartida y un tour guiado de 13 pasos (se ofrece en la primera visita y siempre está disponible desde el botón bajo el titular). La propia página es una sala oscura sobre un tablero de puntos: primero se escribe el titular y después llega todo lo demás; unos pocos puntos con los colores del logo dan vida al tablero, se atenúan cuando la página ha cargado y se apartan mientras lees. Secciones, en orden: la píldora, las personas, el chat, las reacciones, tu perfil y el modo fantasma, lo que la sala nota sola, la pizarra compartida y cómo integrarlo. La píldora y todos sus paneles llevan el estilo de cristal de la página (ver [§15](#15-personalización-avanzada)). Se abre **en español cuando el idioma principal del navegador es el español** (o catalán, gallego o euskera) y **en inglés para todos los demás**. El selector **EN | ES** de la barra superior lo cambia y la elección se recuerda; `?lang=es` / `?lang=en` en la URL manda sobre ambos.
 
 ## 4. Integrarlo en un proyecto
 
@@ -141,7 +141,7 @@ Todas son opcionales. Los nombres anteriores siguen funcionando: `MultiCursor.in
 | `presence` | boolean | `true` | Muestra la píldora. Con `false` solo hay cursores (y `onStats`). |
 | `onboarding` | boolean | `true` | Aviso de bienvenida la primera vez (aparece a los 1,5 s y no vuelve a salir). |
 | `toggle` | boolean | `true` | Interruptor de "modo fantasma" en el panel de perfil. |
-| `chat` | boolean | `true` | Chat junto al cursor (botón 💬 y tecla `/`). |
+| `chat` | boolean | `true` | Chat junto al cursor (fila del panel de atajos y tecla `/`). |
 | `reactions` | array \| `false` | `["❤️","👍","🔥","😂","🎉","👏","😮","👀"]` | Emojis disponibles (se usan los 9 primeros). `false` las desactiva. |
 | `clicks` | boolean | `true` | Muestra los clics de los demás como ondas de su color. |
 | `selection` | boolean | `true` | Muestra el texto que seleccionan los demás. |
@@ -195,17 +195,17 @@ Además, `Roomful.languages` lista los idiomas incluidos (`["en", "es"]`).
 
 ```
  ┌──────────────────────────────────────────┐
- │ (◐◐◐) 4 aquí │  💬   😊  │  (Tú) ▾        │
+ │ (◐◐◐) 4 aquí │  ⌨   👻  │  (Tú)           │
  └──────────────────────────────────────────┘
-    Personas      Chat Reacc.  Tu perfil
+    Personas    Atajos Fantasma  Tu perfil
 ```
 
 | Parte | Qué hace |
 |---|---|
 | **Personas** | Caras de hasta 3 personas + "N aquí" ("Solo tú" si no hay nadie). Abre un panel con las cifras (en esta página, en toda la web, pico de hoy) y la lista de personas con su estado (**Activo**, **Escribiendo…**, **Ausente**) y un botón **Seguir**. Tu fila tiene **Editar**. |
-| **Chat 💬** | Abre un campo de texto junto a tu cursor. Se oculta en pantallas táctiles (no hay cursor). |
-| **Reacciones 😊** | Abre el selector de emojis encima de la píldora. |
-| **Tu perfil ▾** | Foto (subir, cambiar o quitar), nombre, color, 🎲 Al azar (nombre y color) y el interruptor **Modo fantasma**. No hay botón Guardar: color, foto y dado se aplican al momento, el nombre tras una breve pausa al escribir (o con `Enter` / al salir del campo), y "✓ Guardado" lo confirma. |
+| **Atajos ⌨** | Panel con todas las teclas (`/`, `E`, `Esc`, `?`). Las filas de chat y reacciones son también botones: abren el chat junto al cursor o el selector de emojis encima de la píldora, así que en pantallas táctiles es la forma de chatear y reaccionar. También se abre con `?`. |
+| **Modo fantasma 👻** | Activa el modo fantasma con un clic (el mismo que el interruptor del perfil). |
+| **Tu perfil** | Foto (subir, cambiar o quitar), nombre, color, 🎲 Al azar (nombre y color) y el interruptor **Modo fantasma**. No hay botón Guardar: color, foto y dado se aplican al momento, el nombre tras una breve pausa al escribir (o con `Enter` / al salir del campo), y "✓ Guardado" lo confirma. |
 
 Estados especiales:
 
@@ -221,6 +221,7 @@ Estados especiales:
 | `Enter` (en el chat) | Enviar; el mensaje se queda 4 s y desaparece |
 | `Esc` (en el chat) | Borrar el mensaje y cerrar |
 | `E` | Abrir/cerrar el selector de emojis junto al cursor |
+| `?` | Abrir/cerrar el panel de atajos |
 | Agitar el ratón de lado a lado | Saludar 👋 a la sala |
 | `1`–`9` (con el selector abierto) | Lanzar ese emoji (atajo oculto) |
 | `Esc` | Cerrar paneles y selector; dejar de seguir |
@@ -231,8 +232,8 @@ Los atajos no se activan mientras escribes en un campo de texto de la página.
 ### En móvil y tablet
 
 - **Tu dedo es tu cursor:** al tocar o deslizar la página, tu cursor se coloca ahí y viaja con el contenido al hacer scroll, así los demás ven por dónde vas leyendo. Tocar la píldora o sus paneles no lo mueve.
-- **Chat:** el botón 💬 abre el campo de mensaje abajo, encima del teclado; los demás ven tu mensaje junto a tu cursor.
-- **Reacciones:** el botón 🙂.
+- **Chat:** toca ⌨ y luego "Escribir junto a tu cursor": el campo de mensaje se abre abajo, encima del teclado; los demás ven tu mensaje junto a tu cursor.
+- **Reacciones:** toca ⌨ y luego "Reaccionar".
 - **Seguir** se detiene al deslizar para hacer scroll; un simple toque no lo corta.
 - El aviso de bienvenida y los textos de ayuda hablan de botones en vez de atajos de teclado.
 
@@ -592,7 +593,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 
 ## 15. Personalización avanzada
 
-- **Estilos:** todas las clases empiezan por `mc-` (`.mc-presence`, `.mc-pop`, `.mc-cursor`, `.mc-tag`…). Puedes sobrescribirlas desde tu CSS con más especificidad. La capa de cursores usa `z-index: 2147483000` y la píldora está por encima.
+- **Estilos:** todas las clases empiezan por `mc-` (`.mc-presence`, `.mc-pop`, `.mc-cursor`, `.mc-tag`…). Puedes sobrescribirlas desde tu CSS con más especificidad. La capa de cursores usa `z-index: 2147483000` y la píldora está por encima. La landing es un ejemplo completo: con `html .mc-presence`, `html .mc-pop`, `html .mc-picker`, `html .mc-coach`, `html .mc-tour` y `html .mc-tooltip` le da a la píldora y a todo lo que abre su propio cristal oscuro, sus tipografías y sus colores, sea cual sea el tema del sistema del visitante.
 - **Constantes** al principio de `roomful.js`:
 
 | Constante | Valor | Qué controla |
