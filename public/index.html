@@ -5,289 +5,378 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Roomful · Your website, with people in it</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0F0F0E">
 <meta name="description" content="Roomful turns any website into a room full of people: see who's in, chat next to your cursor, react, follow others and choose how you show up.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  /* ============ Roomful · one dark room, coloured only by the people in it ============ */
   :root{
-    --canvas:#F3F2EE; --dot:#D6D4CC; --surface:#FFFFFF; --ink:#151515; --muted:#6E6C66; --line:#E2E0D9;
-    --sel:#0D99FF; --me:#A259FF; --me-ink:#fff;
-    --c1:#F24E1E; --c2:#FFC700; --c3:#0ACF83; --c4:#1ABCFE; --c5:#A259FF; --c6:#FF4FA3;
-    --serif:"Instrument Serif", Georgia, serif;
-    --sans:"Inter Tight", Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-    --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
-    --r:18px;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --canvas:#111111; --dot:#2A2A2A; --surface:#1A1A1A; --ink:#F1F0EC; --muted:#9A988F; --line:#2B2B2B;
-    }
+    --bg:#0F0F0E; --surface:#161614; --raised:#1D1D1B; --ink:#F3F1EC; --muted:#8F8C84; --faint:#56534D;
+    --line:rgba(243,241,236,.08); --line-2:rgba(243,241,236,.15);
+    --c1:#FF6B3D; --c2:#FFC93C; --c3:#2ED69B; --c4:#3FB6FF; --c5:#A98BFF; --c6:#FF5FA8;
+    --me:#3FB6FF; --me-ink:#0F0F0E;
+    --serif:"Instrument Serif", Georgia, serif; --sans:"Geist", system-ui, -apple-system, sans-serif; --mono:"Geist Mono", ui-monospace, Menlo, monospace;
+    --glass:color-mix(in srgb,var(--surface) 78%,transparent);
+    --gut:clamp(20px,3vw,48px); --max:1440px;
+    color-scheme:dark;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth;overflow-x:clip}
-  body{margin:0;background:var(--canvas);color:var(--ink);font:17px/1.55 var(--sans);
-    background-image:radial-gradient(var(--dot) 1.1px, transparent 1.2px);background-size:22px 22px;
-    -webkit-font-smoothing:antialiased}
-  ::selection{background:color-mix(in srgb,var(--me) 30%,transparent)}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
-  h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.025em;line-height:1.02}
-  em{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.01em}
-  p{margin:0;color:var(--muted)}
-  a{color:inherit}
-  .mono{font-family:var(--mono);font-size:12px;letter-spacing:.02em}
-  button{font:inherit;color:inherit}
-
-  /* ---------- Top bar: like an editor toolbar ---------- */
-  .top{position:sticky;top:14px;z-index:20;margin:14px auto 0;max-width:1180px;padding:0 28px}
-  .bar{display:flex;align-items:center;gap:6px;height:52px;padding:0 8px 0 16px;border-radius:14px;
-    background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);
-    border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.05)}
-  .logo{display:flex;align-items:baseline;font-size:20px;font-weight:700;letter-spacing:-.045em;margin-right:auto;text-decoration:none}
-  .logo-dot{width:.32em;height:.32em;margin-left:.08em;border-radius:50%;background:var(--me)}
-  .bar nav{display:flex;gap:2px}
-  .bar nav a{font-size:14px;text-decoration:none;color:var(--muted);padding:8px 12px;border-radius:9px}
-  .lang{display:inline-flex;padding:3px;border-radius:10px;background:color-mix(in srgb,var(--ink) 7%,transparent);margin-left:8px}
-  .lang button{all:unset;cursor:pointer;font:600 12px var(--mono);letter-spacing:.04em;padding:6px 9px;border-radius:7px;color:var(--muted)}
-  .lang button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-  .lang button:hover{color:var(--ink)}
-  .lang button:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
-  .bar-gh{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;margin-left:8px;border-radius:10px;
-    background:var(--ink);color:var(--canvas);font-size:14px;font-weight:600;text-decoration:none;transition:transform .12s}
-  .bar-gh:hover{transform:translateY(-1px)}
-  .bar-gh:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
-  .bar nav a:hover{background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink)}
-
-  /* ---------- Frames (sections as Figma frames) ---------- */
-  .frame{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:44px}
-  .frame-label{position:absolute;left:2px;top:-26px;display:flex;gap:8px;align-items:center;
-    font:500 12px var(--mono);color:var(--muted);transition:color .15s}
-  .frame-label::before{content:"#";font-weight:600;opacity:.6}
-  .frame::after{content:"";position:absolute;inset:-5px;pointer-events:none;opacity:0;transition:opacity .15s;border-radius:calc(var(--r) + 4px);
+  body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+  /* The whole site sits on one dot canvas, fixed behind everything (like a design tool's board) */
+  /* Under the dots, the dark ground drifts through faint hues of the three logo colors as you go down the page */
+  body{position:relative}
+  .glow{position:absolute;inset:0;z-index:-2;pointer-events:none;overflow:hidden;
     background:
-      linear-gradient(#fff,#fff) 1px 1px/6px 6px no-repeat,
-      linear-gradient(#fff,#fff) calc(100% - 1px) 1px/6px 6px no-repeat,
-      linear-gradient(#fff,#fff) 1px calc(100% - 1px)/6px 6px no-repeat,
-      linear-gradient(#fff,#fff) calc(100% - 1px) calc(100% - 1px)/6px 6px no-repeat,
-      linear-gradient(var(--sel),var(--sel)) 0 0/8px 8px no-repeat,
-      linear-gradient(var(--sel),var(--sel)) 100% 0/8px 8px no-repeat,
-      linear-gradient(var(--sel),var(--sel)) 0 100%/8px 8px no-repeat,
-      linear-gradient(var(--sel),var(--sel)) 100% 100%/8px 8px no-repeat;
-    outline:1.5px solid var(--sel);outline-offset:-4px}
-  .frame::before{content:attr(data-size);position:absolute;left:50%;bottom:-32px;transform:translateX(-50%);
-    font:500 11px var(--mono);background:var(--sel);color:#fff;padding:3px 7px;border-radius:5px;opacity:0;transition:opacity .15s;white-space:nowrap}
-  .frame:hover::after,.frame:hover::before{opacity:1}
-  .frame:hover>.frame-label{color:var(--sel)}
-  @media (hover:none){.frame::after,.frame::before{display:none}}
+      radial-gradient(70vw 55vw at 8% 0%,rgba(255,107,61,.075),transparent 70%),
+      radial-gradient(60vw 50vw at 96% 9%,rgba(63,182,255,.06),transparent 70%),
+      radial-gradient(65vw 55vw at 4% 27%,rgba(46,214,155,.045),transparent 70%),
+      radial-gradient(70vw 60vw at 92% 44%,rgba(63,182,255,.055),transparent 70%),
+      radial-gradient(65vw 55vw at 10% 62%,rgba(255,107,61,.05),transparent 70%),
+      radial-gradient(70vw 60vw at 90% 80%,rgba(46,214,155,.045),transparent 70%),
+      radial-gradient(80vw 60vw at 30% 100%,rgba(255,107,61,.06),transparent 70%)}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:radial-gradient(rgba(243,241,236,.11) 1px,transparent 1.2px) 0 0/24px 24px}
+  ::selection{background:color-mix(in srgb,var(--me) 40%,transparent)}
+  a{color:inherit}
+  button{font:inherit;color:inherit}
+  p{margin:0}
+  em{font-style:italic}
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 var(--gut)}
+  .mono{font:400 12px/1.4 var(--mono);letter-spacing:.04em}
+  kbd{font:500 .8em/1 var(--mono);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:6px;padding:.2em .45em;background:var(--raised);color:var(--ink);white-space:nowrap}
+  :focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:6px}
 
-  section{padding:56px 0}
-  .kicker{display:inline-flex;align-items:center;gap:10px;font:500 12px var(--mono);color:var(--muted);margin-bottom:18px}
-  .num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--canvas);font:600 12px var(--mono)}
-  .h2{font-size:clamp(34px,4.6vw,60px)}
-  .lede{font-size:19px;max-width:520px;margin-top:18px}
-  .split{display:grid;grid-template-columns:1fr 1.05fr;gap:56px;align-items:center}
+  /* ---------- top bar: the name, the sections, who is here ---------- */
+  /* At the top the bar is see-through (the dots run under it); once you scroll it turns to glass */
+  .top{position:sticky;top:0;z-index:30;background:transparent;border-bottom:1px solid transparent;transition:border-color .3s,background-color .3s}
+  .top.scrolled{border-bottom-color:var(--line);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  /* The live pill wears the scrolled header: same glass, same hairline, same type */
+  html .mc-presence{background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--line-2);box-shadow:none;color:var(--ink);font-family:var(--sans)}
+  html .mc-presence .mc-btn:hover,html .mc-presence .mc-btn[aria-expanded=true]{background:rgba(243,241,236,.07)}
+  html .mc-presence .mc-avatar{border-color:var(--bg)}
+  html .mc-presence .mc-avatar.mc-more{background:var(--raised);color:var(--muted)}
+  html .mc-presence .mc-sep{background:var(--line-2)}
+  html .mc-presence .mc-pill-btn{background:var(--ink);color:var(--bg)}
+  html .mc-presence .mc-pill-btn:hover{background:#fff}
+  /* …and so does everything it opens: panels, the emoji picker, the first-visit hint, the tour card, the tooltip */
+  html .mc-pop,html .mc-picker,html .mc-tour{background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  html .mc-coach{background:var(--surface)}
+  html .mc-pop,html .mc-picker,html .mc-coach,html .mc-tour{border:1px solid var(--line-2);color:var(--ink);font-family:var(--sans);box-shadow:0 24px 60px -20px rgba(0,0,0,.85)}
+  html .mc-pop .mc-btn:hover,html .mc-pop .mc-btn[aria-expanded=true],html .mc-picker .mc-btn:hover,html .mc-coach .mc-btn:hover,html .mc-tour .mc-btn:hover{background:rgba(243,241,236,.07)}
+  html .mc-pop h4,html .mc-tour h4,html .mc-coach b{font:400 24px/1.05 var(--serif);letter-spacing:-.01em}
+  html .mc-coach b{margin-bottom:8px}
+  html .mc-big{font:400 46px/.9 var(--serif);letter-spacing:-.03em}
+  html .mc-head,html .mc-foot{border-color:var(--line)}
+  html .mc-divider{background:var(--line)}
+  html .mc-person:hover,html button.mc-key:hover{background:rgba(243,241,236,.05)}
+  html .mc-pop .mc-avatar{border-color:var(--surface)}
+  html .mc-pop kbd,html .mc-coach kbd,html .mc-tour kbd{font:500 11px/1.4 var(--mono);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:6px;background:var(--raised);color:var(--ink)}
+  html .mc-pop input{border-color:var(--line-2);font-family:var(--sans)}
+  html .mc-act,html .mc-outline{border-color:var(--line-2)}
+  html .mc-primary,html .mc-act.mc-on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  html .mc-primary:hover,html .mc-act.mc-on:hover{background:#fff}
+  html .mc-switch{background:rgba(243,241,236,.18)}
+  html .mc-switch[aria-checked=true]{background:var(--c3)}
+  html .mc-swatch[aria-pressed=true]{box-shadow:0 0 0 2px var(--surface),0 0 0 4px currentColor}
+  html .mc-status i{background:var(--c3)}
+  html .mc-status.mc-typing i{background:var(--c4)}
+  html .mc-status.mc-away i{background:var(--faint)}
+  html .mc-saved.mc-on{color:var(--c3)}
+  html .mc-tour-bar{background:var(--line-2)}
+  html .mc-tour-bar i{background:var(--muted)}
+  html .mc-coach::after{border-color:var(--line-2)}
+  html .mc-tooltip{background:var(--raised);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-2);font-family:var(--sans)}
+  html .mc-tooltip kbd{background:rgba(243,241,236,.1);font-family:var(--mono)}
+  html .mc-btn:focus-visible,html .mc-switch:focus-visible,html .mc-swatch:focus-visible,html .mc-pop input:focus,html button.mc-key:focus-visible,html .mc-follow button:focus-visible{outline-color:var(--ink)}
+  .bar{display:flex;align-items:center;gap:28px;height:72px;max-width:var(--max);margin:0 auto;padding:0 var(--gut)}
+  .logo{display:flex;align-items:center;gap:10px;font:500 19px var(--sans);letter-spacing:-.03em;text-decoration:none}
+  .dots{display:flex}
+  .dots i{width:9px;height:9px;border-radius:50%;margin-left:-3px;box-shadow:0 0 0 2px var(--bg)}
+  .dots i:first-child{margin-left:0}
+  .bar nav{display:flex;gap:4px}
+  .bar nav a{font:400 13px var(--sans);color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:8px;transition:color .15s}
+  .bar nav a:hover{color:var(--ink)}
+  .lang{margin-left:auto;display:inline-flex;gap:2px}
+  .lang button{all:unset;cursor:pointer;padding:6px 8px;border-radius:6px;font:500 12px var(--mono);color:var(--faint);transition:color .15s}
+  .lang button[aria-pressed=true]{color:var(--ink);background:rgba(243,241,236,.07)}
+  .lang button:hover{color:var(--ink)}
+  .bar-gh{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line-2);font:500 13px var(--sans);text-decoration:none;transition:border-color .15s}
+  .bar-gh:hover{border-color:var(--ink)}
 
-  .btn{display:inline-flex;align-items:center;gap:10px;height:46px;padding:0 20px;border-radius:12px;border:1.5px solid var(--ink);
-    background:transparent;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;transition:transform .12s}
-  .btn:hover{transform:translateY(-1px)}
+  /* ---------- buttons and links ---------- */
+  .btn{display:inline-flex;align-items:center;gap:10px;height:50px;padding:0 24px;border-radius:999px;border:1px solid var(--line-2);background:transparent;
+    font:500 15px var(--sans);cursor:pointer;text-decoration:none;white-space:nowrap;transition:transform .15s,border-color .15s,background .15s}
+  .btn:hover{transform:translateY(-1px);border-color:var(--ink)}
   .btn:active{transform:translateY(1px)}
-  .btn.solid{background:var(--ink);color:var(--canvas)}
-  .btn:disabled{opacity:.55;cursor:default;transform:none}
-  .btn:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
-  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
-  .note{font-size:14px;margin-top:14px}
+  .btn.solid{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .btn:disabled{opacity:.5;cursor:default;transform:none}
+  .link{font:500 15px var(--sans);text-decoration:none;border-bottom:1px solid var(--faint);padding-bottom:2px;transition:border-color .15s;cursor:pointer;background:none;border-top:0;border-left:0;border-right:0}
+  .link:hover{border-bottom-color:var(--ink)}
+  .actions{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-top:32px}
 
-  /* ---------- Hero / anatomy ---------- */
-  .hero{padding:72px 0 40px}
-  .hero h1{font-size:clamp(48px,8.4vw,118px);line-height:.94;max-width:1000px}
-  .hero h1 em{color:var(--me);transition:color .3s}
-  .hero .lede{font-size:21px;max-width:600px;margin-top:28px}
-
-  .anatomy{margin-top:72px;padding:88px 44px 44px;display:grid;place-items:center}
-  .pill-xl{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border-radius:999px;background:var(--surface);
-    border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.10);font:500 19px var(--sans);color:var(--muted);
-    transform-origin:center;max-width:100%}
-  .pill-xl .part{position:relative;display:flex;align-items:center;border-radius:999px;padding:0 10px;height:52px;
-    outline:1.5px dashed transparent;outline-offset:2px;transition:outline-color .15s, background .15s;cursor:default}
-  .pill-xl .part[data-n]::before{content:attr(data-n);position:absolute;left:50%;top:-52px;transform:translateX(-50%);
-    width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--canvas);font:600 13px var(--mono)}
-  .pill-xl .part[data-n]::after{content:"";position:absolute;left:50%;top:-22px;height:16px;border-left:1.5px dashed var(--muted)}
-  .pill-xl .part:hover,.pill-xl .part.on{outline-color:var(--sel);background:color-mix(in srgb,var(--sel) 8%,transparent)}
-  .pill-xl .sep{width:1.5px;height:30px;background:var(--line);margin:0 4px}
-  .pill-xl .part .stack{margin-right:12px}
-  .avatar.mini{width:42px;height:42px;font-size:15px;margin-right:6px}
-  kbd{font:600 .78em/1 var(--mono);border:1px solid var(--line);border-bottom-width:2.5px;border-radius:6px;padding:.18em .45em;background:var(--surface);color:var(--ink);white-space:nowrap}
-  .mock{border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:0 18px 50px rgba(0,0,0,.08);overflow:hidden}
-  .mock-head{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  .mock-head b{font:400 56px/1 var(--serif)}
-  .mock-head strong{display:block;font-size:15px}
-  .mock-head small{display:block;font-size:13px;color:var(--muted)}
-  .mock-head .live{margin:0 0 0 auto}
-  .mock-list{list-style:none;margin:0;padding:8px}
-  .mock-list li{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px}
-  .mock-list li:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
-  .mock-list i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:600 13px var(--sans);font-style:normal;color:#fff;flex:none;overflow:hidden}
-  .mock-list div{flex:1;min-width:0}
-  .mock-list strong{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mock-list small{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--c3);display:inline-block}
-  .dot.blue{background:var(--c4)} .dot.grey{background:var(--muted)}
-  .mbtn{font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;border:1px solid var(--line)}
-  .mbtn.on{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
-  .card .ghost-art{height:180px}
-  .card .ghost-art .big-eye{width:84px;height:84px}
-  .stack{display:flex}
-  .stack i{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font:600 15px var(--sans);font-style:normal;
-    border:3px solid var(--surface);margin-left:-11px;color:#fff}
-  .stack i:first-child{margin-left:0}
-  .ico{width:42px;height:42px;display:grid;place-items:center;color:var(--ink)}
-
-  .legend{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:28px}
-  .legend a{display:block;text-decoration:none;padding:18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s, transform .15s}
-  .legend a:hover{border-color:var(--sel);transform:translateY(-2px)}
-  .legend .num{margin-bottom:14px}
-  .legend strong{display:block;font-size:16px;margin-bottom:4px}
-  .legend span:not(.num){font-size:14px;color:var(--muted);line-height:1.4;display:block}
-
-
-  /* ---------- 01 · People ---------- */
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .stats div{padding:26px 22px;border-left:1px solid var(--line)}
-  .stats div:first-child{border-left:0}
-  .stats b{display:block;font:400 clamp(56px,6vw,84px)/1 var(--serif);letter-spacing:-.02em;color:var(--ink)}
-  .stats span{font-size:13px;color:var(--muted)}
-  .live{display:inline-flex;align-items:center;gap:8px;font:500 12px var(--mono);color:var(--muted);margin-bottom:14px}
-  .live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c3);box-shadow:0 0 0 0 var(--c3);animation:pulse 2s infinite}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c3) 60%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
-
-  /* ---------- 02 · Chat ---------- */
-  .keys{display:flex;gap:14px;align-items:center;margin-top:30px;flex-wrap:wrap}
-  .keys small{font-size:14px;color:var(--muted)}
-  .scene{position:relative;height:340px;border-radius:14px;background:var(--canvas);border:1px solid var(--line);overflow:hidden;
-    background-image:radial-gradient(var(--dot) 1.1px, transparent 1.2px);background-size:22px 22px}
-  .fake{position:absolute}
-  .fake svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2))}
-  .bubble{position:absolute;left:16px;top:18px;padding:9px 14px 11px;border-radius:4px 18px 18px 18px;font:400 16px/1.25 var(--sans);
-    white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.15)}
-  .bubble small{display:block;font-size:11px;font-weight:500;opacity:.8;margin-bottom:3px}
-  .tagx{position:absolute;left:16px;top:18px;padding:4px 9px;border-radius:3px 12px 12px 12px;font:500 13px var(--sans);white-space:nowrap}
-  .caret{display:inline-block;width:2px;height:1em;background:currentColor;vertical-align:-2px;margin-left:2px;animation:blink 1s steps(1) infinite}
+  /* ---------- hero: the headline, edited live by people in the room ---------- */
+  .hero{position:relative;min-height:calc(100svh - 72px);display:grid;align-items:center;isolation:isolate}
+  /* While the headline types, the dots are painted in at random on a canvas; then the CSS grid takes the grey ones
+     back and the canvas keeps only the colored dots */
+  .dotfill{position:fixed;inset:0;z-index:-1;pointer-events:none;transition:opacity 1.8s ease .4s}
+  html.settled .dotfill{opacity:.28}                                /* once the page is in, the colored dots step back */
+  html.settled.deep .dotfill{opacity:0;transition:opacity .8s ease} /* and while reading below, every dot is plain grey */
+  html.intro body::before{opacity:0}
+  .doc{position:relative;padding-top:6vh;padding-bottom:8vh}
+  .file{display:flex;align-items:center;gap:12px;font:400 12px var(--mono);letter-spacing:.04em;color:var(--faint);margin-bottom:24px}
+  .file::before{content:"";width:20px;height:1px;background:currentColor}
+  .file b{color:var(--muted);font-weight:400}
+  .hero h1{margin:0;font:400 clamp(60px,10.4vw,176px)/.98 var(--serif);letter-spacing:-.025em;max-width:11.5ch}
+  /* The headline types itself: every letter starts fully transparent and appears in turn */
+  .hero h1 .ch{color:var(--ink);opacity:0;transition:opacity .18s ease}
+  .hero h1.read .ch,.hero h1.lit .ch{opacity:1}
+  .hero h1.lit .ch{transition:none}
   @keyframes blink{50%{opacity:0}}
+  .cur svg{display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))}
+  .bubble{position:absolute;padding:10px 15px 12px;border-radius:4px 18px 18px 18px;font:500 17px/1.25 var(--sans);color:#0F0F0E;white-space:nowrap;
+    box-shadow:0 14px 30px -10px rgba(0,0,0,.6);pointer-events:none}
+  .bubble small{display:block;font:500 11px var(--mono);opacity:.65;margin-bottom:2px}
+  .hero-foot{display:flex;align-items:center;gap:clamp(32px,4vw,56px);margin-top:clamp(32px,5vh,56px)}
+  /* Intro: only the headline at first; everything else arrives once it has been read */
+  html.intro .top,html.intro .file,html.intro .hero-foot{opacity:0;transform:translateY(10px)}
+  html.intro .mc-layer,html.intro .mc-local,html.intro .mc-presence,html.intro .mc-coach{opacity:0;pointer-events:none}
+  html.reveal .top,html.reveal .file,html.reveal .hero-foot{transition:opacity .8s ease,transform .9s cubic-bezier(.22,1,.36,1),border-color .3s}
+  html.reveal .file{transition-delay:.12s}
+  html.reveal .hero-foot{transition-delay:.28s}
+  html.reveal .mc-layer,html.reveal .mc-local,html.reveal .mc-presence,html.reveal .mc-coach{transition:opacity .8s ease .6s}
+  .hero-lede{margin:0;max-width:44ch;font:400 clamp(17px,1.35vw,20px)/1.45 var(--sans);color:var(--muted)}
+  .hero-lede b{color:var(--ink);font-weight:500}
+  .hero-foot .actions{margin:0;flex:none}
+  .hero>.wrap{width:100%}
 
-  /* ---------- Cards ---------- */
-  .duo{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:36px}
-  .card{border:1px solid var(--line);border-radius:14px;padding:26px;background:var(--canvas)}
-  .card h3{font-size:22px;margin:18px 0 8px}
-  .card p{font-size:15px}
-  .avatar{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font:600 18px var(--sans);color:#fff}
+  /* ---------- sections: one idea each, shown by the people doing it ---------- */
+  section{position:relative;padding:clamp(96px,13vw,200px) 0 0}
+  .label{display:flex;align-items:center;gap:14px;font:400 12px var(--mono);letter-spacing:.04em;color:var(--muted);margin-bottom:28px}
+  .label .n{color:var(--ink)}
+  .label::after{content:"";flex:1;height:1px;background:var(--line)}
+  .h2{margin:0;font:400 clamp(48px,7.2vw,120px)/.98 var(--serif);letter-spacing:-.025em;max-width:14ch}
+  .h2 em,.h3 em{font-style:italic}
+  .lede{margin-top:28px;max-width:42ch;font:400 clamp(17px,1.3vw,19px)/1.55 var(--sans);color:var(--muted)}
+  .lede b{color:var(--ink);font-weight:500}
+  .note{margin-top:18px;font-size:14px;color:var(--faint)}
+  .note .mono{font-size:13px;color:var(--muted)}
+  .h3{margin:0;font:400 clamp(28px,2.6vw,40px)/1.05 var(--serif);letter-spacing:-.015em}
+  .cols{display:grid;grid-template-columns:5fr 7fr;gap:clamp(40px,6vw,96px);align-items:end}
+
+  /* 00 · the pill, enlarged, on a canvas */
+  .stagebox{position:relative;margin-top:64px;border:1px solid var(--line);border-radius:20px;padding:120px 32px 64px;display:grid;place-items:center;overflow:hidden;
+    background:radial-gradient(60% 80% at 50% 50%,rgba(243,241,236,.035),transparent)}
+  .pill-xl{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border-radius:999px;color:var(--ink);
+    background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line-2);
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.8);font:600 19px var(--sans);max-width:100%}
+  .pill-xl .part{position:relative;display:flex;align-items:center;border-radius:999px;padding:0 10px;height:52px;outline:1.5px dashed transparent;outline-offset:2px;transition:outline-color .15s,background .15s}
+  .pill-xl .part[data-n]::before{content:attr(data-n);position:absolute;left:50%;top:-64px;transform:translateX(-50%);font:400 13px var(--mono);color:var(--ink)}
+  .pill-xl .part[data-n]::after{content:"";position:absolute;left:50%;top:-38px;height:28px;border-left:1px solid var(--faint)}
+  .pill-xl .part:hover,.pill-xl .part.on{outline-color:var(--muted);background:rgba(243,241,236,.07)}
+  .pill-xl .sep{width:1.5px;height:30px;background:var(--line-2);margin:0 4px}
+  .pill-xl .part .stack{margin-right:12px}
+  .pill-xl .ico{width:52px;height:52px;display:grid;place-items:center;color:var(--ink)}
+  .pill-xl .stack i{border-color:var(--bg)}
+  .legend{display:grid;grid-template-columns:repeat(4,1fr);margin-top:0;border-bottom:1px solid var(--line)}
+  .legend a{display:block;text-decoration:none;padding:28px 24px 32px 0;transition:color .15s}
+  .legend a+a{padding-left:24px;border-left:1px solid var(--line)}
+  .legend .n{display:block;font:400 12px var(--mono);color:var(--faint);margin-bottom:28px}
+  .legend strong{display:block;font:400 30px/1 var(--serif);margin-bottom:10px;transition:transform .2s}
+  .legend span:not(.n){display:block;font-size:15px;line-height:1.5;color:var(--muted)}
+  .legend a:hover strong{transform:translateX(4px)}
+
+  /* shared people bits */
+  .stack{display:flex}
+  .stack i{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font:600 14px var(--sans);font-style:normal;border:3px solid var(--bg);margin-left:-11px;color:#0F0F0E}
+  .stack i:first-child{margin-left:0}
+  .avatar{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font:600 18px var(--sans);color:#0F0F0E;flex:none}
   .avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
-  .avatar.me{background:var(--me);color:var(--me-ink);box-shadow:inset 0 0 0 3px rgba(255,255,255,.65);transition:background .3s}
-  .follow-demo{position:relative;height:120px;border-radius:10px;border:3px solid var(--c6);margin-top:4px;background:var(--surface)}
-  .follow-demo span{position:absolute;top:-3px;left:50%;transform:translateX(-50%);background:var(--c6);color:#fff;font:600 11px var(--sans);
-    padding:4px 10px 5px;border-radius:0 0 7px 7px;white-space:nowrap}
-  .follow-demo .fake{left:58%;top:52px}
-  .card .btn{margin-top:20px;height:40px;font-size:14px}
+  .avatar.me{background:var(--me);color:var(--me-ink);transition:background .3s}
+  .avatar.mini{width:42px;height:42px;font-size:15px;margin-right:6px;border:0}
+  .cur{position:absolute;pointer-events:none}
+  .tagx{position:absolute;left:16px;top:18px;padding:4px 9px;border-radius:3px 12px 12px 12px;font:500 13px var(--sans);white-space:nowrap;color:#0F0F0E}
+  .botchip{display:inline-block;font:500 9px/1 var(--mono);letter-spacing:.06em;padding:3px 4px 2px;border-radius:4px;box-shadow:inset 0 0 0 1px currentColor;opacity:.75;margin-left:7px;vertical-align:2px}
 
-  /* ---------- 03 · Reactions ---------- */
-  .emoji-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  .emoji-grid button{position:relative;aspect-ratio:1;border-radius:18px;border:1px solid var(--line);background:var(--canvas);
-    font-size:clamp(34px,4vw,48px);cursor:pointer;transition:transform .15s, border-color .15s}
-  .emoji-grid button:hover{transform:translateY(-3px) rotate(-3deg);border-color:var(--sel)}
-  .emoji-grid button:active{transform:scale(.94)}
+  /* 01 · people: the count, set large and live */
+  .count{display:grid;grid-template-columns:5fr 7fr;align-items:end;gap:28px;margin-top:64px;padding-top:40px;border-top:1px solid var(--line)}
+  .count .big{font:400 clamp(160px,22vw,360px)/.78 var(--serif);letter-spacing:-.05em}
+  .count .big i{font-style:italic}
+  .count dl{margin:0 0 18px;display:grid;gap:14px}
+  .count dt{font:400 12px var(--mono);letter-spacing:.04em;color:var(--faint)}
+  .count dd{margin:2px 0 0;font:400 32px/1 var(--serif)}
+  .mock{border:1px solid var(--line-2);border-radius:16px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 40px 80px -30px rgba(0,0,0,.8);overflow:hidden;align-self:stretch}
+  .mock-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);font:400 12px var(--mono);color:var(--muted)}
+  .live{display:inline-flex;align-items:center;gap:8px}
+  .live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c3);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,214,155,.5)}100%{box-shadow:0 0 0 9px rgba(46,214,155,0)}}
+  .mock-list{list-style:none;margin:0;padding:8px}
+  .mock-list li{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;transition:background .15s}
+  .mock-list li:hover{background:rgba(243,241,236,.04)}
+  .mock-list i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:600 13px var(--sans);font-style:normal;color:#0F0F0E;flex:none;overflow:hidden}
+  .mock-list div{flex:1;min-width:0}
+  .mock-list strong{display:block;font:500 15px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mock-list small{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--c3);display:inline-block}
+  .dot.blue{background:var(--c4)} .dot.grey{background:var(--faint)}
+  .mbtn{font:500 13px var(--sans);padding:7px 14px;border-radius:999px;border:1px solid var(--line-2)}
+  .mbtn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
-  /* ---------- 04 · Ghost mode ---------- */
-  .ghost-art{position:relative;display:grid;place-items:center;height:300px;border-radius:14px;border:1px solid var(--line);overflow:hidden;
-    background:repeating-linear-gradient(-45deg,var(--canvas) 0 12px,color-mix(in srgb,var(--line) 55%,var(--canvas)) 12px 13px)}
-  .ghost-art .big-eye{width:120px;height:120px;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;
-    box-shadow:0 14px 40px rgba(0,0,0,.08)}
-  .ghost-art .fake{transition:opacity .4s, filter .4s}
-  body.is-ghost .ghost-art .fake{opacity:.12;filter:grayscale(1)}
-  .state{display:inline-flex;align-items:center;gap:8px;font:500 12px var(--mono);padding:6px 10px;border-radius:8px;
-    background:color-mix(in srgb,var(--c3) 16%,transparent);color:color-mix(in srgb,var(--c3) 70%,var(--ink));margin-top:22px}
-  body.is-ghost .state{background:color-mix(in srgb,var(--muted) 18%,transparent);color:var(--muted)}
+  /* 02 · chat: a wide scene where a conversation happens */
+  .scene{position:relative;height:clamp(300px,28vw,400px);margin-top:64px;border:1px solid var(--line);border-radius:20px;overflow:hidden;
+    background:radial-gradient(60% 80% at 50% 50%,rgba(243,241,236,.035),transparent)}
+  .scene .cur{transition:left 1.2s cubic-bezier(.65,0,.35,1),top 1.2s cubic-bezier(.65,0,.35,1)}
+  .scene .bubble{left:16px;top:20px}
+  .scene .bubble .t:empty{display:none}
+  .caretx{display:inline-block;width:2px;height:1em;background:currentColor;vertical-align:-2px;margin-left:2px;animation:blink 1s steps(1) infinite}
+  .keys{display:flex;gap:28px;flex-wrap:wrap;margin-top:28px;font-size:14px;color:var(--muted)}
+  .keys span{display:inline-flex;align-items:center;gap:10px}
 
-  /* ---------- Without touching the pill ---------- */
-  .trio{display:grid;grid-template-columns:repeat(2,1fr);gap:56px 22px;margin-top:56px}
-  .trio .frame{padding:30px}
-  .trio h3{font-size:24px;margin:6px 0 10px}
-  .trio p{font-size:15px}
-  .zone{position:relative;height:170px;margin-top:22px;border-radius:12px;border:1.5px dashed var(--line);display:grid;place-items:center;
-    cursor:crosshair;overflow:hidden;color:var(--muted);font:500 12px var(--mono);user-select:none}
-  .zone .rip{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:2.5px solid var(--me);
-    animation:rip .65s ease-out forwards;pointer-events:none}
-  @keyframes rip{from{transform:scale(.15);opacity:1}to{transform:scale(1.4);opacity:0}}
-  .selectme{margin-top:22px;padding:18px;border-radius:12px;background:var(--canvas);font:400 22px/1.35 var(--serif);color:var(--ink);cursor:text}
-  .selectme mark{background:color-mix(in srgb,var(--c4) 30%,transparent);color:inherit;border-radius:2px}
-  .idle-demo{position:relative;height:170px;margin-top:22px;border-radius:12px;background:var(--canvas)}
-  .idle-demo .fake{left:30%;top:64px}
-  .idle-demo .fake svg,.idle-demo .tagx{opacity:.4}
-  .zzz{position:absolute;left:22px;top:-16px;font:700 14px/1 var(--sans);pointer-events:none}
+  /* 03 · reactions: eight big keys */
+  .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);margin-top:64px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .emoji-grid button{all:unset;box-sizing:border-box;position:relative;display:grid;place-items:center;aspect-ratio:1;cursor:pointer;font-size:clamp(36px,4.6vw,72px);
+    transition:transform .25s cubic-bezier(.22,1,.36,1),background .2s}
+  .emoji-grid button+button{border-left:1px solid var(--line)}
+  .emoji-grid button::after{content:attr(data-k);position:absolute;left:12px;top:10px;font:400 11px var(--mono);color:var(--faint)}
+  .emoji-grid button:hover{background:rgba(243,241,236,.03)}
+  .emoji-grid button:hover>span{transform:translateY(-8px) rotate(-6deg) scale(1.08)}
+  .emoji-grid button>span{display:block;transition:transform .3s cubic-bezier(.22,1,.36,1)}
+  .emoji-grid button:active>span{transform:scale(.9)}
+  .emoji-grid button:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;border-radius:0}
+
+  /* 04 · profile and ghost mode */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:64px}
+  .card{position:relative;border:1px solid var(--line);border-radius:20px;padding:clamp(28px,3vw,40px);background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);overflow:hidden;transition:background .5s,border-color .5s}
+  .card .h3{margin:28px 0 12px}
+  .card p{color:var(--muted);max-width:40ch}
+  .card .actions{margin-top:28px}
+  .me-row{display:flex;align-items:center;gap:16px}
+  .me-row .avatar{width:72px;height:72px;font-size:22px}
+  .swatches{display:flex;gap:8px;margin-left:auto}
+  .swatches i{width:18px;height:18px;border-radius:50%}
+  .ghost-art{position:relative;height:140px;margin:-4px 0 0}
+  .ghost-art .cur{transition:opacity .5s,filter .5s}
+  .big-ghost{position:absolute;right:0;top:0;width:72px;height:72px;border-radius:50%;border:1px solid var(--line-2);display:grid;place-items:center;color:var(--ink)}
+  .state{display:inline-flex;align-items:center;gap:8px;font:400 12px var(--mono);color:var(--c3)}
+  body.is-ghost .state{color:var(--muted)}
+  body.is-ghost #profile .card:last-child{background:#0B0B0A;border-color:rgba(243,241,236,.04)}
+  body.is-ghost .ghost-art .cur{opacity:.1;filter:grayscale(1)}
+  body.is-ghost .big-ghost{color:var(--muted);border-style:dashed}
+  body.is-ghost #profile .h2{color:var(--faint)}
+
+  /* 06 · board */
+  .board-host{margin-top:64px}
+  .board-host .rb{--rb-bg:var(--surface);--rb-ink:var(--ink);--rb-line:var(--line-2);--rb-paper:#171715;--rb-hover:rgba(243,241,236,.07);--rb-dotc:rgba(243,241,236,.09)}
+
+  /* 05 · what the room notices: a table of four, no boxes */
+  .trio{display:grid;grid-template-columns:repeat(4,1fr);margin-top:64px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .cell{position:relative;padding:28px 24px 32px 0;display:flex;flex-direction:column;min-height:420px}
+  .cell+.cell{padding-left:24px;border-left:1px solid var(--line)}
+  .cell .n{font:400 12px var(--mono);color:var(--faint)}
+  .cell .h3{margin:28px 0 12px;font-size:clamp(26px,2.2vw,34px)}
+  .cell p{color:var(--muted);font-size:15px}
+  .zone,.selectme,.idle-demo,.wave-demo{position:relative;margin-top:auto;height:170px;border-radius:14px;overflow:hidden}
+  .zone{border:1px dashed var(--line-2);display:grid;place-items:center;cursor:crosshair;color:var(--faint);font:400 12px var(--mono);user-select:none}
+  .zone .rip{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:2px solid var(--me);animation:rip .65s ease-out forwards;pointer-events:none}
+  @keyframes rip{from{transform:scale(.15);opacity:1}to{transform:scale(1.5);opacity:0}}
+  .selectme{height:auto;min-height:170px;padding:20px;background:var(--glass);font:400 26px/1.25 var(--serif);color:var(--ink);cursor:text;overflow:visible}
+  .selectme mark{background:color-mix(in srgb,var(--c4) 35%,transparent);color:inherit;border-radius:2px}
+  .idle-demo,.wave-demo{background:var(--glass)}
+  .idle-demo .cur{left:30%;top:70px}
+  .idle-demo svg,.idle-demo .tagx{opacity:.45}
+  .zzz{position:absolute;left:22px;top:-16px;font:600 14px/1 var(--sans);pointer-events:none}
   .zzz span{position:absolute;left:0;top:0;opacity:0;animation:zzz 2.4s ease-in-out infinite}
   .zzz span:nth-child(2){animation-delay:.8s;font-size:12px}
   .zzz span:nth-child(3){animation-delay:1.6s;font-size:10px}
   @keyframes zzz{0%{transform:translate(0,6px) scale(.6);opacity:0}20%{opacity:1}100%{transform:translate(16px,-20px) scale(1.2);opacity:0}}
-
-  .board-host{margin-top:28px}
-  .board-host .rb{--rb-bg:var(--surface);--rb-ink:var(--ink);--rb-line:var(--line);--rb-paper:var(--canvas)}
-  .wave-demo{position:relative;height:170px;margin-top:22px;border-radius:12px;background:var(--canvas);overflow:hidden}
-  .wave-demo .fake{left:34%;top:78px;animation:shake 3s ease-in-out infinite}
+  .wave-demo .cur{left:34%;top:78px;animation:shake 3s ease-in-out infinite}
   .wave-demo .hi{position:absolute;left:4px;top:-8px;font-size:28px;line-height:1;opacity:0;animation:hi 3s ease-out infinite}
-  @keyframes shake{0%,4%{transform:translateX(0)}8%{transform:translateX(-22px)}14%{transform:translateX(22px)}20%{transform:translateX(-22px)}
-    26%{transform:translateX(22px)}32%,100%{transform:translateX(0)}}
-  @keyframes hi{0%,32%{transform:translateY(0) scale(.4);opacity:0}40%{transform:translateY(-12px) scale(1.15);opacity:1}
-    75%{transform:translateY(-58px) scale(.95) rotate(-12deg);opacity:0}100%{opacity:0}}
-  .botchip{display:inline-block;font:700 9px/1 var(--sans);letter-spacing:.06em;padding:3px 4px 2px;border-radius:4px;
-    box-shadow:inset 0 0 0 1px currentColor;opacity:.7;margin-left:7px;vertical-align:2px}
-  .bots{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;margin-top:22px}
-  .bots .stack i{width:52px;height:52px;font-size:16px;border-color:var(--surface)}
+  @keyframes shake{0%,4%{transform:translateX(0)}8%{transform:translateX(-22px)}14%{transform:translateX(22px)}20%{transform:translateX(-22px)}26%{transform:translateX(22px)}32%,100%{transform:translateX(0)}}
+  @keyframes hi{0%,32%{transform:translateY(0) scale(.4);opacity:0}40%{transform:translateY(-12px) scale(1.15);opacity:1}75%{transform:translateY(-58px) scale(.95) rotate(-12deg);opacity:0}100%{opacity:0}}
+  .bots{display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center;padding:40px 0;border-bottom:1px solid var(--line)}
+  .bots .stack i{width:56px;height:56px;font-size:16px}
+  .bots .h3{margin-bottom:10px}
+  .bots p{color:var(--muted);max-width:70ch}
 
-  /* ---------- Integrate ---------- */
-  pre{margin:0;padding:24px 26px;border-radius:14px;background:#151515;border:1px solid #2B2B2B;color:#E9E7E1;font:14px/1.7 var(--mono);overflow:auto}
-  pre .c{color:#7C7A72} pre .s{color:#FFC700} pre .k{color:#1ABCFE} pre .f{color:#0ACF83}
-  .code{position:relative}
-  .copy{position:absolute;right:14px;top:14px;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333;background:#222;color:#ddd;font:500 12px var(--mono);cursor:pointer}
+  /* 07 · integrate */
+  #integrate{text-align:left}
+  .code{position:relative;margin-top:64px}
+  pre{margin:0;padding:clamp(28px,3vw,44px);border-radius:20px;background:color-mix(in srgb,#0A0A09 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line-2);color:#E9E7E1;font:400 clamp(14px,1.15vw,17px)/1.8 var(--mono);overflow:auto}
+  pre .c{color:var(--faint)} pre .s{color:var(--c2)} pre .k{color:var(--c4)} pre .f{color:var(--c6)}
+  .copy{position:absolute;right:18px;top:18px;height:36px;padding:0 16px;border-radius:999px;border:1px solid var(--line-2);background:var(--raised);font:500 12px var(--mono);cursor:pointer;transition:border-color .15s}
+  .copy:hover{border-color:var(--ink)}
 
-  footer{padding:60px 0 140px;color:var(--muted);font-size:14px}
-  footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:28px}
-  .legal{display:flex;flex-direction:column;gap:6px}
-  .gh{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:600;text-decoration:none;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);transition:border-color .15s}
-  .gh:hover{border-color:var(--sel)}
-  .gh:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
-  .foot-links{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .gh.star{border-color:color-mix(in srgb,#F5A524 55%,var(--line));background:color-mix(in srgb,#F5A524 10%,var(--surface))}
-  .gh.star:hover{border-color:#F5A524}
-  .gh.star .st{font-size:18px;line-height:1;display:inline-block;transition:transform .25s}
+  /* footer: the name, set large, in everyone's colours */
+  footer{padding:clamp(120px,16vw,240px) 0 40px}
+  .bigname{margin:0 0 48px;font:400 clamp(110px,25vw,420px)/.8 var(--serif);letter-spacing:-.055em;white-space:nowrap}
+  .bigname .dots{display:inline-flex;vertical-align:baseline;margin-left:.1em}
+  .bigname .dots i{width:.14em;height:.14em;margin-left:-.04em;box-shadow:0 0 0 .02em var(--bg)}
+  .foot-row{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding-top:28px;border-top:1px solid var(--line)}
+  .legal{font:400 12px var(--mono);color:var(--faint)}
+  .foot-links{display:flex;gap:10px;flex-wrap:wrap}
+  .gh{display:inline-flex;align-items:center;gap:10px;height:46px;padding:0 20px;border-radius:999px;border:1px solid var(--line-2);font:500 14px var(--sans);text-decoration:none;transition:border-color .15s}
+  .gh:hover{border-color:var(--ink)}
+  .gh.star{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .gh.star .st{font-size:17px;line-height:1;display:inline-block;transition:transform .25s}
   .gh.star:hover .st{transform:rotate(-18deg) scale(1.25)}
 
-  @media (max-width:900px){
-    .split,.duo,.trio{grid-template-columns:1fr}
-    .legend{grid-template-columns:repeat(2,1fr)}
+  /* reveal: content settles in once as it arrives (never hidden without JS) */
+  .js .rv{opacity:0;transform:translateY(24px);transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1)}
+  .js .rv.in{opacity:1;transform:none}
+
+  @media (max-width:1100px){
     .bar nav{display:none}
-    .frame{padding:28px}
-    .anatomy{padding:72px 16px 28px}
+    .trio{grid-template-columns:1fr 1fr}
+    .cell:nth-child(3){padding-left:0;border-left:0}
+    .cell:nth-child(n+3){border-top:1px solid var(--line)}
+    .emoji-grid{grid-template-columns:repeat(4,1fr)}
+    .emoji-grid button:nth-child(5){border-left:0}
+    .emoji-grid button:nth-child(n+5){border-top:1px solid var(--line)}
+  }
+  @media (max-width:860px){
+    .cols,.duo{grid-template-columns:1fr}
+    .count{grid-template-columns:1fr}
+    .legend{grid-template-columns:1fr 1fr}
+    .legend a:nth-child(3){padding-left:0;border-left:0}
+    .legend a:nth-child(n+3){border-top:1px solid var(--line)}
     .pill-xl{zoom:.72}
+    .stagebox{padding:96px 12px 48px}
   }
   @media (max-width:640px){
-    .bar-gh{padding:0 10px}.bar-gh span{display:none}
-    .wrap,.top{padding:0 16px}
-    .pill-xl{zoom:.5}
-    .anatomy{padding:56px 8px 16px}
-    .stats{grid-template-columns:1fr}
-    .stats div{border-left:0;border-top:1px solid var(--line)}
-    .stats div:first-child{border-top:0}
+    .bar-gh span{display:none}
+    .hero h1{font-size:15.5vw;max-width:none}
+    .hero-foot{flex-direction:column;align-items:stretch;gap:28px}
+    .hero-foot .btn{flex:1;justify-content:center}
+    .trio{grid-template-columns:1fr}
+    .cell,.cell+.cell{padding:28px 0;border-left:0}
+    .cell+.cell{border-top:1px solid var(--line)}
+    .cell{min-height:0}
+    .cell .zone,.cell .selectme,.cell .idle-demo,.cell .wave-demo{margin-top:24px}
     .legend{grid-template-columns:1fr}
-    section{padding:40px 0}
+    .legend a,.legend a+a{padding:24px 0;border-left:0}
+    .legend a+a{border-top:1px solid var(--line)}
+    .pill-xl{zoom:.5}
+    .bots{grid-template-columns:1fr}
+    .swatches{display:none}
   }
-  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .js .rv{opacity:1;transform:none}
+  }
 </style>
+<script>document.documentElement.classList.add("js");
+  // The headline is read first; the rest of the page waits for it (not with reduced motion)
+  try { if (!matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("intro"); } catch (e) {}</script>
 </head>
 <body>
+<div class="glow" aria-hidden="true"></div>
 
 <div class="top">
   <div class="bar">
-    <a class="logo" href="#">
-      roomful<i class="logo-dot" aria-hidden="true"></i>
-    </a>
+    <a class="logo" href="#"><span class="dots" aria-hidden="true"><i style="background:var(--c1)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></span>roomful</a>
     <nav data-i18n-attr="aria-label:navLabel" aria-label="Sections">
       <a href="#people" data-i18n="navPeople">People</a>
       <a href="#chat" data-i18n="navChat">Chat</a>
@@ -301,62 +390,77 @@
       <button type="button" data-lang="es" aria-pressed="false" lang="es" title="Español">ES</button>
     </div>
     <a class="bar-gh" href="https://github.com/AdrianBurriel/roomful" target="_blank" rel="noopener" data-i18n-attr="aria-label:ghLabel" aria-label="View the project on GitHub (opens in a new tab)">
-      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span>
     </a>
   </div>
 </div>
 
-<!-- ============ HERO ============ -->
+<!-- ============ HERO: the headline, edited live ============ -->
 <header class="hero">
-  <div class="wrap">
-    <div class="kicker"><span class="num">↘</span> <span data-i18n="heroKicker">Come on in</span></div>
-    <h1 data-i18n="heroTitle">Someone else is <em>reading</em> this.</h1>
-    <p class="lede" data-i18n="heroLede">Right now, everyone on this page is in the room with you. You meet them through one small piece: the pill in the bottom-right corner, your door to the room. It has four parts; here's each one, and every demo is real.</p>
-    <div class="actions hero-tour">
-      <button class="btn solid" type="button" data-tour>▶ Take the guided tour</button>
-      <button class="btn" type="button" data-tour-restart hidden>Start over</button>
-    </div>
-
-    <div class="frame anatomy" data-size="Pill · 2× scale" data-i18n-attr="data-size:anatomySize">
-      <span class="frame-label" data-i18n="anatomyLabel">Anatomy</span>
-      <div class="pill-xl" data-i18n-attr="aria-label:pillReplica" aria-label="Enlarged replica of the pill">
-        <span class="part" data-n="1" data-for="people">
-          <span class="stack"><i style="background:var(--c4)">AZ</i><i style="background:var(--c1)">TT</i><i style="background:var(--c3)">KL</i></span>
-          <span data-stat="label">4 here</span>
-        </span>
-        <span class="sep"></span>
-        <span class="part ico" data-n="2" data-for="chat"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.5-5.2A8.5 8.5 0 1 1 21 12z"/></svg></span>
-        <span class="part ico" data-n="3" data-for="reactions"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg></span>
-        <span class="sep"></span>
-        <span class="part" data-n="4" data-for="profile"><i class="avatar me mini" data-me-initials>ME</i><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:.45"><path d="M18 15l-6-6-6 6"/></svg></span>
+  <div class="wrap doc" data-doc>
+    <div class="file"><span data-i18n="heroFile">headline.txt</span> <b>— <span data-stat="page">1</span> <span data-i18n="heroReading">reading now</span></b></div>
+    <h1 id="hero-h" data-hero aria-label="Someone else is reading this.">Someone else is <em>reading</em> this.</h1>
+    <div class="hero-foot">
+      <p class="hero-lede"><b>Roomful</b> <span data-i18n="heroLede2">turns any website into a room: you see everyone's cursors, chat next to them, react and draw on a shared board. With two lines of code.</span></p>
+      <div class="actions hero-tour">
+        <button class="btn solid" type="button" data-tour>Take the guided tour</button>
       </div>
-    </div>
-
-    <div class="legend">
-      <a href="#people" data-for="people"><span class="num">1</span><strong data-i18n="legPeople">People</strong><span data-i18n="legPeopleText">Who's in the room, what they're up to and who to follow.</span></a>
-      <a href="#chat" data-for="chat"><span class="num">2</span><strong data-i18n="legChat">Chat</strong><span data-i18n="legChatText">Say something right next to your cursor. Shortcut: <kbd>/</kbd></span></a>
-      <a href="#reactions" data-for="reactions"><span class="num">3</span><strong data-i18n="legReactions">Reactions</strong><span data-i18n="legReactionsText">Emojis that float up for the whole room. Shortcut: <kbd>E</kbd></span></a>
-      <a href="#profile" data-for="profile"><span class="num">4</span><strong data-i18n="legProfile">Your profile</strong><span data-i18n="legProfileText">How you show up: name, color, photo… or ghost mode.</span></a>
     </div>
   </div>
 </header>
 
+<!-- ============ 00 THE PILL ============ -->
+<section id="pill">
+  <div class="wrap">
+    <div class="label rv"><span class="n">00</span><span data-i18n="pillLabel">The pill</span></div>
+    <div class="cols rv">
+      <h2 class="h2" data-i18n="pillTitle">One pill, <em>four</em> doors.</h2>
+      <p class="lede" data-i18n="pillLede">It sits in the bottom-right corner of every page. Here it is, two times bigger, every part numbered. Everything below is real: try it.</p>
+    </div>
+    <div class="stagebox rv" data-i18n-attr="aria-label:pillReplica" aria-label="Enlarged replica of the pill">
+      <div class="pill-xl">
+        <span class="part" data-n="01" data-for="people">
+          <span class="stack"><i style="background:var(--c4)">ZA</i><i style="background:var(--c1)">TT</i><i style="background:var(--c3)">LK</i></span>
+          <span data-stat="label">4 here</span>
+        </span>
+        <span class="sep"></span>
+        <span class="part ico" data-n="02" data-for="keys"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12.5h.01M18 12.5h.01M10 12.5h4M8 16h8"/></svg></span>
+        <span class="part ico" data-n="03" data-for="ghost"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5a7.5 7.5 0 0 0-7.5 7.5v11.5l2.8-2.4 2.4 2.4L12 19.1l2.3 2.4 2.4-2.4 2.8 2.4V10A7.5 7.5 0 0 0 12 2.5z"/><path d="M9.5 10h.01M14.5 10h.01"/></svg></span>
+        <span class="sep"></span>
+        <span class="part" data-n="04" data-for="profile"><i class="avatar me mini" data-me-initials>ME</i></span>
+      </div>
+    </div>
+    <div class="legend rv">
+      <a href="#people" data-for="people"><span class="n">01</span><strong data-i18n="legPeople">People</strong><span data-i18n="legPeopleText">Who's in the room, what they're up to and who to follow.</span></a>
+      <a href="#chat" data-for="keys"><span class="n">02</span><strong data-i18n="legKeys">Shortcuts</strong><span data-i18n="legKeysText"><kbd>/</kbd> to chat next to your cursor, <kbd>E</kbd> to react, <kbd>?</kbd> to see them all. On a phone, tap it to do the same.</span></a>
+      <a href="#profile" data-for="ghost"><span class="n">03</span><strong data-i18n="legGhost">Ghost mode</strong><span data-i18n="legGhostText">One click and you vanish: you stop seeing cursors and nobody sees yours.</span></a>
+      <a href="#profile" data-for="profile"><span class="n">04</span><strong data-i18n="legProfile">Your profile</strong><span data-i18n="legProfileText">How you show up: your name, your color and your photo.</span></a>
+    </div>
+  </div>
+</section>
+
 <!-- ============ 01 PEOPLE ============ -->
 <section id="people">
   <div class="wrap">
-    <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label" data-i18n="s1Label">01 — People</span>
+    <div class="label rv"><span class="n">01</span><span data-i18n="s1Kicker">The faces on the left</span></div>
+    <div class="cols rv">
+      <h2 class="h2" data-i18n="s1Title">Who else is in the <em>room</em>?</h2>
       <div>
-        <div class="kicker"><span class="num">1</span> <span data-i18n="s1Kicker">The faces on the left</span></div>
-        <h2 class="h2" data-i18n="s1Title">Who else is in the <em>room</em>?</h2>
         <p class="lede" data-i18n="s1Lede">The faces and the number tell you how full the room is. Click them to see who each person is, whether they're active, typing or stepped away, and a button to <b>follow</b> them: you'll go wherever they go.</p>
-        <div class="actions">
-          <button class="btn solid" type="button" data-open="people" data-i18n="s1Btn">See who's in the room</button>
-        </div>
-        <p class="note" data-i18n="s1Note">The numbers come from the same source as the pill (<span class="mono">onStats</span>), so you can show them anywhere on your site.</p>
+        <div class="actions"><button class="btn solid" type="button" data-open="people" data-i18n="s1Btn">See who's in the room</button></div>
+      </div>
+    </div>
+    <div class="count rv">
+      <div>
+        <div class="big" aria-live="polite"><span data-stat="page">1</span></div>
+        <dl>
+          <div><dt data-i18n="mockPeopleHere">people in this room</dt></div>
+          <div><dt data-i18n="cSite">on the whole site</dt><dd data-stat="site">1</dd></div>
+          <div><dt data-i18n="cPeak">today's peak</dt><dd data-stat="peak">1</dd></div>
+        </dl>
       </div>
       <div class="mock" aria-hidden="true">
-        <div class="mock-head"><b data-stat="page">–</b><div><strong data-i18n="mockPeopleHere">people in this room</strong><small><span data-stat="site">–</span> <span data-i18n="mockSite">on the whole site · today's peak:</span> <span data-stat="peak">–</span></small></div><span class="live" data-i18n="live">Live</span></div>
+        <div class="mock-head"><span data-i18n="mockTitle">People · this page</span><span class="live" data-i18n="live">Live</span></div>
         <ul class="mock-list">
           <li><i class="avatar me" data-me-initials>ME</i><div><strong data-me-name>You</strong><small data-i18n="mockYou">You</small></div><span class="mbtn" data-i18n="mockEdit">Edit</span></li>
           <li><i style="background:var(--c4)">ZA</i><div><strong data-i18n="botAxolotl">Zen Axolotl</strong><small><em class="dot"></em><span data-i18n="mockActive">Active</span></small></div><span class="mbtn" data-i18n="mockFollow">Follow</span></li>
@@ -365,30 +469,26 @@
         </ul>
       </div>
     </div>
+    <p class="note rv" data-i18n="s1Note">The numbers come from the same source as the pill (<span class="mono">onStats</span>), so you can show them anywhere on your site.</p>
   </div>
 </section>
 
 <!-- ============ 02 CHAT ============ -->
 <section id="chat">
   <div class="wrap">
-    <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label" data-i18n="s2Label">02 — Chat</span>
-      <div class="scene" aria-hidden="true">
-        <div class="fake" style="left:16%;top:22%">
-          <svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--me)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
-          <div class="bubble" style="background:var(--me);color:var(--me-ink)"><small data-me-name>You</small><span data-i18n="bubbleMe">Do you like this headline?</span><span class="caret"></span></div>
-        </div>
-        <div class="fake" style="left:58%;top:58%">
-          <svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c3)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
-          <div class="bubble" style="background:var(--c3);color:#fff"><small data-i18n="botAxolotl2">Zen Axolotl</small><span data-i18n="bubbleOther">Love it! 🙌</span></div>
-        </div>
-      </div>
+    <div class="label rv"><span class="n">02</span><span data-i18n="s2Kicker">The / key</span></div>
+    <div class="cols rv">
+      <h2 class="h2" data-i18n="s2Title">Talk <em>where</em> you're looking.</h2>
       <div>
-        <div class="kicker"><span class="num">2</span> <span data-i18n="s2Kicker">The speech bubble</span></div>
-        <h2 class="h2" data-i18n="s2Title">Talk <em>where</em> you're looking.</h2>
-        <p class="lede" data-i18n="s2Lede">Click the speech bubble or press <kbd>/</kbd> and type: your message appears next to your cursor, live, for the whole room. <kbd>Enter</kbd> keeps it for a few seconds and <kbd>Esc</kbd> clears it.</p>
+        <p class="lede" data-i18n="s2Lede">Press <kbd>/</kbd> (or tap ⌨ on the pill) and type: your message appears next to your cursor, live, for the whole room. <kbd>Enter</kbd> keeps it for a few seconds and <kbd>Esc</kbd> clears it.</p>
         <div class="actions"><button class="btn solid" type="button" data-open="chat" data-i18n="s2Btn">Write something</button></div>
       </div>
+    </div>
+    <div class="scene rv" aria-hidden="true" data-convo>
+      <div class="cur" data-who="a" style="left:18%;top:26%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--me)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <div class="bubble" style="background:var(--me);color:var(--me-ink)"><small data-me-name>You</small><span class="t" data-i18n="bubbleMe">Do you like this headline?</span><span class="caretx"></span></div></div>
+      <div class="cur" data-who="b" style="left:58%;top:58%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c3)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <div class="bubble" style="background:var(--c3)"><small data-i18n="botAxolotl2">Zen Axolotl</small><span class="t" data-i18n="bubbleOther">Love it! 🙌</span></div></div>
     </div>
   </div>
 </section>
@@ -396,24 +496,23 @@
 <!-- ============ 03 REACTIONS ============ -->
 <section id="reactions">
   <div class="wrap">
-    <div class="frame split" data-size="W Fill · H Hug">
-      <span class="frame-label" data-i18n="s3Label">03 — Reactions</span>
+    <div class="label rv"><span class="n">03</span><span data-i18n="s3Kicker">The E key</span></div>
+    <div class="cols rv">
+      <h2 class="h2" data-i18n="s3Title">Applaud without <em>saying</em> a word.</h2>
       <div>
-        <div class="kicker"><span class="num">3</span> <span data-i18n="s3Kicker">The smiley</span></div>
-        <h2 class="h2" data-i18n="s3Title">Applaud without <em>saying</em> a word.</h2>
-        <p class="lede" data-i18n="s3Lede">The smiley opens the emojis. With the keyboard it's faster: press <kbd>E</kbd> wherever your cursor is and pick one. They float up from there and the whole room sees them. And to say hi, just shake your cursor from side to side: 👋.</p>
+        <p class="lede" data-i18n="s3Lede">Press <kbd>E</kbd> wherever your cursor is and pick an emoji (on a phone, tap ⌨ on the pill). They float up from there and the whole room sees them. And to say hi, just shake your cursor from side to side: 👋.</p>
         <p class="note" data-i18n="s3Note">Try it right here: click any of these emojis.</p>
       </div>
-      <div class="emoji-grid" data-mc-target>
-        <button type="button" data-react="❤️">❤️</button>
-        <button type="button" data-react="👍">👍</button>
-        <button type="button" data-react="🔥">🔥</button>
-        <button type="button" data-react="😂">😂</button>
-        <button type="button" data-react="🎉">🎉</button>
-        <button type="button" data-react="👏">👏</button>
-        <button type="button" data-react="😮">😮</button>
-        <button type="button" data-react="👀">👀</button>
-      </div>
+    </div>
+    <div class="emoji-grid rv" data-mc-target>
+      <button type="button" data-react="❤️" data-k="1"><span>❤️</span></button>
+      <button type="button" data-react="👍" data-k="2"><span>👍</span></button>
+      <button type="button" data-react="🔥" data-k="3"><span>🔥</span></button>
+      <button type="button" data-react="😂" data-k="4"><span>😂</span></button>
+      <button type="button" data-react="🎉" data-k="5"><span>🎉</span></button>
+      <button type="button" data-react="👏" data-k="6"><span>👏</span></button>
+      <button type="button" data-react="😮" data-k="7"><span>😮</span></button>
+      <button type="button" data-react="👀" data-k="8"><span>👀</span></button>
     </div>
   </div>
 </section>
@@ -421,105 +520,92 @@
 <!-- ============ 04 YOUR PROFILE ============ -->
 <section id="profile">
   <div class="wrap">
-    <div class="frame" data-size="W Fill · H Hug">
-      <span class="frame-label" data-i18n="s4Label">04 — Your profile</span>
-      <div class="kicker"><span class="num">4</span> <span data-i18n="s4Kicker">Your face, on the right</span></div>
-      <h2 class="h2" data-i18n="s4Title">You decide <em>how</em> they see you. Or whether they do.</h2>
-      <div class="duo">
-        <div class="card">
-          <div class="avatar me" data-me-initials>ME</div>
-          <h3><span data-me-name>You</span></h3>
-          <p data-i18n="s4Text">Change your name, your color or add a photo from your computer: it saves on its own as you go, no button needed. Out of ideas? The dice picks a random name and color. Your own cursor wears them too, just like everyone else's, and we'll remember you next time you walk in.</p>
-          <button class="btn" type="button" data-open="profile" data-i18n="s4Btn">Edit my profile</button>
+    <div class="label rv"><span class="n">04</span><span data-i18n="s4Kicker">Your face, on the right</span></div>
+    <h2 class="h2 rv" data-i18n="s4Title">You decide <em>how</em> they see you. Or whether they do.</h2>
+    <div class="duo rv">
+      <div class="card">
+        <div class="me-row"><div class="avatar me" data-me-initials>ME</div><span class="swatches" aria-hidden="true"><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i><i style="background:var(--c6)"></i></span></div>
+        <h3 class="h3"><span data-me-name>You</span></h3>
+        <p data-i18n="s4Text">Change your name, your color or add a photo from your computer: it saves on its own as you go, no button needed. Out of ideas? The dice picks a random name and color. Your own cursor wears them too, just like everyone else's, and we'll remember you next time you walk in.</p>
+        <div class="actions"><button class="btn solid" type="button" data-open="profile" data-i18n="s4Btn">Edit my profile</button></div>
+      </div>
+      <div class="card">
+        <div class="ghost-art" aria-hidden="true">
+          <div class="cur" style="left:4%;top:10px"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c1)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c1)" data-i18n="botTapir2">Turbo Tapir</div></div>
+          <div class="cur" style="left:36%;top:78px"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c4)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c4)" data-i18n="botKoala2">Lunar Koala</div></div>
+          <div class="big-ghost" data-ghost-ico></div>
         </div>
-        <div class="card">
-          <div class="ghost-art" aria-hidden="true">
-            <div class="fake" style="left:14%;top:22%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c1)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c1);color:#fff" data-i18n="botTapir2">Turbo Tapir</div></div>
-            <div class="fake" style="left:58%;top:62%"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c4)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c4);color:#fff" data-i18n="botKoala2">Lunar Koala</div></div>
-            <div class="big-eye" data-eye></div>
-          </div>
-          <h3 data-i18n="ghostTitle"><em>Ghost</em> mode</h3>
-          <p data-i18n="ghostText">Walk through the room unseen: other cursors disappear and yours stops being shared. You disconnect completely: nobody sees you, not even in the list.</p>
-          <div class="actions" style="margin-top:20px;align-items:center">
-            <button class="btn" type="button" data-open="ghost">Turn on ghost mode</button>
-            <span class="state" data-ghost-state style="margin:0">● Visible to others</span>
-          </div>
-        </div>
+        <h3 class="h3" data-i18n="ghostTitle"><em>Ghost</em> mode</h3>
+        <p data-i18n="ghostText">Tap the 👻 on the pill and walk through the room unseen: other cursors disappear and yours stops being shared. You disconnect completely: nobody sees you, not even in the list.</p>
+        <div class="actions"><button class="btn" type="button" data-open="ghost">Turn on ghost mode</button><span class="state" data-ghost-state>● Visible to others</span></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ 05 BOARD ============ -->
-<section id="board">
+<!-- ============ 05 WITHOUT TOUCHING THE PILL ============ -->
+<section id="extras">
   <div class="wrap">
-    <div class="frame" data-size="Board · 16:10" data-i18n-attr="data-size:boardSize">
-      <span class="frame-label" data-i18n="boardLabel">05 — Board</span>
-      <div class="kicker"><span class="num">✎</span> <span data-i18n="boardKicker">Leave your mark</span></div>
-      <h2 class="h2" data-i18n="boardTitle">A wall for <em>everyone</em> in the room.</h2>
-      <p class="lede" data-i18n="boardLede">Draw or write whatever you like: it stays here for whoever comes next. Your ink refills every 3 hours, so make it count. When the board fills up, the oldest drawings fade and get erased first, so there's always something to see. Hover over a drawing to see who made it.</p>
-      <div class="board-host" data-board data-mc-target></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ WITHOUT TOUCHING THE PILL ============ -->
-<section>
-  <div class="wrap">
-    <div class="kicker"><span class="num">+</span> <span data-i18n="extrasKicker">What happens without touching the pill</span></div>
-    <h2 class="h2" data-i18n="extrasTitle">And the room notices, <em>without you doing a thing</em>…</h2>
-    <div class="trio">
-      <div class="frame" data-size="Clicks" data-i18n-attr="data-size:clicksLabel">
-        <span class="frame-label" data-i18n="clicksLabel">Clicks</span>
-        <h3 data-i18n="clicksTitle">Your clicks <em>show</em></h3>
+    <div class="label rv"><span class="n">05</span><span data-i18n="extrasKicker">What happens without touching the pill</span></div>
+    <h2 class="h2 rv" data-i18n="extrasTitle">And the room notices, <em>without you doing a thing</em>…</h2>
+    <div class="trio rv">
+      <div class="cell">
+        <span class="n">a</span>
+        <h3 class="h3" data-i18n="clicksTitle">Your clicks <em>show</em></h3>
         <p data-i18n="clicksText">Every click leaves a ripple in your color for everyone in the room.</p>
         <div class="zone" data-zone data-i18n="clicksZone">click here</div>
       </div>
-      <div class="frame" data-size="Selection" data-i18n-attr="data-size:selLabel">
-        <span class="frame-label" data-i18n="selLabel">Selection</span>
-        <h3 data-i18n="selTitle">What you <em>highlight</em> shows</h3>
+      <div class="cell">
+        <span class="n">b</span>
+        <h3 class="h3" data-i18n="selTitle">What you <em>highlight</em> shows</h3>
         <p data-i18n="selText">Select some text and others will see it highlighted in your color, even on a different screen.</p>
         <div class="selectme" data-i18n="selDemo">Select this sentence and look at the other tab: <mark>it shows up highlighted</mark> in your color.</div>
       </div>
-      <div class="frame" data-size="Idle" data-i18n-attr="data-size:idleLabel">
-        <span class="frame-label" data-i18n="idleLabel">Idle</span>
-        <h3 data-i18n="idleTitle">If you leave, <em>it shows</em></h3>
+      <div class="cell">
+        <span class="n">c</span>
+        <h3 class="h3" data-i18n="idleTitle">If you leave, <em>it shows</em></h3>
         <p data-i18n="idleText">After 30 seconds without moving, your cursor fades and dozes off in a corner: zzz.</p>
         <div class="idle-demo" aria-hidden="true">
-          <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c2)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c2);color:#1e1e1e" data-i18n="botSloth">Zen Sloth</div><div class="zzz" style="color:var(--c2)"><span>z</span><span>z</span><span>z</span></div></div>
+          <div class="cur"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--c2)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--c2)" data-i18n="botSloth">Zen Sloth</div><div class="zzz" style="color:var(--c2)"><span>z</span><span>z</span><span>z</span></div></div>
         </div>
       </div>
-      <div class="frame" data-size="Wave" data-i18n-attr="data-size:waveLabel">
-        <span class="frame-label" data-i18n="waveLabel">Wave</span>
-        <h3 data-i18n="waveTitle">Shake it to <em>say hi</em></h3>
+      <div class="cell">
+        <span class="n">d</span>
+        <h3 class="h3" data-i18n="waveTitle">Shake it to <em>say hi</em></h3>
         <p data-i18n="waveText">Move your cursor quickly from side to side and a 👋 floats up for the whole room. Try it right here.</p>
         <div class="wave-demo" data-mc-target aria-hidden="true">
-          <div class="fake"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--me)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--me);color:var(--me-ink)" data-me-name>You</div><div class="hi">👋</div></div>
+          <div class="cur"><svg width="22" height="24" viewBox="0 0 20 22"><path d="M2 2 L2 17.5 L6.3 13.4 L9.3 20 L12.2 18.7 L9.3 12.3 L15.4 12.3 Z" fill="var(--me)" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="tagx" style="background:var(--me);color:var(--me-ink)" data-me-name>You</div><div class="hi">👋</div></div>
         </div>
       </div>
     </div>
-
-    <div class="frame" style="margin-top:56px" data-size="Company" data-i18n-attr="data-size:botsSize">
-      <span class="frame-label" data-i18n="botsLabel">Never empty</span>
-      <div class="bots">
-        <div class="stack" aria-hidden="true"><i style="background:var(--c5)">ZC</i><i style="background:var(--c2);color:#1e1e1e">FQ</i></div>
-        <div>
-          <h3 style="font-size:26px;margin-bottom:8px" data-i18n="botsTitle">Walked into an empty room? You <em>won't</em> be alone.</h3>
-          <p data-i18n="botsText">When nobody's around, a couple of regulars wander in, look around and wave hello now and then. They wear a <span class="botchip">BOT</span> label, so nobody mistakes them for people. When real people arrive, most of them head for the door, but one always stays to keep you company.</p>
-        </div>
+    <div class="bots rv">
+      <div class="stack" aria-hidden="true"><i style="background:var(--c5)">ZC</i><i style="background:var(--c2)">FQ</i></div>
+      <div>
+        <h3 class="h3" data-i18n="botsTitle">Walked into an empty room? You <em>won't</em> be alone.</h3>
+        <p data-i18n="botsText">When nobody's around, a couple of regulars wander in, look around and wave hello now and then. They wear a <span class="botchip">BOT</span> label, so nobody mistakes them for people. When real people arrive, most of them head for the door, but one always stays to keep you company.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ INTEGRATE ============ -->
+<!-- ============ 06 BOARD: last, so you have seen everything before you draw ============ -->
+<section id="board">
+  <div class="wrap">
+    <div class="label rv"><span class="n">06</span><span data-i18n="boardKicker">Leave your mark</span></div>
+    <div class="cols rv">
+      <h2 class="h2" data-i18n="boardTitle">A wall for <em>everyone</em> in the room.</h2>
+      <p class="lede" data-i18n="boardLede">Draw or write whatever you like: it stays here for whoever comes next. Your ink refills every 3 hours, so make it count. When the board fills up, the oldest drawings fade and get erased first, so there's always something to see. Hover over a drawing to see who made it.</p>
+    </div>
+    <div class="board-host rv" data-board data-mc-target></div>
+  </div>
+</section>
+
+<!-- ============ 07 INTEGRATE ============ -->
 <section id="integrate">
   <div class="wrap">
-    <div class="frame" data-size="Code" data-i18n-attr="data-size:codeSize">
-      <span class="frame-label" data-i18n="intLabel">Integrate</span>
-      <div class="kicker"><span class="num">&lt;/&gt;</span> <span data-i18n="intKicker">For developers</span></div>
-      <h2 class="h2" style="margin-bottom:28px" data-i18n="intTitle">Two lines and your site is a <em>roomful</em>.</h2>
-      <div class="code">
+    <div class="label rv"><span class="n">07</span><span data-i18n="intKicker">For developers</span></div>
+    <h2 class="h2 rv" data-i18n="intTitle">Two lines and your site is a <em>roomful</em>.</h2>
+    <div class="code rv">
       <button class="copy" type="button" data-copy data-i18n="copy">Copy</button>
 <pre><code data-i18n="code"><span class="c">&lt;!-- 1. The script --&gt;</span>
 &lt;<span class="k">script</span> src=<span class="s">"/roomful.js"</span>&gt;&lt;/<span class="k">script</span>&gt;
@@ -533,29 +619,27 @@
     onStats: s =&gt; console.<span class="f">log</span>(s.page, <span class="s">"people here"</span>)
   });
 &lt;/<span class="k">script</span>&gt;</code></pre>
-      </div>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <div class="legal">
-      <span data-i18n="madeWith">Roomful · made with <span class="mono">roomful.js</span></span>
-    </div>
-    <div class="foot-links">
-    <a class="gh star" href="https://github.com/AdrianBurriel/roomful" target="_blank" rel="noopener" data-i18n-attr="aria-label:starLabel" aria-label="Liked it? Give it a star on GitHub (opens in a new tab)">
-      <span class="st" aria-hidden="true">⭐</span>
-      <span data-i18n="starFooter">Liked it? Give it a like on GitHub</span>
-    </a>
-    <a class="gh" href="https://github.com/AdrianBurriel/roomful" target="_blank" rel="noopener">
-      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      <span data-i18n="ghFooter">View the project on GitHub</span>
-    </a>
+    <p class="bigname" aria-hidden="true">roomful<span class="dots"><i style="background:var(--c1)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></span></p>
+    <div class="foot-row">
+      <span class="legal" data-i18n="madeWith">Roomful · made with <span class="mono">roomful.js</span></span>
+      <div class="foot-links">
+        <a class="gh star" href="https://github.com/AdrianBurriel/roomful" target="_blank" rel="noopener" data-i18n-attr="aria-label:starLabel" aria-label="Liked it? Give it a star on GitHub (opens in a new tab)">
+          <span class="st" aria-hidden="true">⭐</span><span data-i18n="starFooter">Liked it? Give it a like on GitHub</span>
+        </a>
+        <a class="gh" href="https://github.com/AdrianBurriel/roomful" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span data-i18n="ghFooter">View the project on GitHub</span>
+        </a>
+      </div>
     </div>
   </div>
 </footer>
-
 
 <!-- The integration -->
 <script src="/roomful.js"></script>
@@ -571,14 +655,18 @@
     navLabel: "Secciones", navPeople: "Personas", navChat: "Chat", navReactions: "Reacciones",
     navProfile: "Tu perfil", navBoard: "Pizarra", navIntegrate: "Integrar", langLabel: "Idioma",
     ghLabel: "Ver el proyecto en GitHub (se abre en otra pestaña)",
-    heroKicker: "Adelante, pasa",
+heroFile: "titular.txt", heroReading: "leyendo ahora",
+    heroLede2: "convierte cualquier web en una sala: ves los cursores de los demás, chateas junto a ellos, reaccionáis y dibujáis en una pizarra compartida. Con dos líneas de código.",
+    pillLabel: "La píldora", pillTitle: "Una píldora, <em>cuatro</em> puertas.",
+    pillLede: "Vive en la esquina de abajo a la derecha de cada página. Aquí la tienes al doble de tamaño, con cada parte numerada. Todo lo de abajo funciona de verdad: pruébalo.",
+    cSite: "en toda la web", cPeak: "pico de hoy", mockTitle: "Personas · esta página",
     heroTitle: "Alguien más está <em>leyendo</em> esto.",
     heroLede: "Ahora mismo, todos los que están en esta página están en la sala contigo. Te los presenta una sola pieza: la píldora de abajo a la derecha, tu puerta a la sala. Tiene cuatro partes; aquí te enseñamos cada una, y todas las demos funcionan de verdad.",
     anatomySize: "Píldora · escala 2×", anatomyLabel: "Anatomía", pillReplica: "Réplica ampliada de la píldora",
     legPeople: "Personas", legPeopleText: "Quién hay en la sala, qué hace y a quién seguir.",
-    legChat: "Chat", legChatText: "Di algo justo al lado de tu cursor. Atajo: <kbd>/</kbd>",
-    legReactions: "Reacciones", legReactionsText: "Emojis que flotan para toda la sala. Atajo: <kbd>E</kbd>",
-    legProfile: "Tu perfil", legProfileText: "Cómo apareces: nombre, color, foto… o modo fantasma.",
+    legKeys: "Atajos", legKeysText: "<kbd>/</kbd> para chatear junto a tu cursor, <kbd>E</kbd> para reaccionar, <kbd>?</kbd> para verlos todos. En el móvil, tócalo para hacer lo mismo.",
+    legGhost: "Modo fantasma", legGhostText: "Un clic y desapareces: dejas de ver cursores y nadie ve el tuyo.",
+    legProfile: "Tu perfil", legProfileText: "Cómo apareces: tu nombre, tu color y tu foto.",
     s1Label: "01 — Personas", s1Kicker: "Las caras de la izquierda",
     s1Title: "¿Quién más hay en la <em>sala</em>?",
     s1Lede: "Las caras y el número te dicen cómo de llena está la sala. Púlsalas y verás quién es cada uno, si está activo, escribiendo o se ha ausentado, y un botón para <b>seguirle</b>: irás a donde vaya esa persona.",
@@ -589,19 +677,19 @@
     mockFollow: "Seguir", mockFollow2: "Seguir", mockFollowing: "Siguiendo",
     botAxolotl: "Ajolote Zen", botAxolotl2: "Ajolote Zen", botTapir: "Tapir Turbo", botTapir2: "Tapir Turbo",
     botKoala: "Koala Lunar", botKoala2: "Koala Lunar", botSloth: "Perezoso Zen",
-    s2Label: "02 — Chat", s2Kicker: "El bocadillo", s2Title: "Habla <em>donde</em> estás mirando.",
-    s2Lede: "Pulsa el bocadillo o la tecla <kbd>/</kbd> y escribe: tu mensaje aparece pegado a tu cursor, en directo, para toda la sala. <kbd>Enter</kbd> lo deja unos segundos y <kbd>Esc</kbd> lo borra.",
+    s2Label: "02 — Chat", s2Kicker: "La tecla /", s2Title: "Habla <em>donde</em> estás mirando.",
+    s2Lede: "Pulsa la tecla <kbd>/</kbd> (o toca ⌨ en la píldora) y escribe: tu mensaje aparece pegado a tu cursor, en directo, para toda la sala. <kbd>Enter</kbd> lo deja unos segundos y <kbd>Esc</kbd> lo borra.",
     s2Btn: "Escribir algo", bubbleMe: "¿Os gusta este titular?", bubbleOther: "¡Mucho! 🙌",
-    s3Label: "03 — Reacciones", s3Kicker: "La carita", s3Title: "Aplaude sin <em>decir</em> nada.",
-    s3Lede: "La carita abre los emojis. Con teclado es más rápido: pulsa <kbd>E</kbd> donde tengas el cursor y elige. Salen flotando desde ahí y los ve toda la sala. Y para saludar, basta con agitar el cursor de lado a lado: 👋.",
+    s3Label: "03 — Reacciones", s3Kicker: "La tecla E", s3Title: "Aplaude sin <em>decir</em> nada.",
+    s3Lede: "Pulsa <kbd>E</kbd> donde tengas el cursor y elige un emoji (en el móvil, toca ⌨ en la píldora). Salen flotando desde ahí y los ve toda la sala. Y para saludar, basta con agitar el cursor de lado a lado: 👋.",
     s3Note: "Pruébalo aquí mismo: pulsa cualquiera de estos emojis.",
     s4Label: "04 — Tu perfil", s4Kicker: "Tu cara, a la derecha", s4Title: "Tú decides <em>cómo</em> te ven. O si te ven.",
     s4Text: "Cambia tu nombre, tu color o pon una foto desde tu ordenador: se guarda solo sobre la marcha, sin botones. ¿Sin ideas? El dado elige nombre y color al azar. Tu propio cursor también los lleva, igual que el de los demás, y te recordaremos la próxima vez que entres.",
     s4Btn: "Editar mi perfil", ghostTitle: "Modo <em>fantasma</em>",
-    boardSize: "Pizarra · 16:10", boardLabel: "05 — Pizarra", boardKicker: "Deja tu huella",
+    boardSize: "Pizarra · 16:10", boardLabel: "06 — Pizarra", boardKicker: "Deja tu huella",
     boardTitle: "Un muro para <em>todos</em> los de la sala.",
     boardLede: "Dibuja o escribe lo que quieras: se queda aquí para quien venga después. Tu tinta se recarga cada 3 horas, así que aprovéchala. Cuando la pizarra se llena, los dibujos más antiguos se atenúan y se borran primero, así que siempre hay algo que ver. Pasa por encima de un dibujo para ver quién lo hizo.",
-    ghostText: "Pasa por la sala sin que te vean: desaparecen los cursores de los demás y dejas de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.",
+    ghostText: "Toca el 👻 de la píldora y pasa por la sala sin que te vean: desaparecen los cursores de los demás y dejas de compartir el tuyo. Te desconectas del todo: nadie te ve, ni siquiera en la lista.",
     extrasKicker: "Lo que pasa sin tocar la píldora", extrasTitle: "Y la sala se entera, <em>sin que hagas nada</em>…",
     clicksLabel: "Clics", clicksTitle: "Tus clics se <em>notan</em>",
     clicksText: "Cada clic deja una onda de tu color para todos los de la sala.", clicksZone: "haz clic aquí",
@@ -627,13 +715,13 @@
     en: { here: "{n} here", alone: "Just you", ghostOn: "○ Ghost mode: nobody sees you", ghostOff: "● Visible to others",
           ghostBtnOn: "Become visible again", ghostBtnOff: "Turn on ghost mode", copied: "Copied!",
           title: "Roomful · Your website, with people in it", me: "ME",
-          tourStart: "▶ Take the guided tour · 5 min", tourContinue: "▶ Continue the tour (step {n} of {total})",
-          tourActive: "Tour in progress…", tourRestart: "Start over" },
+          tourStart: "Take the guided tour · 5 min",
+          tourActive: "Tour in progress…" },
     es: { here: "{n} aquí", alone: "Solo tú", ghostOn: "○ Modo fantasma: nadie te ve", ghostOff: "● Visible para los demás",
           ghostBtnOn: "Volver a ser visible", ghostBtnOff: "Activar modo fantasma", copied: "¡Copiado!",
           title: "Roomful · Tu web, con gente dentro", me: "TÚ",
-          tourStart: "▶ Haz el tour guiado · 5 min", tourContinue: "▶ Continuar el tour (paso {n} de {total})",
-          tourActive: "Tour en marcha…", tourRestart: "Empezar de cero" }
+          tourStart: "Haz el tour guiado · 5 min",
+          tourActive: "Tour en marcha…" }
   };
   var LANG_KEY = "multicursor:lang";
 
@@ -712,8 +800,8 @@
       say: { en: "This is the pill 👇", es: "Esta es la píldora 👇" },
       title: { en: "The pill: your door to the room", es: "La píldora: tu puerta a la sala" },
       text: {
-        en: "Bottom right, always at hand. It has four parts: <b>the faces</b> (who's here), <b>💬 chat</b>, <b>🙂 reactions</b> and, at the end, <b>your own face</b>, which opens your profile. At the top of the page there's an enlarged replica with each part numbered. Let's go through them one by one.",
-        es: "Abajo a la derecha, siempre a mano. Tiene cuatro partes: <b>las caras</b> (quién hay), <b>💬 chat</b>, <b>🙂 reacciones</b> y, al final, <b>tu propia cara</b>, que abre tu perfil. Arriba del todo tienes una réplica en grande con cada parte numerada. Vamos a verlas una a una."
+        en: "Bottom right, always at hand. It has four parts: <b>the faces</b> (who's here), <b>⌨ shortcuts</b> (how to chat and react), <b>👻 ghost mode</b> (vanish with one click) and, at the end, <b>your own face</b>, which opens your profile. Just below the title there's an enlarged replica with each part numbered. Let's go through them one by one.",
+        es: "Abajo a la derecha, siempre a mano. Tiene cuatro partes: <b>las caras</b> (quién hay), <b>⌨ los atajos</b> (cómo chatear y reaccionar), <b>👻 el modo fantasma</b> (desaparecer con un clic) y, al final, <b>tu propia cara</b>, que abre tu perfil. Justo debajo del título tienes una réplica en grande con cada parte numerada. Vamos a verlas una a una."
       } },
     { target: "#people .mock",
       say: { en: "Here's who's around", es: "Aquí ves quién hay" },
@@ -733,15 +821,15 @@
       say: { en: "This is how we talk here!", es: "¡Así se habla aquí!" },
       title: { en: "2 · Chat next to your cursor", es: "2 · Chat junto al cursor" },
       text: {
-        en: "<span class=\"mc-kb\">Press <kbd>/</kbd> or click</span><span class=\"mc-tch\">Tap</span> the speech bubble 💬 on the pill and type: your message appears next to your cursor and everyone sees it <b>letter by letter</b>, like this bubble of mine. The box grows with what you write, up to four lines. <span class=\"mc-kb\"><kbd>Enter</kbd> leaves it on screen for a few seconds and <kbd>Esc</kbd> clears it.</span><span class=\"mc-tch\">Send it with your keyboard's send key and it fades after a few seconds.</span>",
-        es: "<span class=\"mc-kb\">Pulsa <kbd>/</kbd> o el</span><span class=\"mc-tch\">Toca el</span> bocadillo 💬 de la píldora y escribe: tu mensaje aparece junto a tu cursor y todos lo ven <b>letra a letra</b>, como esta burbuja mía. La caja crece con lo que escribes, hasta cuatro líneas. <span class=\"mc-kb\"><kbd>Enter</kbd> lo deja unos segundos a la vista y <kbd>Esc</kbd> lo borra.</span><span class=\"mc-tch\">Envíalo con la tecla de enviar del teclado y desaparecerá a los pocos segundos.</span>"
+        en: "<span class=\"mc-kb\">Press <kbd>/</kbd></span><span class=\"mc-tch\">Tap ⌨ on the pill, then “Write next to your cursor”,</span> and type: your message appears next to your cursor and everyone sees it <b>letter by letter</b>, like this bubble of mine. The box grows with what you write, up to four lines. <span class=\"mc-kb\"><kbd>Enter</kbd> leaves it on screen for a few seconds and <kbd>Esc</kbd> clears it.</span><span class=\"mc-tch\">Send it with your keyboard's send key and it fades after a few seconds.</span>",
+        es: "<span class=\"mc-kb\">Pulsa <kbd>/</kbd></span><span class=\"mc-tch\">Toca ⌨ en la píldora y luego “Escribir junto a tu cursor”,</span> y escribe: tu mensaje aparece junto a tu cursor y todos lo ven <b>letra a letra</b>, como esta burbuja mía. La caja crece con lo que escribes, hasta cuatro líneas. <span class=\"mc-kb\"><kbd>Enter</kbd> lo deja unos segundos a la vista y <kbd>Esc</kbd> lo borra.</span><span class=\"mc-tch\">Envíalo con la tecla de enviar del teclado y desaparecerá a los pocos segundos.</span>"
       } },
     { target: "#reactions .emoji-grid",
       say: { en: "Go on, react 🎉", es: "Venga, reacciona 🎉" },
       title: { en: "3 · Reactions", es: "3 · Reacciones" },
       text: {
-        en: "<span class=\"mc-kb\">Press <kbd>E</kbd> wherever your cursor is, or click the smiley 🙂 on the pill,</span><span class=\"mc-tch\">Tap the smiley 🙂 on the pill</span> and pick an emoji: it floats up from your cursor and the whole room sees it. <span class=\"mc-kb\">With the picker open, the number keys <kbd>1</kbd>–<kbd>8</kbd> pick one straight away. </span>These emojis here work too: try any of them.",
-        es: "<span class=\"mc-kb\">Pulsa <kbd>E</kbd> donde tengas el cursor, o la carita 🙂 de la píldora,</span><span class=\"mc-tch\">Toca la carita 🙂 de la píldora</span> y elige un emoji: sale flotando desde tu cursor y lo ve toda la sala. <span class=\"mc-kb\">Con el selector abierto, las teclas <kbd>1</kbd>–<kbd>8</kbd> eligen uno directamente. </span>Estos emojis de aquí también funcionan: prueba cualquiera."
+        en: "<span class=\"mc-kb\">Press <kbd>E</kbd> wherever your cursor is</span><span class=\"mc-tch\">Tap ⌨ on the pill, then “React”,</span> and pick an emoji: it floats up from your cursor and the whole room sees it. <span class=\"mc-kb\">With the picker open, the number keys <kbd>1</kbd>–<kbd>8</kbd> pick one straight away. </span>These emojis here work too: try any of them.",
+        es: "<span class=\"mc-kb\">Pulsa <kbd>E</kbd> donde tengas el cursor</span><span class=\"mc-tch\">Toca ⌨ en la píldora y luego “Reaccionar”,</span> y elige un emoji: sale flotando desde tu cursor y lo ve toda la sala. <span class=\"mc-kb\">Con el selector abierto, las teclas <kbd>1</kbd>–<kbd>8</kbd> eligen uno directamente. </span>Estos emojis de aquí también funcionan: prueba cualquiera."
       } },
     { target: ".wave-demo", wave: true,
       say: { en: "Like this! 👋", es: "¡Así! 👋" },
@@ -761,19 +849,12 @@
       say: { en: "Rather go unnoticed?", es: "¿Prefieres pasar desapercibido?" },
       title: { en: "Ghost mode", es: "Modo fantasma" },
       text: {
-        en: "Your profile also has the <b>Ghost mode</b> switch. Turn it on and you stop seeing everyone else's cursors, and you disconnect completely: nobody sees you, not even in the list. The pill shrinks to “Cursors hidden · <b>Show</b>” so you can come back whenever you want, and your choice is remembered for next time.",
-        es: "En tu perfil también está el interruptor <b>Modo fantasma</b>. Al activarlo dejas de ver los cursores de los demás y te desconectas del todo: nadie te ve, ni siquiera en la lista. La píldora se queda en «Cursores ocultos · <b>Mostrar</b>» para que vuelvas cuando quieras, y tu elección se recuerda para la próxima vez."
+        en: "Tap the 👻 on the pill (or use the switch in your profile) and you stop seeing everyone else's cursors, and you disconnect completely: nobody sees you, not even in the list. The pill shrinks to “Cursors hidden · <b>Show</b>” so you can come back whenever you want, and your choice is remembered for next time.",
+        es: "Toca el 👻 de la píldora (o el interruptor de tu perfil) y dejas de ver los cursores de los demás y te desconectas del todo: nadie te ve, ni siquiera en la lista. La píldora se queda en «Cursores ocultos · <b>Mostrar</b>» para que vuelvas cuando quieras, y tu elección se recuerda para la próxima vez."
       } },
-    { target: "#board .board-host",
-      say: { en: "Leave your mark ✏️", es: "Deja tu huella ✏️" },
-      title: { en: "5 · The shared board", es: "5 · La pizarra compartida" },
-      text: {
-        en: "Draw or write whatever you like and it <b>stays here</b> for everyone who comes after you. Pick the <b>pen</b>, the <b>marker</b> (thicker, uses double ink) or <b>text</b><span class=\"mc-kb\">: click on the board, type and press <kbd>Enter</kbd></span><span class=\"mc-tch\">: tap the board and type</span>. You always draw in your profile color.<span class=\"mc-kb\"> Hover over any drawing to see who made it.</span> Everyone has some <b>ink</b>, shown by the bar, and it refills completely <b>every 3 hours</b>: the countdown next to it tells you exactly when. When the board fills up, the oldest drawings fade and get erased first, so there's always something on it.",
-        es: "Dibuja o escribe lo que quieras y <b>se queda aquí</b> para todos los que vengan después. Elige el <b>lápiz</b>, el <b>rotulador</b> (más grueso, gasta el doble) o el <b>texto</b><span class=\"mc-kb\">: pulsa sobre la pizarra, escribe y pulsa <kbd>Enter</kbd></span><span class=\"mc-tch\">: toca la pizarra y escribe</span>. Dibujas siempre con el color de tu perfil.<span class=\"mc-kb\"> Pasa el ratón por encima de un dibujo para ver quién lo hizo.</span> Cada persona tiene una cantidad de <b>tinta</b>, que ves en la barra, y se recarga entera <b>cada 3 horas</b>: la cuenta atrás de al lado te dice exactamente cuándo. Cuando la pizarra se llena, los dibujos más antiguos se atenúan y se borran primero, así que siempre hay algo."
-      } },
-    { target: ".trio > .frame:first-child",
+    { target: ".trio > .cell:first-child",
       say: { en: "Everything shows here", es: "Aquí todo se nota" },
-      title: { en: "Clicks and selection", es: "Clics y selección" },
+      title: { en: "5 · Clicks and selection", es: "5 · Clics y selección" },
       text: {
         en: "Even without touching the pill, the room notices: every <b>click</b> leaves a ripple in your color on everyone else's screen, and the <b>text you select</b> shows up highlighted in your color for them, even if their screen is a different size. Try clicking inside this box.",
         es: "Aunque no toques la píldora, la sala se entera: cada <b>clic</b> deja una onda de tu color en la pantalla de los demás, y el <b>texto que seleccionas</b> les aparece resaltado con tu color, aunque su pantalla sea de otro tamaño. Prueba a hacer clic dentro de este recuadro."
@@ -784,6 +865,13 @@
       text: {
         en: "If you don't move for 30 seconds, your cursor fades, dozes off (zzz) and the list shows you as <b>Away</b>. And if you walk into an empty room, a few regulars wander around the page, look at things and wave. They wear a <b>BOT</b> label so nobody mistakes them for people. When real people arrive most of them leave, but one always stays. Each visitor sees their own, and during this tour they step aside so they don't get in the way.",
         es: "Si pasas 30 segundos sin moverte, tu cursor se atenúa, se echa una siesta (zzz) y en la lista sales como <b>Ausente</b>. Y si entras en una sala vacía, unos habituales se pasean por la página, curiosean y saludan. Llevan la etiqueta <b>BOT</b> para que nadie los confunda con personas. Cuando llega gente de verdad casi todos se van, pero uno se queda siempre. Cada visitante ve los suyos, y durante este tour se apartan para no estorbar."
+      } },
+    { target: "#board .board-host",
+      say: { en: "Leave your mark ✏️", es: "Deja tu huella ✏️" },
+      title: { en: "6 · The shared board", es: "6 · La pizarra compartida" },
+      text: {
+        en: "Draw or write whatever you like and it <b>stays here</b> for everyone who comes after you. Pick the <b>pen</b>, the <b>marker</b> (thicker, uses double ink) or <b>text</b><span class=\"mc-kb\">: click on the board, type and press <kbd>Enter</kbd></span><span class=\"mc-tch\">: tap the board and type</span>. You always draw in your profile color.<span class=\"mc-kb\"> Hover over any drawing to see who made it.</span> Everyone has some <b>ink</b>, shown by the bar, and it refills completely <b>every 3 hours</b>: the countdown next to it tells you exactly when. When the board fills up, the oldest drawings fade and get erased first, so there's always something on it.",
+        es: "Dibuja o escribe lo que quieras y <b>se queda aquí</b> para todos los que vengan después. Elige el <b>lápiz</b>, el <b>rotulador</b> (más grueso, gasta el doble) o el <b>texto</b><span class=\"mc-kb\">: pulsa sobre la pizarra, escribe y pulsa <kbd>Enter</kbd></span><span class=\"mc-tch\">: toca la pizarra y escribe</span>. Dibujas siempre con el color de tu perfil.<span class=\"mc-kb\"> Pasa el ratón por encima de un dibujo para ver quién lo hizo.</span> Cada persona tiene una cantidad de <b>tinta</b>, que ves en la barra, y se recarga entera <b>cada 3 horas</b>: la cuenta atrás de al lado te dice exactamente cuándo. Cuando la pizarra se llena, los dibujos más antiguos se atenúan y se borran primero, así que siempre hay algo."
       } },
     { target: "#integrate pre", wave: true,
       say: { en: "That's all, see you! 👋", es: "¡Eso es todo, hasta luego! 👋" },
@@ -799,11 +887,11 @@
     tour: { steps: TOUR, name: { en: "Capybara", es: "Capibara" } },
     ably: isLocal ? null : { authUrl: "/api/ably-token" },
     bots: 2,
-    botTargets: "h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, .board-host, pre",
+    botTargets: ".hero h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, .board-host, pre, .count .big",
     botPhrases: {
-      en: ["Hi 👋", "What does the eye do?", "Press E, you'll see", "Love this typography",
+      en: ["Hi 👋", "What does the 👻 do?", "Press E, you'll see", "Love this typography",
         "Follow me 🏃", "This feels so Figma", "Testing the chat…", "Capybaras rule 🦫", "How many of us are there?", "Shall we draw something on the board? ✏️"],
-      es: ["Hola 👋", "¿Qué hace el ojo?", "Pulsa la E, ya verás", "Me encanta esta tipografía",
+      es: ["Hola 👋", "¿Qué hace el 👻?", "Pulsa la E, ya verás", "Me encanta esta tipografía",
         "¿Me sigues? 🏃", "Esto es muy Figma", "Probando el chat…", "Capibaras al poder 🦫", "¿Cuántos somos?", "¿Dibujamos algo en la pizarra? ✏️"]
     },
     onStats: paintStats
@@ -831,25 +919,22 @@
     document.body.classList.toggle("is-ghost", mc.ghost);
     $("[data-ghost-state]").textContent = mc.ghost ? d("ghostOn") : d("ghostOff");
     $('[data-open="ghost"]').textContent = mc.ghost ? d("ghostBtnOn") : d("ghostBtnOff");
-    $("[data-eye]").innerHTML = mc.ghost
-      ? '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.6 3.5M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2l20 20"/></svg>'
-      : '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+    // The same ghost as on the pill: solid while you're visible, dashed once you've vanished
+    $("[data-ghost-ico]").innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"'
+      + (mc.ghost ? ' stroke-dasharray="2.2 2.4"' : '') + '><path d="M12 2.5a7.5 7.5 0 0 0-7.5 7.5v11.5l2.8-2.4 2.4 2.4L12 19.1l2.3 2.4 2.4-2.4 2.8 2.4V10A7.5 7.5 0 0 0 12 2.5z"/><path d="M9.5 10h.01M14.5 10h.01" stroke-dasharray="none"/></svg>';
   }
   syncMe();
   setInterval(syncMe, 500);
 
-  // Hero tour button: start, continue where you left it, or start over
+  // Hero tour button: one button, and the tour always starts from the top
   var tourKey = "";
   function syncTour() {
-    var s = mc.tour, key = lang + s.active + s.saved;
+    var s = mc.tour, key = lang + s.active;
     if (key === tourKey) return;
     tourKey = key;
-    var b = $("[data-tour]"), r = $("[data-tour-restart]");
-    var resume = !s.active && s.saved > 0;
-    b.textContent = s.active ? d("tourActive") : resume ? d("tourContinue", { n: s.saved + 1, total: s.total }) : d("tourStart");
+    var b = $("[data-tour]");
+    b.textContent = s.active ? d("tourActive") : d("tourStart");
     b.disabled = s.active;
-    r.textContent = d("tourRestart");
-    r.hidden = !resume;
   }
   syncTour();
   setInterval(syncTour, 300);
@@ -865,14 +950,14 @@
     lastKey = "";                                    // repaint name / ghost texts
     syncMe();
     paintStats(mc.stats);
+    playHero();
   }
 
   // Landing buttons → the real pill
   document.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-open],[data-react],[data-copy],[data-lang],[data-tour],[data-tour-restart]");
+    var b = e.target.closest("[data-open],[data-react],[data-copy],[data-lang],[data-tour]");
     if (!b) return;
-    if (b.hasAttribute("data-tour")) { mc.startTour(); syncTour(); return; }
-    if (b.hasAttribute("data-tour-restart")) { mc.startTour(0); syncTour(); return; }
+    if (b.hasAttribute("data-tour")) { mc.startTour(0); syncTour(); return; }
     if (b.hasAttribute("data-lang")) return setLang(b.getAttribute("data-lang"));
     if (b.hasAttribute("data-react")) return mc.react(b.getAttribute("data-react"));
     if (b.hasAttribute("data-copy")) {
@@ -901,6 +986,176 @@
     a.addEventListener("mouseenter", function () { part.classList.add("on"); });
     a.addEventListener("mouseleave", function () { part.classList.remove("on"); });
   });
+
+  // ---- The hero: its headline is edited live by people in the room ----------
+  var HERO = {
+    en: ["Someone", "else", "is", "*reading", "this."],
+    es: ["Alguien", "más", "está", "*leyendo", "esto."]
+  };
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var heroH = $("[data-hero]"), heroRun = 0;
+  function mk(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  // Every letter in its own span; words stay whole so lines still break between them
+  function heroBuild(words) {
+    heroH.innerHTML = ""; heroH.classList.remove("read", "lit");
+    var letters = [];
+    words.forEach(function (w, i) {
+      var italic = w[0] === "*", text = italic ? w.slice(1) : w;
+      var box = mk(italic ? "em" : "span", "w");
+      Array.from(text).forEach(function (c) { var ch = mk("span", "ch"); ch.textContent = c; ch.setAttribute("aria-hidden", "true"); box.appendChild(ch); letters.push(ch); });
+      if (i) heroH.appendChild(document.createTextNode(" "));
+      heroH.appendChild(box);
+      letters.push(null);                                                   // a beat between words
+    });
+    return letters;
+  }
+  // The dot board: grey dots come from the CSS grid; a canvas on top adds the colored ones (the logo's three),
+  // scattered at random and kept for the whole visit. Each cell decides its color once, so a resize never reshuffles.
+  var LOGO = ["#FF6B3D", "#2ED69B", "#3FB6FF"], GREY = "rgba(243,241,236,.11)", dotColor = {}, dotCv = null, dotG = null;
+  function colorAt(x, y) {
+    var k = x + "," + y;
+    if (!(k in dotColor)) dotColor[k] = Math.random() < .035 ? LOGO[Math.floor(Math.random() * 3)] : "";
+    return dotColor[k];
+  }
+  function dotBoard() {
+    var w = innerWidth, h = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);   // the viewport, like the fixed grid
+    if (!dotCv) { dotCv = mk("canvas", "dotfill"); document.body.insertBefore(dotCv, document.body.firstChild); }
+    dotCv.width = w * dpr; dotCv.height = h * dpr; dotCv.style.width = w + "px"; dotCv.style.height = h + "px";
+    dotG = dotCv.getContext("2d"); dotG.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var pts = [];
+    for (var y = 12; y < h; y += 24) for (var x = 12; x < w; x += 24) pts.push([x, y]);
+    return pts;
+  }
+  function dot(x, y, grey) {
+    var c = colorAt(x, y); if (!c && !grey) return;
+    dotG.fillStyle = c || GREY; dotG.beginPath(); dotG.arc(x, y, c ? 1.6 : 1.1, 0, 6.2832); dotG.fill();
+  }
+  function colorDots() { dotBoard().forEach(function (p) { dot(p[0], p[1], false); }); }
+  // Now and then a colored dot hops to a free neighbouring point: it stretches along the way like a drop of ink
+  function drawColors(skip) {
+    dotG.clearRect(0, 0, innerWidth, innerHeight);
+    for (var k in dotColor) {
+      if (!dotColor[k] || k === skip) continue;
+      var xy = k.split(","); dotG.fillStyle = dotColor[k];
+      dotG.beginPath(); dotG.arc(+xy[0], +xy[1], 1.6, 0, 6.2832); dotG.fill();
+    }
+  }
+  function hop() {
+    var from = [];
+    for (var k in dotColor) if (dotColor[k]) {
+      var xy = k.split(",").map(Number);
+      if (xy[0] < innerWidth && xy[1] < innerHeight) from.push(xy);
+    }
+    if (!from.length) return;
+    var a = from[Math.floor(Math.random() * from.length)], dirs = [];
+    [-1, 0, 1].forEach(function (dx) { [-1, 0, 1].forEach(function (dy) {
+      var bx = a[0] + dx * 24, by = a[1] + dy * 24;
+      if ((dx || dy) && bx > 0 && by > 0 && bx < innerWidth && by < innerHeight && !colorAt(bx, by)) dirs.push([bx, by]);
+    }); });
+    if (!dirs.length) return;
+    var b = dirs[Math.floor(Math.random() * dirs.length)], ka = a.join(","), c = dotColor[ka];
+    var ang = Math.atan2(b[1] - a[1], b[0] - a[0]), dur = 900, start = null;
+    function ease(p) { return p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; }
+    (function frame(now) {
+      if (start === null) start = now;
+      var p = Math.min(1, (now - start) / dur), e = ease(p), st = Math.sin(Math.PI * p);
+      drawColors(ka);
+      dotG.fillStyle = c; dotG.beginPath();
+      dotG.ellipse(a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, 1.6 * (1 + 2.2 * st), 1.6 * (1 - .3 * st), ang, 0, 6.2832);
+      dotG.fill();
+      if (p < 1) return requestAnimationFrame(frame);
+      dotColor[ka] = ""; dotColor[b.join(",")] = c; drawColors();
+    })(performance.now());
+  }
+  (function hopLoop() {
+    setTimeout(function () { if (revealed && !reduced && !document.hidden && dotG) hop(); hopLoop(); }, 900 + Math.random() * 1600);
+  })();
+  var dotResize = 0;
+  addEventListener("resize", function () { clearTimeout(dotResize); dotResize = setTimeout(function () { if (revealed) colorDots(); }, 150); });
+  // Brings in everything that waited for the headline (once)
+  var revealed = false;
+  function revealPage() {
+    if (revealed) return; revealed = true;
+    var h = document.documentElement;
+    h.classList.add("reveal"); h.classList.remove("intro");
+    colorDots();                                                            // the CSS grid takes the grey ones back
+    h.classList.add("settled");                                             // …and the colored ones dim down
+    setTimeout(function () { h.classList.remove("reveal"); }, 2000);
+  }
+  setTimeout(revealPage, 7000);                                            // never keep the page hidden for long
+
+  // Paints the whole board one dot at a time, in random order, over `ms`
+  function paintDots(ms) {
+    var pts = dotBoard();
+    for (var i = pts.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), tmp = pts[i]; pts[i] = pts[j]; pts[j] = tmp; }
+    var drawn = 0, start = null;
+    (function frame(now) {
+      if (revealed) return;
+      if (start === null) start = now;
+      var p = Math.min(1, (now - start) / ms), want = Math.round((1 - Math.pow(1 - p, 2)) * pts.length);
+      for (; drawn < want; drawn++) dot(pts[drawn][0], pts[drawn][1], true);
+      if (p < 1) requestAnimationFrame(frame);
+    })(performance.now());
+  }
+  function playHero() {
+    var id = ++heroRun, words = HERO[lang];
+    heroH.setAttribute("aria-label", words.join(" ").replace("*", ""));
+    var letters = heroBuild(words);
+    if (reduced) { heroH.classList.add("lit"); revealPage(); return; }
+    var step = 70, t = 0;                                                   // ms between letters
+    letters.forEach(function (ch) {                                         // a typing rhythm: steady, never mechanical
+      if (ch) { ch.style.transitionDelay = t + "ms"; t += step * (.7 + Math.random() * .6); } else t += step * 1.8;
+    });
+    if (!revealed) paintDots(t + 500);                                      // the room fills in behind the words
+    setTimeout(function () {
+      if (id !== heroRun) return;
+      heroH.offsetWidth; heroH.classList.add("read");
+      setTimeout(function () { if (id === heroRun) revealPage(); }, t + 300);
+    }, revealed ? 300 : 500);
+  }
+  document.fonts.ready.then(playHero);
+
+  // ---- 02 · Chat: a conversation that types itself, only while on screen ----
+  var convo = $("[data-convo]"), convoRun = 0;
+  function convoWait(ms, id) { return new Promise(function (res, rej) { setTimeout(function () { id === convoRun ? res() : rej(); }, ms); }); }
+  async function playConvo() {
+    var id = ++convoRun, a = $('[data-who="a"]', convo), b = $('[data-who="b"]', convo);
+    var ta = $(".t", a), tb = $(".t", b), sa, sb;
+    function src(el) { var k = el.getAttribute("data-i18n"); return (lang === "es" && ES[k] != null ? ES[k] : el._en).replace(/<[^>]+>/g, ""); }
+    if (reduced) return;
+    try {
+      for (;;) {
+        sa = src(ta); sb = src(tb);
+        ta.textContent = ""; tb.textContent = ""; b.style.opacity = 0;
+        a.style.left = "14%"; a.style.top = "30%";
+        await convoWait(700, id);
+        for (var i = 0; i < sa.length; i++) { ta.textContent += sa[i]; await convoWait(45 + Math.random() * 60, id); }
+        await convoWait(900, id);
+        b.style.opacity = 1; b.style.left = "56%"; b.style.top = "56%";
+        await convoWait(700, id);
+        for (var j = 0; j < sb.length; j++) { tb.textContent += sb[j]; await convoWait(45 + Math.random() * 60, id); }
+        await convoWait(3600, id);
+      }
+    } catch (e) {}
+  }
+  if (convo && "IntersectionObserver" in window) {
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) playConvo(); else convoRun++; });
+    }, { threshold: .35 }).observe(convo);
+  }
+
+  // ---- Content settles in once as it arrives; the bar gets its line on scroll ----
+  if ("IntersectionObserver" in window && !reduced) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, { rootMargin: "0px 0px -8% 0px" });
+    $$(".rv").forEach(function (n) { io.observe(n); });
+  } else { $$(".rv").forEach(function (n) { n.classList.add("in"); }); }
+  var topBar = $(".top");
+  addEventListener("scroll", function () {
+    topBar.classList.toggle("scrolled", scrollY > 8);
+    document.documentElement.classList.toggle("deep", scrollY > innerHeight * .3);
+  }, { passive: true });
 })();
 </script>
 </body>

@@ -141,7 +141,7 @@ All of them are optional. The former names still work: `MultiCursor.init()` is a
 | `presence` | boolean | `true` | Shows the pill. With `false` there are only cursors (and `onStats`). |
 | `onboarding` | boolean | `true` | Welcome hint on the first visit (shows after 1.5 s and never again). |
 | `toggle` | boolean | `true` | "Ghost mode" switch in the profile panel. |
-| `chat` | boolean | `true` | Chat next to the cursor (💬 button and `/` key). |
+| `chat` | boolean | `true` | Chat next to the cursor (shortcuts panel row and `/` key). |
 | `reactions` | array \| `false` | `["❤️","👍","🔥","😂","🎉","👏","😮","👀"]` | Available emojis (the first 9 are used). `false` disables them. |
 | `clicks` | boolean | `true` | Shows other people's clicks as ripples in their color. |
 | `selection` | boolean | `true` | Shows the text other people select. |
@@ -195,17 +195,17 @@ const mc = Roomful.init({ ... });
 
 ```
  ┌──────────────────────────────────────────┐
- │ (◐◐◐) 4 here │  💬   😊  │  (You) ▾       │
+ │ (◐◐◐) 4 here │  ⌨   👻  │  (You)          │
  └──────────────────────────────────────────┘
-    People        Chat React  Your profile
+    People     Shortcuts Ghost  Your profile
 ```
 
 | Part | What it does |
 |---|---|
 | **People** | Up to 3 faces + "N here" ("Just you" when nobody else is around). Opens a panel with the numbers (on this page, on the whole site, today's peak) and the list of people with their status (**Active**, **Typing…**, **Away**) and a **Follow** button. Your row has **Edit**. |
-| **Chat 💬** | Opens a text field next to your cursor. Hidden on touch screens (there's no cursor). |
-| **Reactions 😊** | Opens the emoji picker above the pill. |
-| **Your profile ▾** | Photo (upload, change or remove), name, color, 🎲 Random (name and color) and the **Ghost mode** switch. There's no Save button: color, photo and dice apply instantly, the name after a short pause in typing (or on `Enter` / leaving the field), and "✓ Saved" confirms it. |
+| **Shortcuts ⌨** | A panel with every key (`/`, `E`, `Esc`, `?`). The chat and reaction rows are also buttons: they open the chat next to your cursor or the emoji picker above the pill, so on touch screens this is how you chat and react. `?` opens it too. |
+| **Ghost mode 👻** | Turns ghost mode on with one click (the same as the switch in your profile). |
+| **Your profile** | Photo (upload, change or remove), name, color, 🎲 Random (name and color) and the **Ghost mode** switch. There's no Save button: color, photo and dice apply instantly, the name after a short pause in typing (or on `Enter` / leaving the field), and "✓ Saved" confirms it. |
 
 Special states:
 
@@ -221,6 +221,7 @@ Special states:
 | `Enter` (in the chat) | Send; the message stays for 4 s and disappears |
 | `Esc` (in the chat) | Clear the message and close |
 | `E` | Open/close the emoji picker next to your cursor |
+| `?` | Open/close the shortcuts panel |
 | Shake the mouse side to side | Wave 👋 at the room |
 | `1`–`9` (with the picker open) | Send that emoji (hidden shortcut) |
 | `Esc` | Close panels and picker; stop following |
@@ -231,8 +232,8 @@ Shortcuts are ignored while you type in a text field on the page.
 ### On phones and tablets
 
 - **Your finger is your cursor:** touching or swiping the page puts your cursor there, and it travels with the content as you scroll, so others see where you are reading. Touches on the pill and its panels don't move it.
-- **Chat:** the 💬 button opens the message field docked at the bottom, above the keyboard; others see your message next to your cursor.
-- **Reactions:** the 🙂 button.
+- **Chat:** tap ⌨ and then "Write next to your cursor": the message field opens docked at the bottom, above the keyboard; others see your message next to your cursor.
+- **Reactions:** tap ⌨ and then "React".
 - **Following** stops when you swipe to scroll; a simple tap doesn't stop it.
 - The welcome hint and the help texts talk about buttons instead of keyboard shortcuts.
 
