@@ -814,7 +814,7 @@
     var last = { cx: 0, cy: 0, has: false, sent: 0, pending: null };
     var chatTimer = null, raf = 0, houseTimer = null, selTimer = null, resizeTimer = null;
     var lastSelJSON = "null", lastClick = -1e9, lastReact = -1e9;
-    var following = null, openPop = null, picker = null;
+    var following = null, openPop = null, picker = null, pickerReach = 0;
     var serverStats = { room: 0, site: 0, peak: 0 }, statsKey = "";
     var bots = [];
     var wave = { x: null, dir: 0, run: 0, flips: [], at: -1e9 };
@@ -1352,10 +1352,17 @@
       picker.style.left = Math.max(8, Math.min(innerWidth - w - 8, left)) + "px";
       picker.style.top = Math.max(8, Math.min(innerHeight - h - 8, top)) + "px";
       if (fromButton) picker.querySelector("button").focus();
+      // Moving away from it without picking closes it (measured from where the pointer was,
+      // so a picker opened far from the cursor doesn't vanish while you head towards it)
+      pickerReach = last.has ? pickerDistance(last.cx, last.cy) : 0;
       dismissCoach();
       setExpanded();
     }
     function closePicker() { if (picker) { picker.remove(); picker = null; } setExpanded(); }
+    function pickerDistance(x, y) {
+      var r = picker.getBoundingClientRect();
+      return Math.hypot(Math.max(r.left - x, 0, x - r.right), Math.max(r.top - y, 0, y - r.bottom));
+    }
 
     // ---- following someone ----
     function paintFollow(p) {
@@ -2233,6 +2240,10 @@
       if (performance.now() - lastTouchAt > 800) lastInput = "mouse";   // not the mouse event a tap emulates
       last.cx = e.clientX; last.cy = e.clientY; last.has = true;
       pointerIn = true; showSelf();
+      if (picker) {
+        var d = pickerDistance(e.clientX, e.clientY);
+        if (d > pickerReach + 90) closePicker(); else if (d < pickerReach) pickerReach = d;
+      }
       if (localVisible()) placeLocal();
       detectWave(e.clientX);
       sendPosition();
@@ -2257,7 +2268,7 @@
         react(waveEmoji);
       }
     }
-    function onScroll() { sendPosition(); }
+    function onScroll() { if (picker) closePicker(); sendPosition(); }   // scrolling on without picking closes the emojis
     function onLeave(e) {
       if (e.relatedTarget) return;
       pointerIn = false; wave.x = null; showSelf();
