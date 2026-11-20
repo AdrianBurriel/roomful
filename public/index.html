@@ -133,6 +133,7 @@
   .hero h1{margin:0;font:400 clamp(60px,10.4vw,176px)/.98 var(--serif);letter-spacing:-.025em;max-width:11.5ch}
   /* The headline types itself: every letter starts fully transparent and appears in turn */
   .hero h1 .ch{color:var(--ink);opacity:0;transition:opacity .18s ease}
+  html.intro .hero h1:not(.built){visibility:hidden}               /* the static (English) headline never flashes before it types */
   .hero h1.read .ch,.hero h1.lit .ch{opacity:1}
   .hero h1.lit .ch{transition:none}
   @keyframes blink{50%{opacity:0}}
@@ -143,7 +144,7 @@
   .hero-foot{display:flex;align-items:center;gap:clamp(32px,4vw,56px);margin-top:clamp(32px,5vh,56px)}
   /* Intro: only the headline at first; everything else arrives once it has been read */
   html.intro .top,html.intro .file,html.intro .hero-foot{opacity:0;transform:translateY(10px)}
-  html.intro .mc-layer,html.intro .mc-local,html.intro .mc-presence,html.intro .mc-coach{opacity:0;pointer-events:none}
+  html.intro .mc-layer,html.intro .mc-local,html.intro .mc-presence,html.intro .mc-coach{opacity:0;visibility:hidden;pointer-events:none}   /* hidden too: their own pop-in animation would flash them through the opacity */
   html.reveal .top,html.reveal .file,html.reveal .hero-foot{transition:opacity .8s ease,transform .9s cubic-bezier(.22,1,.36,1),border-color .3s}
   html.reveal .file{transition-delay:.12s}
   html.reveal .hero-foot{transition-delay:.28s}
@@ -970,7 +971,7 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
     lastKey = "";                                    // repaint name / ghost texts
     syncMe();
     paintStats(mc.stats);
-    playHero();
+    heroStarted = true; playHero();
   }
 
   // Landing buttons → the real pill
@@ -1017,7 +1018,7 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
   function mk(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   // Every letter in its own span; words stay whole so lines still break between them
   function heroBuild(words) {
-    heroH.innerHTML = ""; heroH.classList.remove("read", "lit");
+    heroH.innerHTML = ""; heroH.classList.remove("read", "lit"); heroH.classList.add("built");
     var letters = [];
     words.forEach(function (w, i) {
       var italic = w[0] === "*", text = italic ? w.slice(1) : w;
@@ -1131,9 +1132,12 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
       if (id !== heroRun) return;
       heroH.offsetWidth; heroH.classList.add("read");
       setTimeout(function () { if (id === heroRun) revealPage(); }, t + 300);
-    }, revealed ? 300 : 500);
+    }, revealed ? 300 : 150);
   }
-  document.fonts.ready.then(playHero);
+  // Types as soon as the headline font is in, but never waits more than 1.2 s for it
+  var heroStarted = false;
+  function startHero() { if (!heroStarted) { heroStarted = true; playHero(); } }
+  document.fonts.ready.then(startHero); setTimeout(startHero, 1200);
 
   // ---- 02 · Chat: a conversation that types itself, only while on screen ----
   var convo = $("[data-convo]"), convoRun = 0;
