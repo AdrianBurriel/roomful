@@ -1,5 +1,5 @@
 /*!
- * Roomful — turn any website into a room full of people: Figma-style
+ * roomful·js — turn any website into a room full of people: Figma-style
  * multiplayer cursors, presence, chat and reactions.
  *
  * Minimal usage:
@@ -92,7 +92,7 @@
         toolbar: "People on this page", seeWho: "See who's here",
         chatTip: "Write next to your cursor", react: "React", reactWith: "React with {e}",
         profile: "Your profile", profileOf: "Your profile · {name}", profileLabel: "Your profile: {name}",
-        hidden: "Cursors hidden", show: "Show",
+        hidden: "Cursors hidden", show: "Show", showCursors: "Show cursors",
         coachLabel: "How it works", coachTitle: "👋 You're not alone on this page",
         coachBody: "Down here you can see who else is looking. Click the faces to see who they are and follow them.",
         coachShortcuts: "Shortcuts:", coachChat: "<kbd>/</kbd> to write next to your cursor",
@@ -141,7 +141,7 @@
         toolbar: "Personas en esta página", seeWho: "Ver quién está aquí",
         chatTip: "Escribir junto a tu cursor", react: "Reaccionar", reactWith: "Reaccionar {e}",
         profile: "Tu perfil", profileOf: "Tu perfil · {name}", profileLabel: "Tu perfil: {name}",
-        hidden: "Cursores ocultos", show: "Mostrar",
+        hidden: "Cursores ocultos", show: "Mostrar", showCursors: "Mostrar cursores",
         coachLabel: "Cómo funciona", coachTitle: "👋 No estás solo en esta página",
         coachBody: "Abajo ves quién más está mirando. Pulsa sobre las caras para ver quiénes son y seguirles.",
         coachShortcuts: "Atajos:", coachChat: "<kbd>/</kbd> para escribir junto a tu cursor",
@@ -336,9 +336,10 @@
     ".mc-sep{width:1px;height:20px;background:rgba(0,0,0,.1);margin:0 4px;flex:none}",
     ".mc-me-btn{width:36px;height:36px}",
     ".mc-me-btn .mc-avatar{margin:0;border:0;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}",
-    ".mc-ghost-bar{display:none;align-items:center;gap:8px;padding:0 0 0 10px;white-space:nowrap}",
-    ".mc-presence.mc-ghost>*{display:none}",
-    ".mc-presence.mc-ghost>.mc-ghost-bar{display:flex}",
+    /* ghost mode: the same pill, same parts — "Cursors hidden" where the faces were, the 👻 pressed, shortcuts off */
+    ".mc-people.mc-hid{padding-left:10px;font-weight:500}",
+    ".mc-ghost-btn.mc-on{background:rgba(0,0,0,.08)}",
+    ".mc-presence .mc-btn:disabled{opacity:.3;cursor:default;background:none}",
     ".mc-pill-btn{height:30px;padding:0 14px;font-weight:600;background:#1E1E1E;color:#fff}",
     ".mc-pill-btn:hover{background:#000}",
     /* tooltip with keyboard shortcut */
@@ -350,6 +351,9 @@
     "@media (hover:none){.mc-tooltip{display:none}}",
     ".mc-pop kbd,.mc-coach kbd,.mc-tour kbd{font:600 11px/1.4 ui-monospace,Menlo,monospace;border:1px solid rgba(0,0,0,.18);border-bottom-width:2px;",
     "  border-radius:5px;padding:1px 5px;margin:0 1px}",
+    /* "⌨" in copy is shown as the pill's own keyboard icon in a key cap: the glyph is thin and tiny on phones */
+    "kbd.mc-kicon{display:inline-flex;align-items:center;vertical-align:-.3em;padding:2px 5px}",
+    "kbd.mc-kicon svg{width:16px;height:16px;display:block}",
     /* panels */
     ".mc-pop{position:fixed;right:16px;bottom:68px;z-index:2147483003;border-radius:16px;width:300px;max-width:calc(100vw - 32px);",
     "  overflow:hidden;animation:mc-in .16s ease-out}",
@@ -426,7 +430,7 @@
     ".mc-coach{position:fixed;right:16px;bottom:72px;z-index:2147483003;border-radius:14px;padding:16px;width:290px;",
     "  max-width:calc(100vw - 32px);box-sizing:border-box;animation:mc-in .25s ease-out}",
     ".mc-coach b{display:block;font-size:14px;margin-bottom:6px}",
-    ".mc-coach p{margin:0 0 14px;font-weight:400;opacity:.75;line-height:1.5}",
+    ".mc-coach p{margin:0 0 14px;font-weight:400;color:color-mix(in srgb,currentColor 75%,transparent);line-height:1.5}",   // dims the text, not its key caps
     ".mc-coach::after{content:'';position:absolute;right:34px;bottom:-7px;width:12px;height:12px;background:inherit;",
     "  border-right:1px solid rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.08);transform:rotate(45deg)}",
     /* guided tour: spotlight on the element + explanation card */
@@ -474,6 +478,7 @@
     "  .mc-presence,.mc-pop,.mc-picker,.mc-coach,.mc-tour{background:#1f1f1f;border-color:rgba(255,255,255,.1);color:#EEE}",
     "  .mc-avatar{border-color:#1f1f1f}.mc-btn:hover,.mc-btn[aria-expanded=true]{background:rgba(255,255,255,.08)}",
     "  .mc-sep{background:rgba(255,255,255,.12)}.mc-avatar.mc-more{background:#333;color:#ddd}",
+    "  .mc-ghost-btn.mc-on{background:rgba(255,255,255,.12)}",
     "  .mc-pill-btn,.mc-primary,.mc-act.mc-on{background:#fff;color:#1E1E1E;border-color:#fff}",
     "  .mc-pill-btn:hover,.mc-primary:hover,.mc-act.mc-on:hover{background:#e6e6e6}",
     "  .mc-act,.mc-outline,.mc-pop input{border-color:rgba(255,255,255,.2)}",
@@ -490,7 +495,9 @@
       ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
   }
   var ICON_KEYS = icon('<rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12.5h.01M18 12.5h.01M10 12.5h4M8 16h8"/>');
+  var KEYS_KBD = '<kbd class="mc-kicon" aria-label="⌨">' + ICON_KEYS + '</kbd>';   // "⌨" in copy, legible on phones
   var ICON_GHOST = icon('<path d="M12 2.5a7.5 7.5 0 0 0-7.5 7.5v11.5l2.8-2.4 2.4 2.4L12 19.1l2.3 2.4 2.4-2.4 2.8 2.4V10A7.5 7.5 0 0 0 12 2.5z"/><path d="M9.5 10h.01M14.5 10h.01"/>');
+  var ICON_GHOST_OFF = ICON_GHOST.replace("<svg ", '<svg stroke-dasharray="2.2 2.4" ');   // the same ghost, dashed: you've vanished
   var ICON_PEOPLE = icon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>', 16);
   var ICON_EYE_OFF = icon('<path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.6 3.5M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2l20 20"/>', 16);
 
@@ -849,26 +856,20 @@
     // Every button says what it does (tooltip + shortcut) and opens a self-explanatory panel.
     // Chat and reactions live in the shortcuts panel: a key away, or a tap on touch screens.
     var presence = null, peopleBtn = null, keysBtn = null, ghostBtn = null, meBtn = null;
-    var ghostText = null, showBtn = null, tooltip = null, coach = null, coachTimer = null;
+    var tooltip = null, coach = null, coachTimer = null;
     var lastInput = "mouse", lastTouchAt = -1e9, touchStart = null, chatDocked = false;
     if (opts.presence !== false) {
       presence = el("div", "mc-presence", document.body);
       presence.setAttribute("role", "toolbar");
-      peopleBtn = pillButton("mc-btn mc-people", "", function () { togglePop("people"); });
+      peopleBtn = pillButton("mc-btn mc-people", "", function () { if (ghost) setGhost(false); else togglePop("people"); });
       if (opts.chat !== false || reactions) {
         el("span", "mc-sep", presence);
         keysBtn = pillButton("mc-btn mc-icon mc-keys-btn", "?", function () { togglePop("keys"); }, ICON_KEYS);
       } else el("span", "mc-sep", presence);
-      // One click to vanish; the pill then shrinks to "Cursors hidden · Show"
-      ghostBtn = pillButton("mc-btn mc-icon mc-ghost-btn", "", function () { closePop(); closePicker(); setGhost(true); }, ICON_GHOST);
+      // One click to vanish, another to come back; the pill keeps its shape (see renderPresence)
+      ghostBtn = pillButton("mc-btn mc-icon mc-ghost-btn", "", function () { closePop(); closePicker(); setGhost(!ghost); }, ICON_GHOST);
       el("span", "mc-sep", presence);
       meBtn = pillButton("mc-btn mc-me-btn", "", function () { togglePop("profile"); });
-      var ghostBar = el("div", "mc-ghost-bar", presence);
-      ghostBar.innerHTML = ICON_EYE_OFF;
-      ghostText = el("span", "", ghostBar);
-      showBtn = el("button", "mc-btn mc-pill-btn", ghostBar);
-      showBtn.type = "button";
-      showBtn.addEventListener("click", function () { setGhost(false); });
       tooltip = el("div", "mc-tooltip", document.body);
       tooltip.setAttribute("aria-hidden", "true");
     }
@@ -880,9 +881,16 @@
       if (!presence) return;
       presence.setAttribute("aria-label", t("toolbar"));
       if (keysBtn) setTip(keysBtn, t("keys"));
-      setTip(ghostBtn, t("ghost"), t("ghost") + ". " + t("ghostHelp"));
-      ghostText.textContent = t("hidden");
-      showBtn.textContent = t("show");
+      paintGhostBtn();
+    }
+
+    function paintGhostBtn() {
+      if (!ghostBtn) return;
+      ghostBtn.classList.toggle("mc-on", ghost);
+      ghostBtn.setAttribute("aria-pressed", String(ghost));
+      ghostBtn.innerHTML = ghost ? ICON_GHOST_OFF : ICON_GHOST;
+      if (ghost) setTip(ghostBtn, t("showCursors"));
+      else setTip(ghostBtn, t("ghost"), t("ghost") + ". " + t("ghostHelp"));
     }
 
     function pillButton(cls, kbd, onClick, iconHTML) {
@@ -928,7 +936,7 @@
       var touchUI = isTouchUI();
       if (!touchUI && opts.chat !== false) tips.push(t("coachChat"));
       if (!touchUI && reactions) tips.push(t("coachReact"));
-      el("p", "", coach).innerHTML = t("coachBody") + (!keysBtn ? "" : touchUI ? " " + t("coachKeysTouch") :
+      el("p", "", coach).innerHTML = t("coachBody") + (!keysBtn ? "" : touchUI ? " " + t("coachKeysTouch").replace(/⌨/g, KEYS_KBD) :
         " " + t("coachShortcuts") + " " + tips.join(" " + t("and") + " ") + ". " + t("coachKeys"));
       var row = el("div", "mc-row", coach);
       if (tourSteps && opts.tour.offer !== false) {
@@ -2105,18 +2113,24 @@
     function renderPresence() {
       if (!presence) { emitStats(); return; }
       presence.classList.toggle("mc-ghost", ghost);
-      if (ghost) { emitStats(); return; }
-      var arr = peopleList(), others = arr.slice(1);
+      if (ghostBtn.classList.contains("mc-on") !== ghost) paintGhostBtn();
+      if (keysBtn) keysBtn.disabled = ghost;           // chat and reactions need you in the room
+      var arr = ghost ? [] : peopleList(), others = arr.slice(1);
 
-      // "People" button: other people's faces + how many of you there are
-      var key = lang + "|" + arr.length + "|" + following + "|" + others.slice(0, 3).map(function (u) {
+      // "People" button: other people's faces + how many of you there are (as a ghost: "Cursors hidden", tap to come back)
+      var key = ghost ? lang + "|ghost" : lang + "|" + arr.length + "|" + following + "|" + others.slice(0, 3).map(function (u) {
         return u.id + u.name + u.color + (u.avatar ? u.avatar.length : "");
       }).join("|");
       if (peopleBtn._key !== key) {                // don't rebuild without changes (no lost clicks)
         peopleBtn._key = key;
         peopleBtn.innerHTML = "";
-        peopleBtn.classList.toggle("mc-alone", !others.length);
-        if (others.length) {
+        peopleBtn.classList.toggle("mc-alone", !ghost && !others.length);
+        peopleBtn.classList.toggle("mc-hid", ghost);
+        if (ghost) {
+          peopleBtn.innerHTML = ICON_EYE_OFF;
+          el("span", "", peopleBtn).textContent = t("hidden");
+          setTip(peopleBtn, t("showCursors"));
+        } else if (others.length) {
           var stack = el("span", "mc-stack", peopleBtn);
           others.slice(0, 3).forEach(function (u) {
             var a = face("", u, stack);

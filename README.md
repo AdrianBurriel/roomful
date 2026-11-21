@@ -1,4 +1,4 @@
-# Roomful
+# roomful·js
 
 🇬🇧 **English** · 🇪🇸 [Español](README.es.md)
 
@@ -20,14 +20,14 @@
 Requirement: Python 3.8 or newer.
 
 ```bash
-git clone https://github.com/AdrianBurriel/roomful.git
-cd roomful
+git clone https://github.com/AdrianBurriel/roomfuljs.git
+cd roomfuljs
 python3 server.py            # → http://localhost:8080
 ```
 
 Open `http://localhost:8080` and, to see yourself from the outside, also open it **in another browser or on another device on your network** (`http://<your-local-ip>:8080`). Tabs of the same browser count as the same person.
 
-The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty (labelled **BOT**; one always stays). It has a **shared board** to draw on, and a **guided tour** of 13 steps that's offered on the first visit and always available from the button under the headline. The page itself is one dark room on a dot board: the headline types itself first, then everything else arrives; a few dots in the logo's colors liven up the board, dim once the page is in and step aside while you read. Sections, in order: the pill, people, chat, reactions, your profile and ghost mode, what the room notices on its own, the shared board and how to integrate it. The pill and every panel it opens wear the page's own glass style (see *Styles* in the docs). It opens **in Spanish if your browser is in Spanish** (or Catalan, Galician or Basque) and in English otherwise, with an **EN | ES** switch in the top bar that's remembered.
+The demo is a landing page that explains every part of the pill, with demos that really work and 2 fake visitors so it's never empty (labelled **BOT**; one always stays). It has a **shared board** to draw on, and a **guided tour** of 13 steps that's offered on the first visit and always available from the button under the headline. The page itself is one dark room on a dot board: the headline types itself first, then everything else arrives; a few dots in the logo's colors liven up the board, dim once the page is in and step aside while you read. Sections, in order: the pill, people, chat, reactions, your profile and ghost mode, what the room notices on its own, the shared board and how to integrate it. The pill and every panel it opens wear the page's own glass style (see *Styles* in the docs). Scrolling glides with [Lenis](https://github.com/darkroomengineering/lenis) (off with *reduce motion*), the top menu lights up the section you're in, and the three dots of the logo move on hover and, now and then, on their own. It opens **in Spanish if your browser is in Spanish** (or Catalan, Galician or Basque) and in English otherwise, with an **EN | ES** switch in the top bar that's remembered.
 
 ## What's included
 
@@ -62,8 +62,8 @@ The demo is a landing page that explains every part of the pill, with demos that
 | Part | What it does | Shortcut |
 |---|---|---|
 | **People** | List of who's here, with their status, the numbers (on this page, on the whole site, today's peak) and a **Follow** button | — |
-| **Shortcuts** | Every key Roomful listens to: `/` chat next to your cursor (up to 4 lines; `Enter` keeps it for a few seconds, `Esc` clears it), `E` reactions that float up from your cursor (`1`–`9` to pick), `Esc` and `?`. Each row is also a button, so touch screens can chat and react from here | `?` |
-| **Ghost mode** | One click to stop seeing cursors and stop sharing yours; the pill shrinks to "Cursors hidden · Show" | — |
+| **Shortcuts** | Every key roomful·js listens to: `/` chat next to your cursor (up to 4 lines; `Enter` keeps it for a few seconds, `Esc` clears it), `E` reactions that float up from your cursor (`1`–`9` to pick), `Esc` and `?`. Each row is also a button, so touch screens can chat and react from here | `?` |
+| **Ghost mode** | One click to stop seeing cursors and stop sharing yours; the pill keeps its shape: "Cursors hidden" where the faces were and the 👻 pressed (tap either to come back) | — |
 | **Your profile** | Name, color, photo and 🎲 random, saved on their own as you change them (no Save button), plus the **ghost mode** switch | — |
 
 On a computer every button shows a tooltip with its shortcut; on phones and tablets you tap ⌨ and pick "Write" or "React". The first visit brings a welcome hint that also offers the guided tour (if the site has one).
@@ -142,7 +142,7 @@ mc.destroy();
 
 - **Ink:** each person gets 5,000 units (about 3 long strokes or 10 short ones; the marker uses double, text 40 per letter), and it **refills completely every 3 hours** (at 00:00, 03:00, 06:00… UTC). A live countdown next to the ink bar shows when (`↻ Refills in 2:14:05`), and if you try to draw with no ink left, a card tells you you've used it up and when you can draw again. The server checks it per browser, with a looser cap per network.
 - **Always something there:** when the ink on the board goes over 60,000, the oldest drawings are erased first (they fade a little beforehand). The newest one always stays.
-- **Who drew it:** each drawing keeps its author's Roomful name; hover over it to see it. Drawings made before names were saved show "Someone".
+- **Who drew it:** each drawing keeps its author's roomful·js name; hover over it to see it. Drawings made before names were saved show "Someone".
 - **Live:** when someone finishes a drawing, everyone else's board updates straight away.
 - **Storage:** with `server.py`, in a file (`BOARD_FILE`); on Vercel, in Upstash Redis (see [Deploy on Vercel](#deploy-on-vercel)).
 
@@ -155,8 +155,8 @@ Two ways: on your own server with `server.py`, or on Vercel with Ably and no ser
 `server.py` runs anywhere with Python or Docker (Render, Fly.io, Railway, a VPS…), **as a single instance**:
 
 ```bash
-docker build -t roomful .
-docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://mydomain.com roomful
+docker build -t roomfuljs .
+docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://mydomain.com roomfuljs
 ```
 
 | Variable | Purpose | Default |

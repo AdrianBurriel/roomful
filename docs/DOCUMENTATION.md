@@ -1,8 +1,8 @@
-# Full documentation · Roomful
+# Full documentation · roomful·js
 
 🇬🇧 **English** · 🇪🇸 [Español](DOCUMENTACION.md)
 
-Technical reference for Roomful: the `roomful.js` integration that turns every page into a room, and the `server.py` server that keeps it full. For a quick introduction, see the [README](../README.md).
+Technical reference for roomful·js: the `roomful.js` integration that turns every page into a room, and the `server.py` server that keeps it full. For a quick introduction, see the [README](../README.md).
 
 ## Contents
 
@@ -28,7 +28,7 @@ Technical reference for Roomful: the `roomful.js` integration that turns every p
 
 ## 1. What it is and how it works
 
-Roomful turns every page of a website into a **room**. Everyone on the same page is in the same room and sees, in real time, everybody else's cursor, Figma multiplayer style. Each cursor carries a random name ("Zen Capybara", "Ninja Axolotl"…). In the bottom-right corner, a **pill**, the door to the room, shows who's in and lets people chat, react, follow someone and edit their profile.
+roomful·js turns every page of a website into a **room**. Everyone on the same page is in the same room and sees, in real time, everybody else's cursor, Figma multiplayer style. Each cursor carries a random name ("Zen Capybara", "Ninja Axolotl"…). In the bottom-right corner, a **pill**, the door to the room, shows who's in and lets people chat, react, follow someone and edit their profile.
 
 There are two pieces:
 
@@ -61,8 +61,8 @@ There is no database. Everything lives in the server's memory and in each visito
 ## 3. Running it locally
 
 ```bash
-git clone https://github.com/AdrianBurriel/roomful.git
-cd roomful
+git clone https://github.com/AdrianBurriel/roomfuljs.git
+cd roomfuljs
 python3 server.py                 # → http://localhost:8080
 ```
 
@@ -210,7 +210,7 @@ const mc = Roomful.init({ ... });
 Special states:
 
 - **Following someone:** a frame in their color surrounds the screen, with a "Following X · Stop following ✕" button at the top.
-- **Ghost mode:** the pill shrinks to "Cursors hidden · **Show**".
+- **Ghost mode:** the pill keeps its shape and style: "Cursors hidden" where the faces were, the 👻 pressed (dashed) and shortcuts greyed out; tap "Cursors hidden" or the 👻 to come back.
 - **First visit:** a "👋 You're not alone on this page" hint with **Got it**. It's marked as seen when clicked or when any panel is opened.
 
 ### Shortcuts
@@ -241,7 +241,7 @@ Shortcuts are ignored while you type in a text field on the page.
 
 ### 8.1 Rooms
 
-The room is the heart of Roomful: you see the cursors, messages and reactions of the people in your same room.
+The room is the heart of roomful·js: you see the cursors, messages and reactions of the people in your same room.
 
 - By default, the room is `location.pathname` without trailing slash (`/pricing/` → `/pricing`). Query and hash don't count.
 - In SPAs route changes are detected (checked every second) and the client reconnects to the new room.
@@ -377,7 +377,7 @@ Each text can be a string or `{ en, es, … }`. `text` is HTML: inside it, `<spa
 
 ### 8.14 Shared board
 
-`public/roomful-board.js` is an add-on: a board where everyone in the room can draw and write, and the drawings stay for whoever comes next. It uses the Roomful instance for your browser id, your color, the language and the "someone drew" signal.
+`public/roomful-board.js` is an add-on: a board where everyone in the room can draw and write, and the drawings stay for whoever comes next. It uses the roomful·js instance for your browser id, your color, the language and the "someone drew" signal.
 
 ```js
 const mc = Roomful.init({ … });
@@ -391,7 +391,7 @@ board.setLang("en"); board.refresh(); board.destroy();
 ```
 
 - **Tools:** pen (thin) and marker (thick, double ink), always in your profile color (there's deliberately no color picker: your color is your signature), plus **text** (click, type up to 60 characters, `Enter`). Each drawing is sent when you finish it.
-- **Who drew it:** each drawing is saved with its author's Roomful name (`mc.me.name` at that moment). Hovering a drawing with the mouse shows that name in a tag of the drawing's color, above the pointer (your own cursor's tag sits below it). Drawings saved without a name show "Someone". On touch screens there's no hover, so it isn't shown.
+- **Who drew it:** each drawing is saved with its author's roomful·js name (`mc.me.name` at that moment). Hovering a drawing with the mouse shows that name in a tag of the drawing's color, above the pointer (your own cursor's tag sits below it). Drawings saved without a name show "Someone". On touch screens there's no hover, so it isn't shown.
 - **Ink:** 5,000 units per browser, refilled completely **every 3 hours** (at 00:00, 03:00, 06:00… UTC; `INK_PERIOD_H` in `api/board.js`, `INK_PERIOD` in `server.py`); a stroke costs its length in board units (the board is 1600 × 1000), the marker double, text 40 per character. A bar shows what's left, and next to it a **live countdown** to the next refill (`↻ Refills in 2:14:05`, updated every second); when it reaches zero the board fetches the new ink by itself. If you run out mid-stroke, the stroke ends there. Trying to draw or write with no ink left shows a card over the board, **"You've used up your ink"**, with a live countdown and the local time you can draw again ("You can draw again at 16:00"); it closes with **OK**, by clicking outside it, after 8 seconds, or by itself when the ink refills. The server is the one that checks it: per browser id, and 25,000 per IP and period so a shared network can't be abused.
 - **Capacity:** when the ink on the board goes over 60,000 (or there are more than 300 drawings), the oldest are erased until it fits; the newest always stays. The oldest ones fade a little once the board is three-quarters full, so you can tell what's about to go.
 - **Live:** when a drawing is saved, `mc.signal("board")` tells the room and everyone else's board fetches the changes. It also fetches when it comes into view, when the tab comes back, and every minute while visible. The drawing itself only appears once finished.
@@ -563,7 +563,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 - **Strict validation** of every field ([§9.4](#94-field-validation)): photos can only be small raster images, "emojis" can't be text and colors can only be hex.
 - **No HTML from users:** names, messages and emojis are inserted as text (`textContent`), never as HTML.
 - **What others see:** name, color, photo, cursor position, chat messages, clicks, reactions and which text you select, always within the same room. The profile panel warns that people on the page will see the photo.
-- **What's stored:** only the shared board: its drawings (color, lines, text and the author's Roomful name, which anyone hovering the drawing can see) and, for the ink, how much each browser id and each network has used in the current 3-hour period (on Vercel the IP is kept as a hash, and these counts expire after two periods; in `server.py` they're only in memory). Everything else is in memory and disappears on disconnect or restart.
+- **What's stored:** only the shared board: its drawings (color, lines, text and the author's roomful·js name, which anyone hovering the drawing can see) and, for the ink, how much each browser id and each network has used in the current 3-hour period (on Vercel the IP is kept as a hash, and these counts expire after two periods; in `server.py` they're only in memory). Everything else is in memory and disappears on disconnect or restart.
 - **The board isn't moderated:** anyone can draw or write anything, and it stays until it's erased for being the oldest. Board text is drawn on the canvas, never inserted as HTML.
 - **Ghost mode:** disconnects completely.
 - **Browser id:** random and not tied to any personal data.
@@ -632,7 +632,7 @@ Order on connect: `welcome` → `stats`. The protocol is small: it can be ported
 ## 17. Repository structure
 
 ```
-roomful/
+roomfuljs/
 ├── public/
 │   ├── roomful.js         # The integration (client)
 │   ├── roomful-board.js   # The shared board (add-on)
