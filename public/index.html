@@ -192,17 +192,28 @@
   /* 00 · the pill, enlarged, on a canvas */
   .stagebox{position:relative;margin-top:64px;border:1px solid var(--line);border-radius:20px;padding:120px 32px 64px;display:grid;place-items:center;overflow:hidden;
     background:radial-gradient(60% 80% at 50% 50%,rgba(243,241,236,.035),transparent)}
-  .pill-xl{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border-radius:999px;color:var(--ink);
-    background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line-2);
-    box-shadow:0 30px 70px -20px rgba(0,0,0,.8);font:600 19px var(--sans);max-width:100%}
-  .pill-xl .part{position:relative;display:flex;align-items:center;border-radius:999px;padding:0 10px;height:52px;outline:1.5px dashed transparent;outline-offset:2px;transition:outline-color .15s,background .15s}
-  .pill-xl .part[data-n]::before{content:attr(data-n);position:absolute;left:50%;top:-64px;transform:translateX(-50%);font:400 13px var(--mono);color:var(--ink)}
-  .pill-xl .part[data-n]::after{content:"";position:absolute;left:50%;top:-38px;height:28px;border-left:1px solid var(--faint)}
+  /* The real pill, mirrored live (see mirrorPill) and drawn at exactly 2×: every size below is the pill's own, doubled */
+  .pill-xl{display:flex;align-items:center;gap:4px;padding:8px;border-radius:999px;color:var(--ink);
+    background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:2px solid var(--line-2);
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.8);font:500 26px/1.3 var(--sans);max-width:100%;pointer-events:auto}
+  .pill-xl .mc-btn{cursor:default}
+  .pill-xl .mc-people{height:72px;padding:0 24px 0 8px;gap:16px;font-weight:600}
+  .pill-xl .mc-people.mc-alone,.pill-xl .mc-people.mc-hid{padding-left:20px}
+  .pill-xl .mc-avatar{width:56px;height:56px;border-width:4px;margin-left:-16px;font-size:22px;border-color:var(--bg)}
+  .pill-xl .mc-stack>:first-child{margin-left:0}
+  .pill-xl .mc-avatar.mc-more{background:var(--raised);color:var(--muted)}
+  .pill-xl .mc-icon,.pill-xl .mc-me-btn{width:72px;height:72px}
+  .pill-xl .mc-icon svg{width:36px;height:36px}
+  .pill-xl .mc-people svg{width:32px;height:32px}
+  .pill-xl .mc-me-btn .mc-avatar{margin:0;border:0;box-shadow:inset 0 0 0 4px rgba(255,255,255,.55)}
+  .pill-xl .mc-sep{width:2px;height:40px;margin:0 8px;background:var(--line-2)}
+  .pill-xl .mc-ghost-btn.mc-on{background:rgba(243,241,236,.1)}
+  .pill-xl .mc-btn:disabled{opacity:.3}
+  /* anatomy: numbered parts, outlined when you hover them or their legend card */
+  .pill-xl .part{position:relative;outline:1.5px dashed transparent;outline-offset:2px;transition:outline-color .15s,background .15s}
+  .pill-xl .part[data-n]::before{content:attr(data-n);position:absolute;left:50%;top:-68px;transform:translateX(-50%);font:400 13px var(--mono);color:var(--ink)}
+  .pill-xl .part[data-n]::after{content:"";position:absolute;left:50%;top:-42px;height:28px;border-left:1px solid var(--faint)}
   .pill-xl .part:hover,.pill-xl .part.on{outline-color:var(--muted);background:rgba(243,241,236,.07)}
-  .pill-xl .sep{width:1.5px;height:30px;background:var(--line-2);margin:0 4px}
-  .pill-xl .part .stack{margin-right:12px}
-  .pill-xl .ico{width:52px;height:52px;display:grid;place-items:center;color:var(--ink)}
-  .pill-xl .stack i{border-color:var(--bg)}
   .legend{display:grid;grid-template-columns:repeat(4,1fr);margin-top:0;border-bottom:1px solid var(--line)}
   .legend a{display:block;text-decoration:none;padding:28px 24px 32px 0;transition:color .15s}
   .legend a+a{padding-left:24px;border-left:1px solid var(--line)}
@@ -471,17 +482,7 @@
       <p class="lede" data-i18n="pillLede">It sits in the bottom-right corner of every page. Here it is, two times bigger, every part numbered. Everything below is real: try it.</p>
     </div>
     <div class="stagebox rv" data-i18n-attr="aria-label:pillReplica" aria-label="Enlarged replica of the pill">
-      <div class="pill-xl">
-        <span class="part" data-n="01" data-for="people">
-          <span class="stack"><i style="background:var(--c4)">ZA</i><i style="background:var(--c1)">TT</i><i style="background:var(--c3)">LK</i></span>
-          <span data-stat="label">4 here</span>
-        </span>
-        <span class="sep"></span>
-        <span class="part ico" data-n="02" data-for="keys"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12.5h.01M18 12.5h.01M10 12.5h4M8 16h8"/></svg></span>
-        <span class="part ico" data-n="03" data-for="ghost"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5a7.5 7.5 0 0 0-7.5 7.5v11.5l2.8-2.4 2.4 2.4L12 19.1l2.3 2.4 2.4-2.4 2.8 2.4V10A7.5 7.5 0 0 0 12 2.5z"/><path d="M9.5 10h.01M14.5 10h.01"/></svg></span>
-        <span class="sep"></span>
-        <span class="part" data-n="04" data-for="profile"><i class="avatar me mini" data-me-initials>ME</i></span>
-      </div>
+      <div class="pill-xl" aria-hidden="true"></div>
     </div>
     <div class="legend rv">
       <a href="#people" data-for="people"><span class="n">01</span><strong data-i18n="legPeople">People</strong><span data-i18n="legPeopleText">Who's in the room, what they're up to and who to follow.</span></a>
@@ -1042,11 +1043,40 @@
   });
 
   // Anatomy: highlights the pill part when hovering its legend card
+  var legendOn = null;
+  function markLegendPart() {
+    $$(".pill-xl .part").forEach(function (p) { p.classList.toggle("on", p.getAttribute("data-for") === legendOn); });
+  }
   $$(".legend a").forEach(function (a) {
-    var part = $('.pill-xl .part[data-for="' + a.getAttribute("data-for") + '"]');
-    a.addEventListener("mouseenter", function () { part.classList.add("on"); });
-    a.addEventListener("mouseleave", function () { part.classList.remove("on"); });
+    a.addEventListener("mouseenter", function () { legendOn = a.getAttribute("data-for"); markLegendPart(); });
+    a.addEventListener("mouseleave", function () { legendOn = null; markLegendPart(); });
   });
+
+  // The enlarged pill is the real one, mirrored: same faces, count, icons and state (ghost, your photo…),
+  // copied whenever the live pill changes; CSS draws it at 2× and numbers its four parts.
+  (function mirrorPill() {
+    var stage = $(".pill-xl"), live = $(".mc-presence"); if (!stage || !live) return;
+    var PARTS = { "mc-people": ["01", "people"], "mc-keys-btn": ["02", "keys"], "mc-ghost-btn": ["03", "ghost"], "mc-me-btn": ["04", "profile"] };
+    var queued = false;
+    function copy() {
+      queued = false;
+      var frag = document.createDocumentFragment();
+      [].forEach.call(live.children, function (c) {
+        var k = c.cloneNode(true);
+        ["data-tip", "data-kbd", "aria-label", "aria-expanded", "aria-keyshortcuts", "aria-pressed", "id"].forEach(function (at) { k.removeAttribute(at); });
+        if (k.tagName === "BUTTON") k.tabIndex = -1;
+        Object.keys(PARTS).forEach(function (cls) {
+          if (k.classList.contains(cls)) { k.classList.add("part"); k.setAttribute("data-n", PARTS[cls][0]); k.setAttribute("data-for", PARTS[cls][1]); }
+        });
+        frag.appendChild(k);
+      });
+      stage.replaceChildren(frag);
+      markLegendPart();
+    }
+    function queue() { if (!queued) { queued = true; requestAnimationFrame(copy); } }
+    new MutationObserver(queue).observe(live, { subtree: true, childList: true, attributes: true, characterData: true });
+    copy();
+  })();
 
   // ---- The hero: its headline is edited live by people in the room ----------
   var HERO = {
