@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Roomful · Your website, with people in it</title>
+<title>roomful·js · Your website, with people in it</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0F0F0E">
-<meta name="description" content="Roomful turns any website into a room full of people: see who's in, chat next to your cursor, react, follow others and choose how you show up.">
+<meta name="description" content="roomful·js turns any website into a room full of people: see who's in, chat next to your cursor, react, follow others and choose how you show up.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   /* ============ Roomful · one dark room, coloured only by the people in it ============ */
   :root{
-    --bg:#0F0F0E; --surface:#161614; --raised:#1D1D1B; --ink:#F3F1EC; --muted:#8F8C84; --faint:#56534D;
+    --bg:#0F0F0E; --surface:#161614; --raised:#1D1D1B; --ink:#F3F1EC; --ink-soft:#B4B1AA; --muted:#8F8C84; --faint:#56534D;
     --line:rgba(243,241,236,.08); --line-2:rgba(243,241,236,.15);
     --c1:#FF6B3D; --c2:#FFC93C; --c3:#2ED69B; --c4:#3FB6FF; --c5:#A98BFF; --c6:#FF5FA8;
     --me:#3FB6FF; --me-ink:#0F0F0E;
@@ -24,6 +24,12 @@
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth;overflow-x:clip}
+  /* Lenis smooth scroll (its own stylesheet, inlined); while it runs it does the easing, so the native smooth goes off */
+  html.lenis,html.lenis body{height:auto}
+  html.lenis{scroll-behavior:auto}
+  .lenis:not(.lenis-autoToggle).lenis-stopped{overflow:clip}
+  .lenis [data-lenis-prevent]{overscroll-behavior:contain}
+  .lenis.lenis-smooth iframe{pointer-events:none}
   body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
   /* The whole site sits on one dot canvas, fixed behind everything (like a design tool's board) */
   /* Under the dots, the dark ground drifts through faint hues of the three logo colors as you go down the page */
@@ -46,6 +52,8 @@
   em{font-style:italic}
   .wrap{max-width:var(--max);margin:0 auto;padding:0 var(--gut)}
   .mono{font:400 12px/1.4 var(--mono);letter-spacing:.04em}
+  kbd.kicon{display:inline-flex;align-items:center;vertical-align:-.28em;padding:.22em .4em}   /* “⌨” in copy → the pill's keyboard icon in a key cap */
+  kbd.kicon svg{width:1.3em;height:1.3em;display:block}
   kbd{font:500 .8em/1 var(--mono);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:6px;padding:.2em .45em;background:var(--raised);color:var(--ink);white-space:nowrap}
   :focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:6px}
 
@@ -60,13 +68,17 @@
   html .mc-presence .mc-avatar{border-color:var(--bg)}
   html .mc-presence .mc-avatar.mc-more{background:var(--raised);color:var(--muted)}
   html .mc-presence .mc-sep{background:var(--line-2)}
+  html .mc-presence .mc-ghost-btn.mc-on{background:rgba(243,241,236,.1)}
+  html .mc-presence .mc-btn:disabled{background:none}
   html .mc-presence .mc-pill-btn{background:var(--ink);color:var(--bg)}
   html .mc-presence .mc-pill-btn:hover{background:#fff}
   /* …and so does everything it opens: panels, the emoji picker, the first-visit hint, the tour card, the tooltip */
   html .mc-pop,html .mc-picker,html .mc-tour{background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
   html .mc-coach{background:var(--surface)}
   html .mc-pop,html .mc-picker,html .mc-coach,html .mc-tour{border:1px solid var(--line-2);color:var(--ink);font-family:var(--sans);box-shadow:0 24px 60px -20px rgba(0,0,0,.85)}
-  html .mc-pop .mc-btn:hover,html .mc-pop .mc-btn[aria-expanded=true],html .mc-picker .mc-btn:hover,html .mc-coach .mc-btn:hover,html .mc-tour .mc-btn:hover{background:rgba(243,241,236,.07)}
+  /* quiet buttons get a faint wash on hover; filled ones (Next, Take the tour, Following…) keep their own, see below */
+  html .mc-pop .mc-btn:not(.mc-primary):not(.mc-pill-btn):not(.mc-on):hover,html .mc-pop .mc-btn[aria-expanded=true],html .mc-picker .mc-btn:hover,
+  html .mc-coach .mc-btn:not(.mc-primary):not(.mc-pill-btn):hover,html .mc-tour .mc-btn:not(.mc-primary):not(.mc-pill-btn):hover{background:rgba(243,241,236,.07)}
   html .mc-pop h4,html .mc-tour h4,html .mc-coach b{font:400 24px/1.05 var(--serif);letter-spacing:-.01em}
   html .mc-coach b{margin-bottom:8px}
   html .mc-big{font:400 46px/.9 var(--serif);letter-spacing:-.03em}
@@ -77,8 +89,8 @@
   html .mc-pop kbd,html .mc-coach kbd,html .mc-tour kbd{font:500 11px/1.4 var(--mono);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:6px;background:var(--raised);color:var(--ink)}
   html .mc-pop input{border-color:var(--line-2);font-family:var(--sans)}
   html .mc-act,html .mc-outline{border-color:var(--line-2)}
-  html .mc-primary,html .mc-act.mc-on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-  html .mc-primary:hover,html .mc-act.mc-on:hover{background:#fff}
+  html .mc-primary,html .mc-act.mc-on,html .mc-coach .mc-pill-btn{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  html .mc-primary:hover,html .mc-act.mc-on:hover,html .mc-coach .mc-pill-btn:hover{background:#fff}
   html .mc-switch{background:rgba(243,241,236,.18)}
   html .mc-switch[aria-checked=true]{background:var(--c3)}
   html .mc-swatch[aria-pressed=true]{box-shadow:0 0 0 2px var(--surface),0 0 0 4px currentColor}
@@ -90,16 +102,24 @@
   html .mc-tour-bar i{background:var(--muted)}
   html .mc-coach::after{border-color:var(--line-2)}
   html .mc-tooltip{background:var(--raised);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-2);font-family:var(--sans)}
+  html kbd.mc-kicon{color:var(--ink)}
   html .mc-tooltip kbd{background:rgba(243,241,236,.1);font-family:var(--mono)}
   html .mc-btn:focus-visible,html .mc-switch:focus-visible,html .mc-swatch:focus-visible,html .mc-pop input:focus,html button.mc-key:focus-visible,html .mc-follow button:focus-visible{outline-color:var(--ink)}
   .bar{display:flex;align-items:center;gap:28px;height:72px;max-width:var(--max);margin:0 auto;padding:0 var(--gut)}
   .logo{display:flex;align-items:center;gap:10px;font:500 19px var(--sans);letter-spacing:-.03em;text-decoration:none}
   .dots{display:flex}
+  .brand-js{color:var(--ink-soft)}   /* roomful·js: the “·js” a softer white */
   .dots i{width:9px;height:9px;border-radius:50%;margin-left:-3px;box-shadow:0 0 0 2px var(--bg)}
   .dots i:first-child{margin-left:0}
-  .bar nav{display:flex;gap:4px}
-  .bar nav a{font:400 13px var(--sans);color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:8px;transition:color .15s}
-  .bar nav a:hover{color:var(--ink)}
+  .logo .dots i{position:relative;transform-origin:50% 100%}          /* header logo: the three people move (hover + now and then), see logoMotion */
+  .bar nav{display:flex;gap:4px;position:relative}
+  .bar nav a{position:relative;z-index:1;font:400 13px var(--sans);color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:8px;transition:color .25s}
+  .bar nav a:hover,.bar nav a[aria-current]{color:var(--ink)}
+  /* the section you're reading lights up its link; the highlight glides from one link to the next */
+  .nav-ind{position:absolute;left:0;top:0;height:100%;width:0;border-radius:8px;background:rgba(243,241,236,.08);opacity:0;pointer-events:none;
+    transition:transform .45s cubic-bezier(.3,.7,.2,1),width .45s cubic-bezier(.3,.7,.2,1),opacity .3s}
+  .nav-ind.on{opacity:1}
+  .nav-ind.snap{transition:opacity .3s}
   .lang{margin-left:auto;display:inline-flex;gap:2px}
   .lang button{all:unset;cursor:pointer;padding:6px 8px;border-radius:6px;font:500 12px var(--mono);color:var(--faint);transition:color .15s}
   .lang button[aria-pressed=true]{color:var(--ink);background:rgba(243,241,236,.07)}
@@ -126,6 +146,7 @@
   html.settled .dotfill{opacity:.28}                                /* once the page is in, the colored dots step back */
   html.settled.deep .dotfill{opacity:0;transition:opacity .8s ease} /* and while reading below, every dot is plain grey */
   html.intro body::before{opacity:0}
+  html.intro,html.intro body{overflow:hidden}                         /* no scrolling until the headline has typed itself */
   .doc{position:relative;padding-top:6vh;padding-bottom:8vh}
   .file{display:flex;align-items:center;gap:12px;font:400 12px var(--mono);letter-spacing:.04em;color:var(--faint);margin-bottom:24px}
   .file::before{content:"";width:20px;height:1px;background:currentColor}
@@ -315,21 +336,23 @@
 
   /* footer: the name, set large, in everyone's colours */
   footer{padding:clamp(120px,16vw,240px) 0 96px}   /* the end clears the pill */
+  footer{overflow:clip}   /* the letters waiting below the floor must not make the page taller: it would shrink, and jump, as they rise */
   /* the name set large in the logo's own type (Geist 500, tight), not the headline serif */
-  .bigname{margin:0 0 48px;font:500 clamp(72px,24vw,400px)/.82 var(--sans);letter-spacing:-.065em;white-space:nowrap}
+  .bigname{margin:0 0 48px;font:500 clamp(52px,19vw,320px)/.82 var(--sans);letter-spacing:-.065em;white-space:nowrap}
   .bigname .dots{display:inline-flex;vertical-align:baseline;margin-left:.1em}
   .bigname .dots i{width:.14em;height:.14em;margin-left:-.04em;box-shadow:0 0 0 .02em var(--bg)}
   /* on arrival: the letters rise out of the floor one by one, then the three people drop into the room */
-  .bigname .word{display:inline-block;clip-path:inset(-30% -10% 0 -10%)}
+  .bigname .mid{margin:0 .05em}                                     /* the · needs air at this tight tracking */
+  .bigname .word{display:inline-block;clip-path:inset(-30% -10% 0 -10%);padding-bottom:.1em;margin-bottom:-.1em}   /* the floor sits under the j's descender */
   .bigname .ch{display:inline-block}
-  .js .bigname .ch{transform:translateY(120%) rotate(6deg)}
+  .js .bigname .ch{transform:translateY(160%) rotate(6deg)}
   .js .bigname .dots i{opacity:0;transform:translateY(-1.6em)}
   .js .bigname.play .ch{transform:none;animation:chRise 1s cubic-bezier(.2,1.15,.35,1) calc(var(--i) * 70ms) both}
   .js .bigname.play .dots i{opacity:1;transform:none;transform-origin:50% 100%;animation:dotDrop .9s linear both}
   .js .bigname.play .dots i:nth-child(1){animation-delay:.72s}
   .js .bigname.play .dots i:nth-child(2){animation-delay:.86s}
   .js .bigname.play .dots i:nth-child(3){animation-delay:1s}
-  @keyframes chRise{from{transform:translateY(120%) rotate(6deg)}to{transform:none}}
+  @keyframes chRise{from{transform:translateY(160%) rotate(6deg)}to{transform:none}}
   @keyframes dotDrop{
     0%{opacity:0;transform:translateY(-1.6em) scale(.7);animation-timing-function:cubic-bezier(.55,0,1,.45)}
     8%{opacity:1}
@@ -391,6 +414,12 @@
   }
 </style>
 <script>document.documentElement.classList.add("js");
+  // A reload always starts at the top, on the hero: no restored scroll position and no #section jump
+  try {
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    addEventListener("pageshow", function (e) { if (!e.persisted) scrollTo(0, 0); });   // not when coming back from the cache
+  } catch (e) {}
   // The headline is read first; the rest of the page waits for it (not with reduced motion)
   try { if (!matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("intro"); } catch (e) {}</script>
 </head>
@@ -399,7 +428,7 @@
 
 <div class="top">
   <div class="bar">
-    <a class="logo" href="#"><span class="dots" aria-hidden="true"><i style="background:var(--c1)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></span>roomful</a>
+    <a class="logo" href="#"><span class="dots" aria-hidden="true"><i style="background:var(--c1)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></span><span>roomful<span class="brand-js">·js</span></span></a>
     <nav data-i18n-attr="aria-label:navLabel" aria-label="Sections">
       <a href="#people" data-i18n="navPeople">People</a>
       <a href="#chat" data-i18n="navChat">Chat</a>
@@ -407,12 +436,13 @@
       <a href="#profile" data-i18n="navProfile">Your profile</a>
       <a href="#board" data-i18n="navBoard">Board</a>
       <a href="#integrate" data-i18n="navIntegrate">Integrate</a>
+      <span class="nav-ind" aria-hidden="true"></span>
     </nav>
     <div class="lang" role="group" data-i18n-attr="aria-label:langLabel" aria-label="Language">
       <button type="button" data-lang="en" aria-pressed="true" lang="en" title="English">EN</button>
       <button type="button" data-lang="es" aria-pressed="false" lang="es" title="Español">ES</button>
     </div>
-    <a class="bar-gh" href="https://github.com/AdrianBurriel/roomful" target="_blank" rel="noopener" data-i18n-attr="aria-label:ghLabel" aria-label="View the project on GitHub (opens in a new tab)">
+    <a class="bar-gh" href="https://github.com/AdrianBurriel/roomfuljs" target="_blank" rel="noopener" data-i18n-attr="aria-label:ghLabel" aria-label="View the project on GitHub (opens in a new tab)">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span>
     </a>
   </div>
@@ -421,10 +451,10 @@
 <!-- ============ HERO: the headline, edited live ============ -->
 <header class="hero">
   <div class="wrap doc" data-doc>
-    <div class="file"><span data-i18n="heroFile">headline.txt</span> <b>— <span data-stat="page">1</span> <span data-i18n="heroReading">reading now</span></b></div>
+    <div class="file"><b data-stat="room" aria-live="polite">Just you in this room</b></div>
     <h1 id="hero-h" data-hero aria-label="Someone else is reading this.">Someone else is <em>reading</em> this.</h1>
     <div class="hero-foot">
-      <p class="hero-lede"><b>Roomful</b> <span data-i18n="heroLede2">turns any website into a room: you see everyone's cursors, chat next to them, react and draw on a shared board. With two lines of code.</span></p>
+      <p class="hero-lede"><b>roomful<span class="brand-js">·js</span></b> <span data-i18n="heroLede2">turns any website into a room: you see everyone's cursors, chat next to them, react and draw on a shared board. With two lines of code.</span></p>
       <div class="actions hero-tour">
         <button class="btn solid" type="button" data-tour>Take the guided tour</button>
       </div>
@@ -489,7 +519,6 @@
         </ul>
       </div>
     </div>
-    <p class="note rv" data-i18n="s1Note">The numbers come from the same source as the pill (<span class="mono">onStats</span>), so you can show them anywhere on your site.</p>
   </div>
 </section>
 
@@ -645,12 +674,12 @@
 
 <footer>
   <div class="wrap">
-    <p class="bigname" aria-hidden="true"><span class="word"><span class="ch" style="--i:0">r</span><span class="ch" style="--i:1">o</span><span class="ch" style="--i:2">o</span><span class="ch" style="--i:3">m</span><span class="ch" style="--i:4">f</span><span class="ch" style="--i:5">u</span><span class="ch" style="--i:6">l</span></span><span class="dots"><i style="background:var(--c1)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></span></p>
+    <p class="bigname" aria-hidden="true"><span class="word"><span class="ch" style="--i:0">r</span><span class="ch" style="--i:1">o</span><span class="ch" style="--i:2">o</span><span class="ch" style="--i:3">m</span><span class="ch" style="--i:4">f</span><span class="ch" style="--i:5">u</span><span class="ch" style="--i:6">l</span><span class="ch brand-js mid" style="--i:7">·</span><span class="ch brand-js" style="--i:8">j</span><span class="ch brand-js" style="--i:9">s</span></span><span class="dots"><i style="background:var(--c1)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></span></p>
     <div class="foot-row">
-      <span class="legal" data-i18n="madeWith">Roomful · made with <span class="mono">roomful.js</span></span>
+      <span class="legal" data-i18n="legal">© 2026 roomful·js. All rights reserved.</span>
       <div class="foot-links">
-        <span class="thanks" data-i18n="starFooter">Liked it? Give it a like on GitHub</span>
-        <a class="gh" href="https://github.com/AdrianBurriel/roomful" target="_blank" rel="noopener">
+        <span class="thanks" data-i18n="starFooter">Liked it? Take a look on GitHub</span>
+        <a class="gh" href="https://github.com/AdrianBurriel/roomfuljs" target="_blank" rel="noopener">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
           <span data-i18n="ghFooter">View the project on GitHub</span>
         </a>
@@ -659,6 +688,8 @@
   </div>
 </footer>
 
+<!-- Smooth scroll -->
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"></script>
 <!-- The integration -->
 <script src="/roomful.js"></script>
 <script src="/roomful-board.js"></script>
@@ -673,7 +704,6 @@
     navLabel: "Secciones", navPeople: "Personas", navChat: "Chat", navReactions: "Reacciones",
     navProfile: "Tu perfil", navBoard: "Pizarra", navIntegrate: "Integrar", langLabel: "Idioma",
     ghLabel: "Ver el proyecto en GitHub (se abre en otra pestaña)",
-heroFile: "titular.txt", heroReading: "leyendo ahora",
     heroLede2: "convierte cualquier web en una sala: ves los cursores de los demás, chateas junto a ellos, reaccionáis y dibujáis en una pizarra compartida. Con dos líneas de código.",
     pillLabel: "La píldora", pillTitle: "Una píldora, <em>cuatro</em> puertas.",
     pillLede: "Vive en la esquina de abajo a la derecha de cada página. Aquí la tienes al doble de tamaño, con cada parte numerada. Todo lo de abajo funciona de verdad: pruébalo.",
@@ -689,7 +719,6 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
     s1Title: "¿Quién más hay en la <em>sala</em>?",
     s1Lede: "Las caras y el número te dicen cómo de llena está la sala. Púlsalas y verás quién es cada uno, si está activo, escribiendo o se ha ausentado, y un botón para <b>seguirle</b>: irás a donde vaya esa persona.",
     s1Btn: "Ver quién hay en la sala",
-    s1Note: "Las cifras salen de la misma fuente que la píldora (<span class=\"mono\">onStats</span>), así que puedes ponerlas donde quieras de tu web.",
     mockSite: "en toda la web · pico de hoy:", live: "En directo",
     mockYou: "Tú", mockEdit: "Editar", mockActive: "Activo", mockTyping: "Escribiendo…", mockAway: "Ausente",
     mockFollow: "Seguir", mockFollow2: "Seguir", mockFollowing: "Siguiendo",
@@ -723,24 +752,30 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
     codeSize: "Código", intLabel: "Integrar", intKicker: "Para desarrolladores",
     intTitle: "Dos líneas y tu web se llena de <em>gente</em>.", copy: "Copiar",
     code: '<span class="c">&lt;!-- 1. El script --&gt;</span>\n&lt;<span class="k">script</span> src=<span class="s">"/roomful.js"</span>&gt;&lt;/<span class="k">script</span>&gt;\n\n<span class="c">&lt;!-- 2. Conéctalo a tu servidor --&gt;</span>\n&lt;<span class="k">script</span>&gt;\n  Roomful.<span class="f">init</span>({\n    url: <span class="s">"wss://cursores.tuweb.com/ws"</span>,\n    lang: <span class="s">"es"</span>,\n    bots: <span class="s">2</span>,\n    onStats: s =&gt; console.<span class="f">log</span>(s.page, <span class="s">"personas aquí"</span>)\n  });\n&lt;/<span class="k">script</span>&gt;',
-    madeWith: "Roomful · hecho con <span class=\"mono\">roomful.js</span>",
+    legal: "© 2026 roomful·js. Todos los derechos reservados.",
     ghFooter: "Ver el proyecto en GitHub",
-    starFooter: "¿Te ha gustado? Dame tu like en GitHub"
+    starFooter: "¿Te ha gustado? Échale un vistazo en GitHub"
   };
   // Texts the landing script writes itself
   var DYN = {
-    en: { here: "{n} here", alone: "Just you", ghostOn: "○ Ghost mode: nobody sees you", ghostOff: "● Visible to others",
+    en: { here: "{n} here", alone: "Just you", room: "{n} people in this room", roomAlone: "Just you in this room", ghostOn: "○ Ghost mode: nobody sees you", ghostOff: "● Visible to others",
           ghostBtnOn: "Become visible again", ghostBtnOff: "Turn on ghost mode", copied: "Copied!",
-          title: "Roomful · Your website, with people in it", me: "ME",
+          title: "roomful·js · Your website, with people in it", me: "ME",
           tourStart: "Take the guided tour · 5 min",
           tourActive: "Tour in progress…" },
-    es: { here: "{n} aquí", alone: "Solo tú", ghostOn: "○ Modo fantasma: nadie te ve", ghostOff: "● Visible para los demás",
+    es: { here: "{n} aquí", alone: "Solo tú", room: "{n} personas en esta sala", roomAlone: "Solo tú en esta sala", ghostOn: "○ Modo fantasma: nadie te ve", ghostOff: "● Visible para los demás",
           ghostBtnOn: "Volver a ser visible", ghostBtnOff: "Activar modo fantasma", copied: "¡Copiado!",
-          title: "Roomful · Tu web, con gente dentro", me: "TÚ",
+          title: "roomful·js · Tu web, con gente dentro", me: "TÚ",
           tourStart: "Haz el tour guiado · 5 min",
           tourActive: "Tour en marcha…" }
   };
   var LANG_KEY = "multicursor:lang";
+
+  // "⌨" is a thin, tiny glyph on phones: in the copy it becomes the pill's own keyboard icon in a key cap
+  var KEYS_KBD = '<kbd class="kicon" aria-label="⌨"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12.5h.01M18 12.5h.01M10 12.5h4M8 16h8"/></svg></kbd>';
+  function keysIcon(h) { return typeof h === "string" ? h.replace(/⌨/g, KEYS_KBD) : h; }
+  Object.keys(ES).forEach(function (k) { ES[k] = keysIcon(ES[k]); });
+  $$("[data-i18n]").forEach(function (el) { if (el.innerHTML.indexOf("⌨") >= 0) el.innerHTML = keysIcon(el.innerHTML); });
 
   // Remember the original English of every translatable node and attribute
   $$("[data-i18n]").forEach(function (el) { el._en = el.innerHTML; });
@@ -800,6 +835,9 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
     });
     $$('[data-stat="label"]').forEach(function (el) {
       el.textContent = s.page > 1 ? d("here", { n: s.page }) : d("alone");
+    });
+    $$('[data-stat="room"]').forEach(function (el) {                  // hero pre-title
+      el.textContent = s.page > 1 ? d("room", { n: s.page }) : d("roomAlone");
     });
   }
 
@@ -870,8 +908,8 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
       say: { en: "Rather go unnoticed?", es: "¿Prefieres pasar desapercibido?" },
       title: { en: "Ghost mode", es: "Modo fantasma" },
       text: {
-        en: "Tap the 👻 on the pill (or use the switch in your profile) and you stop seeing everyone else's cursors, and you disconnect completely: nobody sees you, not even in the list. The pill shrinks to “Cursors hidden · <b>Show</b>” so you can come back whenever you want, and your choice is remembered for next time.",
-        es: "Toca el 👻 de la píldora (o el interruptor de tu perfil) y dejas de ver los cursores de los demás y te desconectas del todo: nadie te ve, ni siquiera en la lista. La píldora se queda en «Cursores ocultos · <b>Mostrar</b>» para que vuelvas cuando quieras, y tu elección se recuerda para la próxima vez."
+        en: "Tap the 👻 on the pill and you stop seeing everyone else's cursors, and you disconnect completely: nobody sees you, not even in the list. The pill keeps its shape: the faces turn into “Cursors hidden” and the 👻 stays pressed; tap either one to come back whenever you want, and your choice is remembered for next time.",
+        es: "Toca el 👻 de la píldora y dejas de ver los cursores de los demás y te desconectas del todo: nadie te ve, ni siquiera en la lista. La píldora no cambia de forma: las caras pasan a «Cursores ocultos» y el 👻 se queda pulsado; toca cualquiera de los dos para volver cuando quieras, y tu elección se recuerda para la próxima vez."
       } },
     { target: ".trio > .cell:first-child",
       say: { en: "Everything shows here", es: "Aquí todo se nota" },
@@ -902,11 +940,13 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
         es: "Son dos líneas: el script <code>roomful.js</code> y <code>Roomful.init()</code>. Funciona en tu propio servidor (<code>server.py</code>) o sin servidor en Vercel con Ably, y todo se puede configurar: idioma, bots, chat, reacciones, incluso un tour como este. La pizarra es un script más, <code>roomful-board.js</code>, y guarda los dibujos en tu servidor o en Upstash Redis. Los detalles están en el README de GitHub. Puedes repetir el tour cuando quieras desde el botón de arriba del todo."
       } }
   ];
+  TOUR.forEach(function (st) { ["title", "text"].forEach(function (f) { if (st[f]) { st[f].en = keysIcon(st[f].en); st[f].es = keysIcon(st[f].es); } }); });
 
   var mc = window.mc = Roomful.init({
     lang: lang,
     tour: { steps: TOUR, name: { en: "Capybara", es: "Capibara" } },
     ably: isLocal ? null : { authUrl: "/api/ably-token" },
+    toggle: false,                                   // ghost mode lives on the pill (👻), not in the profile
     bots: 2,
     botTargets: ".hero h1, h2, h3, .lede, .btn, .legend a, .mock-list li, .card, .scene, .emoji-grid button, .zone, .selectme, .board-host, pre, .stat b",
     botPhrases: {
@@ -1014,6 +1054,14 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
     es: ["Alguien", "más", "está", "*leyendo", "esto."]
   };
   var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Smooth, eased wheel scrolling (Lenis); touch stays native. Nav links glide to their section;
+  // lists that scroll on their own (people panel…) keep their wheel. Not with reduced motion.
+  var lenis = null;
+  if (!reduced && window.Lenis) {
+    lenis = new Lenis({ autoRaf: true, lerp: .1, anchors: true, allowNestedScroll: true });
+    if (document.documentElement.classList.contains("intro")) lenis.stop();   // until revealPage()
+    $(".bar .logo").addEventListener("click", function (e) { e.preventDefault(); lenis.scrollTo(0); });
+  }
   var heroH = $("[data-hero]"), heroRun = 0;
   function mk(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   // Every letter in its own span; words stay whole so lines still break between them
@@ -1099,6 +1147,7 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
     if (revealed) return; revealed = true;
     var h = document.documentElement;
     h.classList.add("reveal"); h.classList.remove("intro");
+    if (lenis) lenis.start();                                              // scrolling unlocks with the page
     colorDots();                                                            // the CSS grid takes the grey ones back
     h.classList.add("settled");                                             // …and the colored ones dim down
     setTimeout(function () { h.classList.remove("reveal"); }, 2000);
@@ -1188,6 +1237,106 @@ heroFile: "titular.txt", heroReading: "leyendo ahora",
       }, { threshold: [0, .5] }).observe(bigname);
     } else bigname.classList.add("play");
   }
+  // Header logo: the three dots are people. Hover → they shuffle apart to make room, one hop each;
+  // now and then, on their own, they wave, trade places or one peeks out.
+  (function logoMotion() {
+    var logo = $(".bar .logo"); if (!logo || reduced || !logo.animate) return;
+    var d = [].slice.call(logo.querySelectorAll(".dots i")), over = false, busy = false;
+    var SPREAD = [-3, 0, 3];
+    function now(el) { var t = getComputedStyle(el).transform; return t === "none" ? "translate(0,0)" : t; }
+    function run(el, frames, o) { var from = now(el); el.getAnimations().forEach(function (a) { a.cancel(); }); frames[0].transform = frames[0].transform || from; return el.animate(frames, o); }
+    function enter() {
+      over = true; busy = true;
+      d.forEach(function (el, i) {
+        var x = SPREAD[i] + "px";
+        run(el, [{}, { transform: "translate(" + x + ",-6px) scale(.88,1.14)", offset: .38, easing: "cubic-bezier(.55,0,1,.45)" },
+                 { transform: "translate(" + x + ",0) scale(1.18,.82)", offset: .7, easing: "cubic-bezier(0,.55,.45,1)" },
+                 { transform: "translate(" + x + ",0)" }],
+            { duration: 560, delay: i * 70, fill: "forwards", easing: "cubic-bezier(.3,.7,.4,1)" });
+      });
+    }
+    function leave() {
+      over = false;
+      d.forEach(function (el, i) {
+        var a = run(el, [{}, { transform: "translate(0,0) scale(1.12,.9)", offset: .65 }, { transform: "translate(0,0)" }],
+                    { duration: 380, delay: (2 - i) * 40, easing: "cubic-bezier(.3,.7,.4,1)" });
+        if (i === 0) a.onfinish = function () { busy = false; };
+      });
+    }
+    logo.addEventListener("mouseenter", enter); logo.addEventListener("focus", enter);
+    logo.addEventListener("mouseleave", leave); logo.addEventListener("blur", leave);
+
+    var idle = {
+      wave: function () {
+        return d.map(function (el, i) {
+          return el.animate([{ transform: "none" }, { transform: "translateY(-5px) scale(.9,1.12)", offset: .35, easing: "cubic-bezier(.55,0,1,.45)" },
+                             { transform: "scale(1.16,.84)", offset: .68 }, { transform: "none" }],
+                            { duration: 600, delay: i * 110, easing: "cubic-bezier(0,.55,.45,1)" });
+        });
+      },
+      swap: function () {                                                  // two neighbours trade places and come back
+        var k = Math.random() < .5 ? 0 : 1, a = d[k], b = d[k + 1];
+        a.style.zIndex = 2;
+        var o = { duration: 1900, easing: "cubic-bezier(.45,0,.25,1)" };
+        var r = [a.animate([{ transform: "none" }, { transform: "translate(3px,-6px)", offset: .14 }, { transform: "translate(6px,0)", offset: .28 },
+                            { transform: "translate(6px,0)", offset: .7 }, { transform: "translate(3px,-6px)", offset: .84 }, { transform: "none" }], o),
+                 b.animate([{ transform: "none" }, { transform: "translate(-6px,0) scale(.92)", offset: .28 },
+                            { transform: "translate(-6px,0)", offset: .7 }, { transform: "scale(.92)", offset: .9 }, { transform: "none" }], o)];
+        r[0].onfinish = function () { a.style.zIndex = ""; };
+        return r;
+      },
+      peek: function () {                                                  // the last one steps out, looks around, steps back in
+        var el = d[2];
+        return [el.animate([{ transform: "none" }, { transform: "translate(6px,0)", offset: .22 }, { transform: "translate(6px,-3px)", offset: .36 },
+                            { transform: "translate(6px,0)", offset: .48 }, { transform: "translate(6px,-3px)", offset: .6 },
+                            { transform: "translate(6px,0)", offset: .72 }, { transform: "none" }],
+                           { duration: 1500, easing: "cubic-bezier(.45,0,.25,1)" })];
+      }
+    };
+    var names = Object.keys(idle), last = "";
+    function tick() {
+      if (revealed && !over && !busy && !document.hidden) {
+        var n; do { n = names[Math.floor(Math.random() * names.length)]; } while (n === last && names.length > 1);
+        last = n; busy = true;
+        var anims = idle[n](), left = anims.length;
+        anims.forEach(function (a) { a.onfinish = (function (f) { return function () { if (f) f(); if (--left === 0 && !over) busy = false; }; })(a.onfinish); a.oncancel = a.onfinish; });
+      }
+      setTimeout(tick, 6000 + Math.random() * 7000);
+    }
+    setTimeout(tick, 3500);
+  })();
+  // Scroll spy: the nav link of the section you're in lights up (the one crossing 35% of the viewport)
+  (function navSpy() {
+    var nav = $(".bar nav"), ind = $(".nav-ind"); if (!nav || !ind) return;
+    var links = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
+    var secs = links.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); });
+    var cur = null, queued = false;
+    function place(a) {
+      if (!a) { ind.classList.remove("on"); return; }
+      if (!ind.classList.contains("on")) ind.classList.add("snap");       // appear in place, don't fly in from the left
+      ind.style.transform = "translateX(" + a.offsetLeft + "px)";
+      ind.style.width = a.offsetWidth + "px";
+      ind.offsetWidth; ind.classList.remove("snap"); ind.classList.add("on");
+    }
+    function update() {
+      queued = false;
+      var line = innerHeight * .35, hit = null;
+      secs.forEach(function (sec, i) {
+        if (!sec) return;
+        var r = sec.getBoundingClientRect();
+        if (r.top <= line && r.bottom > line) hit = links[i];
+      });
+      if (hit === cur) return;
+      if (cur) cur.removeAttribute("aria-current");
+      if (hit) hit.setAttribute("aria-current", "true");
+      cur = hit; place(hit);
+    }
+    function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
+    addEventListener("scroll", queue, { passive: true });
+    addEventListener("resize", function () { if (cur) { ind.classList.add("snap"); place(cur); } queue(); });
+    if ("ResizeObserver" in window) new ResizeObserver(function () { if (cur) { ind.classList.add("snap"); place(cur); } }).observe(nav);  // language switch, fonts
+    update();
+  })();
   var topBar = $(".top");
   addEventListener("scroll", function () {
     topBar.classList.toggle("scrolled", scrollY > 8);
