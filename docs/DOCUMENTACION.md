@@ -1,8 +1,8 @@
-# Documentación completa · Roomful
+# Documentación completa · roomful·js
 
 🇬🇧 [English](DOCUMENTATION.md) · 🇪🇸 **Español**
 
-Referencia técnica de Roomful: la integración `roomful.js`, que convierte cada página en una sala, y el servidor `server.py`, que la mantiene llena. Para una introducción rápida, mira el [README](../README.es.md).
+Referencia técnica de roomful·js: la integración `roomful.js`, que convierte cada página en una sala, y el servidor `server.py`, que la mantiene llena. Para una introducción rápida, mira el [README](../README.es.md).
 
 ## Índice
 
@@ -28,7 +28,7 @@ Referencia técnica de Roomful: la integración `roomful.js`, que convierte cada
 
 ## 1. Qué es y cómo funciona
 
-Roomful convierte cada página de una web en una **sala**. Todos los que están en la misma página están en la misma sala y ven en tiempo real los cursores de los demás, al estilo del espacio multijugador de Figma. Cada cursor lleva un nombre aleatorio ("Capibara Zen", "Ajolote Ninja"…). Abajo a la derecha, una **píldora**, la puerta a la sala, muestra quién hay y permite chatear, reaccionar, seguir a otra persona y editar tu perfil.
+roomful·js convierte cada página de una web en una **sala**. Todos los que están en la misma página están en la misma sala y ven en tiempo real los cursores de los demás, al estilo del espacio multijugador de Figma. Cada cursor lleva un nombre aleatorio ("Capibara Zen", "Ajolote Ninja"…). Abajo a la derecha, una **píldora**, la puerta a la sala, muestra quién hay y permite chatear, reaccionar, seguir a otra persona y editar tu perfil.
 
 Son dos piezas:
 
@@ -61,8 +61,8 @@ No hay base de datos. Todo vive en la memoria del servidor y en el navegador de 
 ## 3. Puesta en marcha en local
 
 ```bash
-git clone https://github.com/AdrianBurriel/roomful.git
-cd roomful
+git clone https://github.com/AdrianBurriel/roomfuljs.git
+cd roomfuljs
 python3 server.py                 # → http://localhost:8080
 ```
 
@@ -210,7 +210,7 @@ Además, `Roomful.languages` lista los idiomas incluidos (`["en", "es"]`).
 Estados especiales:
 
 - **Siguiendo a alguien:** un marco de su color rodea la pantalla, con el botón "Siguiendo a X · Dejar de seguir ✕" arriba.
-- **Modo fantasma:** la píldora se reduce a "Cursores ocultos · **Mostrar**".
+- **Modo fantasma:** la píldora mantiene su forma y estilo: "Cursores ocultos" donde estaban las caras, el 👻 pulsado (discontinuo) y los atajos atenuados; toca "Cursores ocultos" o el 👻 para volver.
 - **Primera visita:** aviso "👋 No estás solo en esta página" con **Entendido**. Se marca como visto al pulsarlo o al abrir cualquier panel.
 
 ### Atajos
@@ -241,7 +241,7 @@ Los atajos no se activan mientras escribes en un campo de texto de la página.
 
 ### 8.1 Salas
 
-La sala es el corazón de Roomful: ves los cursores, mensajes y reacciones de quienes están en tu misma sala.
+La sala es el corazón de roomful·js: ves los cursores, mensajes y reacciones de quienes están en tu misma sala.
 
 - Por defecto, la sala es `location.pathname` sin barra final (`/precios/` → `/precios`). La query y el hash no cuentan.
 - En SPAs se detecta el cambio de ruta (comprobación cada segundo) y se reconecta a la nueva sala.
@@ -377,7 +377,7 @@ Cada texto puede ser una cadena o `{ en, es, … }`. `text` es HTML: dentro, `<s
 
 ### 8.14 Pizarra compartida
 
-`public/roomful-board.js` es un complemento: una pizarra donde todos los de la sala pueden dibujar y escribir, y los dibujos se quedan para quien venga después. Usa la instancia de Roomful para tu id de navegador, tu color, el idioma y el aviso de "alguien ha dibujado".
+`public/roomful-board.js` es un complemento: una pizarra donde todos los de la sala pueden dibujar y escribir, y los dibujos se quedan para quien venga después. Usa la instancia de roomful·js para tu id de navegador, tu color, el idioma y el aviso de "alguien ha dibujado".
 
 ```js
 const mc = Roomful.init({ … });
@@ -391,7 +391,7 @@ board.setLang("en"); board.refresh(); board.destroy();
 ```
 
 - **Herramientas:** lápiz (fino) y rotulador (grueso, el doble de tinta), siempre con el color de tu perfil (a propósito no hay selector de color: tu color es tu firma), y **texto** (pulsa, escribe hasta 60 caracteres, `Enter`). Cada dibujo se envía al terminarlo.
-- **Quién lo dibujó:** cada dibujo se guarda con el nombre de Roomful de su autor (`mc.me.name` en ese momento). Al pasar el ratón por encima se ve ese nombre en una etiqueta del color del dibujo, encima del puntero (la etiqueta de tu propio cursor va debajo). Los dibujos guardados sin nombre muestran "Alguien". En pantallas táctiles no hay "pasar por encima", así que no se muestra.
+- **Quién lo dibujó:** cada dibujo se guarda con el nombre de roomful·js de su autor (`mc.me.name` en ese momento). Al pasar el ratón por encima se ve ese nombre en una etiqueta del color del dibujo, encima del puntero (la etiqueta de tu propio cursor va debajo). Los dibujos guardados sin nombre muestran "Alguien". En pantallas táctiles no hay "pasar por encima", así que no se muestra.
 - **Tinta:** 5.000 unidades por navegador, que se recargan enteras **cada 3 horas** (a las 00:00, 03:00, 06:00… UTC; `INK_PERIOD_H` en `api/board.js`, `INK_PERIOD` en `server.py`); un trazo cuesta su longitud en unidades de la pizarra (que mide 1600 × 1000), el rotulador el doble y el texto 40 por carácter. Una barra muestra lo que queda y, al lado, una **cuenta atrás en directo** hasta la próxima recarga (`↻ Se recarga en 2:14:05`, se actualiza cada segundo); al llegar a cero, la pizarra pide la tinta nueva sola. Si se acaba a mitad de trazo, el trazo termina ahí. Si intentas dibujar o escribir sin tinta, aparece una tarjeta sobre la pizarra, **"Has gastado toda tu tinta"**, con una cuenta atrás en directo y la hora local a la que podrás volver a dibujar ("Podrás volver a dibujar a las 16:00"); se cierra con **Vale**, pulsando fuera, a los 8 segundos o sola cuando se recarga la tinta. Quien la controla es el servidor: por id de navegador, y 25.000 por IP y periodo para que una red compartida no abuse.
 - **Capacidad:** cuando la tinta de la pizarra pasa de 60.000 (o hay más de 300 dibujos), se borran los más antiguos hasta que quepa; el más nuevo se queda siempre. Los más antiguos se atenúan un poco cuando la pizarra está llena a tres cuartos, para que se vea qué está a punto de irse.
 - **En directo:** al guardarse un dibujo, `mc.signal("board")` avisa a la sala y la pizarra de los demás pide los cambios. También los pide al aparecer en pantalla, al volver a la pestaña y cada minuto mientras se ve. El dibujo en sí aparece cuando está terminado.
@@ -563,7 +563,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 - **Validación estricta** de cada campo ([§9.4](#94-validación-de-campos)): las fotos solo pueden ser imágenes rasterizadas pequeñas, los "emojis" no pueden ser texto y los colores solo pueden ser hexadecimales.
 - **Sin HTML de usuarios:** nombres, mensajes y emojis se insertan como texto (`textContent`), nunca como HTML.
 - **Lo que ven los demás:** nombre, color, foto, posición del cursor, mensajes de chat, clics, reacciones y qué texto seleccionas, siempre dentro de la misma sala. El panel de perfil avisa de que la foto la verán quienes estén en la página.
-- **Lo que se guarda:** solo la pizarra compartida: sus dibujos (color, trazos, texto y el nombre de Roomful de su autor, que ve cualquiera que pase por encima) y, para la tinta, cuánto ha gastado cada id de navegador y cada red en el periodo de 3 horas actual (en Vercel la IP se guarda como hash, y estos contadores caducan a los dos periodos; en `server.py` solo están en memoria). Todo lo demás está en memoria y desaparece al desconectar o reiniciar.
+- **Lo que se guarda:** solo la pizarra compartida: sus dibujos (color, trazos, texto y el nombre de roomful·js de su autor, que ve cualquiera que pase por encima) y, para la tinta, cuánto ha gastado cada id de navegador y cada red en el periodo de 3 horas actual (en Vercel la IP se guarda como hash, y estos contadores caducan a los dos periodos; en `server.py` solo están en memoria). Todo lo demás está en memoria y desaparece al desconectar o reiniciar.
 - **La pizarra no tiene moderación:** cualquiera puede dibujar o escribir cualquier cosa, y se queda hasta que se borra por ser lo más antiguo. El texto de la pizarra se pinta en el lienzo, nunca se inserta como HTML.
 - **Modo fantasma:** desconecta del todo.
 - **Id de navegador:** es aleatorio y no está ligado a ningún dato personal.
@@ -631,7 +631,7 @@ Orden al conectar: `welcome` → `stats`. El protocolo es pequeño: se puede por
 ## 17. Estructura del repositorio
 
 ```
-roomful/
+roomfuljs/
 ├── public/
 │   ├── roomful.js         # La integración (cliente)
 │   ├── roomful-board.js   # La pizarra compartida (complemento)

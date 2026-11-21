@@ -1,4 +1,4 @@
-# Roomful
+# roomful·js
 
 🇬🇧 [English](README.md) · 🇪🇸 **Español**
 
@@ -20,14 +20,14 @@
 Requisito: Python 3.8 o superior.
 
 ```bash
-git clone https://github.com/AdrianBurriel/roomful.git
-cd roomful
+git clone https://github.com/AdrianBurriel/roomfuljs.git
+cd roomfuljs
 python3 server.py            # → http://localhost:8080
 ```
 
 Abre `http://localhost:8080` y, para verte desde fuera, ábrelo también **en otro navegador o en otro dispositivo de tu red** (`http://<tu-ip-local>:8080`). Las pestañas del mismo navegador se reconocen como la misma persona.
 
-La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía (marcados como **BOT**; uno se queda siempre). Tiene una **pizarra compartida** para dibujar y un **tour guiado** de 13 pasos que se ofrece en la primera visita y está siempre disponible desde el botón bajo el titular. La propia página es una sala oscura sobre un tablero de puntos: primero se escribe el titular y después llega todo lo demás; unos pocos puntos con los colores del logo dan vida al tablero, se atenúan cuando la página ha cargado y se apartan mientras lees. Secciones, en orden: la píldora, las personas, el chat, las reacciones, tu perfil y el modo fantasma, lo que la sala nota sola, la pizarra compartida y cómo integrarlo. La píldora y todos sus paneles llevan el estilo de cristal de la página (ver *Estilos* en la documentación). Se abre **en español si tu navegador está en español** (o en catalán, gallego o euskera) y en inglés en los demás casos, con un selector **EN | ES** en la barra superior que se recuerda.
+La demo es una landing que explica cada parte de la píldora, con demos que funcionan de verdad y 2 visitantes ficticios para que nunca esté vacía (marcados como **BOT**; uno se queda siempre). Tiene una **pizarra compartida** para dibujar y un **tour guiado** de 13 pasos que se ofrece en la primera visita y está siempre disponible desde el botón bajo el titular. La propia página es una sala oscura sobre un tablero de puntos: primero se escribe el titular y después llega todo lo demás; unos pocos puntos con los colores del logo dan vida al tablero, se atenúan cuando la página ha cargado y se apartan mientras lees. Secciones, en orden: la píldora, las personas, el chat, las reacciones, tu perfil y el modo fantasma, lo que la sala nota sola, la pizarra compartida y cómo integrarlo. La píldora y todos sus paneles llevan el estilo de cristal de la página (ver *Estilos* en la documentación). El scroll se desliza con [Lenis](https://github.com/darkroomengineering/lenis) (desactivado con *reducir movimiento*), el menú de arriba ilumina la sección en la que estás y los tres puntos del logo se mueven al pasar el ratón y, de vez en cuando, solos. Se abre **en español si tu navegador está en español** (o en catalán, gallego o euskera) y en inglés en los demás casos, con un selector **EN | ES** en la barra superior que se recuerda.
 
 ## Qué incluye
 
@@ -62,8 +62,8 @@ La demo es una landing que explica cada parte de la píldora, con demos que func
 | Parte | Qué hace | Atajo |
 |---|---|---|
 | **Personas** | Lista de quién está, con su estado, las cifras (en esta página, en la web, pico de hoy) y un botón **Seguir** | — |
-| **Atajos** | Todas las teclas de Roomful: `/` chat junto a tu cursor (hasta 4 líneas; `Enter` lo deja unos segundos, `Esc` lo borra), `E` reacciones que flotan desde tu cursor (`1`–`9` para elegir), `Esc` y `?`. Cada fila es también un botón, así que en pantallas táctiles se chatea y se reacciona desde aquí | `?` |
-| **Modo fantasma** | Un clic para dejar de ver cursores y de compartir el tuyo; la píldora se queda en "Cursores ocultos · Mostrar" | — |
+| **Atajos** | Todas las teclas de roomful·js: `/` chat junto a tu cursor (hasta 4 líneas; `Enter` lo deja unos segundos, `Esc` lo borra), `E` reacciones que flotan desde tu cursor (`1`–`9` para elegir), `Esc` y `?`. Cada fila es también un botón, así que en pantallas táctiles se chatea y se reacciona desde aquí | `?` |
+| **Modo fantasma** | Un clic para dejar de ver cursores y de compartir el tuyo; la píldora mantiene su forma: "Cursores ocultos" donde estaban las caras y el 👻 pulsado (tocar cualquiera de los dos para volver) | — |
 | **Tu perfil** | Nombre, color, foto y 🎲 al azar, que se guardan solos al cambiarlos (sin botón Guardar), y el interruptor de **modo fantasma** | — |
 
 En el ordenador cada botón muestra un tooltip con su atajo; en móvil y tablet se toca ⌨ y se elige "Escribir" o "Reaccionar". La primera visita trae un aviso de bienvenida que además ofrece el tour guiado (si la web tiene uno).
@@ -142,7 +142,7 @@ mc.destroy();
 
 - **Tinta:** cada persona tiene 5.000 unidades (unos 3 trazos largos o 10 cortos; el rotulador gasta el doble y el texto 40 por letra), y **se recarga entera cada 3 horas** (a las 00:00, 03:00, 06:00… UTC). Una cuenta atrás en directo junto a la barra de tinta dice cuándo (`↻ Se recarga en 2:14:05`), y si intentas dibujar sin tinta, una tarjeta te avisa de que la has gastado y de cuándo podrás volver a dibujar. El servidor la controla por navegador, con un límite más amplio por red.
 - **Siempre hay algo:** cuando la tinta de la pizarra pasa de 60.000, se borran primero los dibujos más antiguos (antes se atenúan un poco). El más nuevo se queda siempre.
-- **Quién lo dibujó:** cada dibujo guarda el nombre de Roomful de su autor; pasa por encima para verlo. Los dibujos hechos antes de guardar nombres muestran "Alguien".
+- **Quién lo dibujó:** cada dibujo guarda el nombre de roomful·js de su autor; pasa por encima para verlo. Los dibujos hechos antes de guardar nombres muestran "Alguien".
 - **En directo:** cuando alguien termina un dibujo, la pizarra de los demás se actualiza al momento.
 - **Guardado:** con `server.py`, en un archivo (`BOARD_FILE`); en Vercel, en Upstash Redis (ver [Desplegar en Vercel](#desplegar-en-vercel)).
 
@@ -155,8 +155,8 @@ Dos vías: en tu propio servidor con `server.py`, o en Vercel con Ably y sin ser
 `server.py` funciona en cualquier sitio con Python o Docker (Render, Fly.io, Railway, un VPS…), **en una sola instancia**:
 
 ```bash
-docker build -t roomful .
-docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://midominio.com roomful
+docker build -t roomfuljs .
+docker run -d -p 8080:8080 -e ALLOWED_ORIGINS=https://midominio.com roomfuljs
 ```
 
 | Variable | Para qué | Por defecto |

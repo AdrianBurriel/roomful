@@ -1,5 +1,5 @@
 /*!
- * Roomful Board — a shared board where everyone in the room can draw and write.
+ * roomful·js Board — a shared board where everyone in the room can draw and write.
  *
  *   <script src="/roomful.js"></script>
  *   <script src="/roomful-board.js"></script>
